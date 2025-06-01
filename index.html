@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rastreador de Proyectos y Finanzas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen text-gray-800 dark:text-gray-200">
+
+    <!-- Pantalla de Autenticación (Overlay) -->
+    <div id="auth-screen" class="fixed inset-0 bg-gray-100 dark:bg-gray-900 z-[100] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 hidden">
+        <div class="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-md">
+            <div id="login-form-container">
+                <h2 class="text-2xl font-bold text-center text-indigo-600 dark:text-indigo-300 mb-6">Iniciar Sesión</h2>
+                <form id="login-form" novalidate>
+                    <div class="mb-4">
+                        <label for="login-username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre de Usuario</label>
+                        <input type="text" id="login-username" name="login-username" required
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                               placeholder="Tu nombre de usuario">
+                        <span id="login-username-error" class="error-message hidden"></span>
+                    </div>
+                    <div class="mb-6">
+                        <label for="login-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña</label>
+                        <input type="password" id="login-password" name="login-password" required
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                               placeholder="Tu contraseña">
+                        <span id="login-password-error" class="error-message hidden"></span>
+                    </div>
+                    <button type="submit" id="login-button"
+                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-300">
+                        Entrar
+                    </button>
+                    <p class="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
+                        ¿No tienes cuenta? <button type="button" id="show-register-form-button" class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">Regístrate</button>
+                    </p>
+                </form>
+            </div>
+            <div id="register-form-container" class="hidden">
+                <h2 class="text-2xl font-bold text-center text-indigo-600 dark:text-indigo-300 mb-6">Crear Cuenta</h2>
+                <form id="register-form" novalidate>
+                    <div class="mb-4">
+                        <label for="register-username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre de Usuario</label>
+                        <input type="text" id="register-username" name="register-username" required minlength="3" maxlength="30"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                               placeholder="Elige un nombre de usuario">
+                        <span id="register-username-error" class="error-message hidden"></span>
+                    </div>
+                    <div class="mb-4">
+                        <label for="register-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña</label>
+                        <input type="password" id="register-password" name="register-password" required minlength="6"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                               placeholder="Crea una contraseña segura">
+                        <span id="register-password-error" class="error-message hidden"></span>
+                    </div>
+                    <div class="mb-6">
+                        <label for="register-confirm-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirmar Contraseña</label>
+                        <input type="password" id="register-confirm-password" name="register-confirm-password" required
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                               placeholder="Vuelve a escribir la contraseña">
+                        <span id="register-confirm-password-error" class="error-message hidden"></span>
+                    </div>
+                    <button type="submit" id="register-button"
+                            class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-300">
+                        Registrarme
+                    </button>
+                    <p class="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
+                        ¿Ya tienes cuenta? <button type="button" id="show-login-form-button" class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">Inicia Sesión</button>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-content" class="hidden">
+        <div class="max-w-7xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-8 relative">
+            <header class="mb-6 border-b pb-4 border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h1 id="main-title" class="text-xl sm:text-4xl font-bold text-indigo-700 dark:text-indigo-300">Rastreador de Proyectos y Finanzas</h1>
+                <div class="flex items-center space-x-2">
+                    <button id="change-title-button" class="p-2 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200" title="Cambiar Título" aria-label="Cambiar título de la aplicación">
+                        <i class="fas fa-edit text-lg" aria-hidden="true"></i>
+                    </button>
+                    <button id="theme-toggle" class="p-2 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200" title="Alternar Modo Día/Noche" aria-label="Alternar modo claro y oscuro">
+                        <i class="fas fa-sun text-lg" aria-hidden="true"></i>
+                    </button>
+                    <button id="logout-button" class="hidden p-2 rounded-md text-gray-600 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-700 hover:text-red-600 dark:hover:text-red-200 transition-colors duration-200" title="Cerrar Sesión" aria-label="Cerrar sesión">
+                        <i class="fas fa-sign-out-alt text-lg" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </header>
+
+            <nav class="mb-6 flex flex-wrap space-x-4 sm:space-x-6 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="Navegación principal">
+                <button class="tab-button py-2 px-1 text-sm sm:text-base text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 active"
+                        data-tab="overview" role="tab" aria-selected="true" aria-controls="overview-content" id="tab-overview">
+                    <i class="fas fa-tachometer-alt mr-1" aria-hidden="true"></i> Vista General
+                </button>
+                <button class="tab-button py-2 px-1 text-sm sm:text-base text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                        data-tab="details" role="tab" aria-selected="false" aria-controls="details-content" id="tab-details">
+                    <i class="fas fa-tasks mr-1" aria-hidden="true"></i> Detalles Proyecto
+                </button>
+                <button class="tab-button py-2 px-1 text-sm sm:text-base text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                        data-tab="cost" role="tab" aria-selected="false" aria-controls="cost-content" id="tab-cost">
+                    <i class="fas fa-dollar-sign mr-1" aria-hidden="true"></i> Costos Proyecto
+                </button>
+                 <button class="tab-button py-2 px-1 text-sm sm:text-base text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                        data-tab="finance" role="tab" aria-selected="false" aria-controls="finance-content" id="tab-finance">
+                    <i class="fas fa-wallet mr-1" aria-hidden="true"></i> Finanzas Mensuales
+                </button>
+                 <button class="tab-button py-2 px-1 text-sm sm:text-base text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                        data-tab="setup" role="tab" aria-selected="false" aria-controls="setup-content" id="tab-setup">
+                    <i class="fas fa-cog mr-1" aria-hidden="true"></i> Configuración
+                </button>
+            </nav>
+
+            <main>
+                <section id="overview-content" class="tab-content active" role="tabpanel" aria-labelledby="tab-overview">
+                    <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Resumen General de Proyectos</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                        <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg shadow border border-blue-100 dark:border-blue-800">
+                            <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">Total Proyectos</h3>
+                            <p id="total-projects" class="text-2xl font-bold text-blue-900 dark:text-blue-100">0</p>
+                        </div>
+                        <div class="bg-green-50 dark:bg-green-900 p-4 rounded-lg shadow border border-green-100 dark:border-green-800">
+                            <h3 class="text-sm font-medium text-green-800 dark:text-green-200">Costo Actual Total (Proyectos)</h3>
+                            <p id="total-actual-cost" class="text-2xl font-bold text-green-900 dark:text-green-100">$0.00</p>
+                        </div>
+                        <div class="bg-purple-50 dark:bg-purple-900 p-4 rounded-lg shadow border border-purple-100 dark:border-purple-800">
+                            <h3 class="text-sm font-medium text-purple-800 dark:text-purple-200">Tareas Totales (Proyectos)</h3>
+                            <p id="cumulative-tasks" class="text-2xl font-bold text-purple-900 dark:text-purple-100">0</p>
+                        </div>
+                    </div>
+
+                    <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4 mt-8">Análisis Gráfico de Proyectos</h2>
+                    <div class="mb-4">
+                        <label for="chart-type-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Seleccionar Tipo de Gráfico:</label>
+                        <select id="chart-type-select" name="chart-type-select"
+                                class="block w-full max-w-xs mt-1 py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-800 dark:text-gray-200">
+                            <option value="statusDistribution">Distribución de Estados de Tarea</option>
+                            <option value="tasksPerProject">Tareas por Proyecto</option>
+                            <option value="projectCostsComparison">Comparativa de Costos por Proyecto</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                        <div class="order-last md:order-first">
+                            <h3 id="chart-title" class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">Distribución de Estados</h3>
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow h-72 md:h-96 flex justify-center items-center border border-gray-200 dark:border-gray-700 relative">
+                                <canvas id="overview-chart"></canvas>
+                                <p id="chart-no-data" class="absolute text-sm text-gray-500 dark:text-gray-400 italic hidden">No hay datos para mostrar en el gráfico.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Resumen por Proyecto</h3>
+                            <div id="project-summary-container" class="h-72 md:h-96">
+                               <p class="text-sm text-gray-500 dark:text-gray-400 italic text-center mt-4">Cargando resúmenes...</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="details-content" class="tab-content" role="tabpanel" aria-labelledby="tab-details" hidden>
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                        <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Tareas del Proyecto</h2>
+                        <button id="add-task-button" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-300 flex items-center justify-center space-x-2 text-sm">
+                            <i class="fas fa-plus" aria-hidden="true"></i>
+                            <span>Agregar Nueva Tarea</span>
+                        </button>
+                    </div>
+                    <!-- Input de Búsqueda para Tareas del Proyecto -->
+                    <div class="mb-4">
+                        <label for="search-project-tasks" class="sr-only">Buscar Tareas</label>
+                        <div class="relative rounded-md shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400" aria-hidden="true"></i>
+                            </div>
+                            <input type="search" id="search-project-tasks" name="search-project-tasks"
+                                   class="block w-full sm:w-1/2 md:w-1/3 lg:w-1/4 pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                   placeholder="Buscar por tarea, descripción o proyecto...">
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg shadow">
+                        <table id="project-details-table" class="bg-white dark:bg-gray-800">
+                            <thead class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                <tr>
+                                    <th class="px-4 py-3 border-b border-gray-200 dark:border-gray-600 text-left text-xs font-semibold uppercase tracking-wider sortable-header" data-sort-key="projectName" aria-sort="none">Proyecto <i class="fas fa-sort" aria-hidden="true"></i></th>
+                                    <th class="px-4 py-3 border-b border-gray-200 dark:border-gray-600 text-left text-xs font-semibold uppercase tracking-wider sortable-header" data-sort-key="task" aria-sort="none">Tarea <i class="fas fa-sort" aria-hidden="true"></i></th>
+                                    <th class="px-4 py-3 border-b border-gray-200 dark:border-gray-600 text-left text-xs font-semibold uppercase tracking-wider">Descripción</th>
+                                    <th class="px-4 py-3 border-b border-gray-200 dark:border-gray-600 text-left text-xs font-semibold uppercase tracking-wider sortable-header" data-sort-key="startDate" aria-sort="none">Inicio <i class="fas fa-sort" aria-hidden="true"></i></th>
+                                    <th class="px-4 py-3 border-b border-gray-200 dark:border-gray-600 text-left text-xs font-semibold uppercase tracking-wider sortable-header" data-sort-key="endDate" aria-sort="none">Fin <i class="fas fa-sort" aria-hidden="true"></i></th>
+                                    <th class="px-4 py-3 border-b border-gray-200 dark:border-gray-600 text-left text-xs font-semibold uppercase tracking-wider sortable-header" data-sort-key="status" aria-sort="none">Estado <i class="fas fa-sort" aria-hidden="true"></i></th>
+                                    <th class="px-4 py-3 border-b border-gray-200 dark:border-gray-600 text-left text-xs font-semibold uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="project-details-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                                <tr><td colspan="7" class="text-center py-10 text-gray-500 dark:text-gray-400">Cargando tareas...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                     <p class="mt-4 text-xs text-gray-500 dark:text-gray-400 italic">Nota: Las tareas con fecha de fin pasada y no 'Completado' se resaltarán en rojo.</p>
+                </section>
+
+                <section id="cost-content" class="tab-content" role="tabpanel" aria-labelledby="tab-cost" hidden>
+                     <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Costos por Proyecto</h2>
+                     </div>
+                     <!-- Input de Búsqueda para Costos por Proyecto -->
+                     <div class="mb-4">
+                        <label for="search-project-costs" class="sr-only">Buscar Costos por Proyecto</label>
+                        <div class="relative rounded-md shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400" aria-hidden="true"></i>
+                            </div>
+                            <input type="search" id="search-project-costs" name="search-project-costs"
+                                   class="block w-full sm:w-1/2 md:w-1/3 lg:w-1/4 pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                   placeholder="Buscar por nombre de proyecto...">
+                        </div>
+                    </div>
+                     <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg shadow">
+                        <table id="project-cost-table" class="bg-white dark:bg-gray-800">
+                            <thead class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                <tr>
+                                    <th class="px-4 py-3 border-b border-gray-200 dark:border-gray-600 text-left text-xs font-semibold uppercase tracking-wider sortable-header" data-sort-key="projectName" aria-sort="none">Proyecto <i class="fas fa-sort" aria-hidden="true"></i></th>
+                                    <th class="px-4 py-3 border-b border-gray-200 dark:border-gray-600 text-left text-xs font-semibold uppercase tracking-wider sortable-header" data-sort-key="budget" aria-sort="none">Presupuesto <i class="fas fa-sort" aria-hidden="true"></i></th>
+                                    <th class="px-4 py-3 border-b border-gray-200 dark:border-gray-600 text-left text-xs font-semibold uppercase tracking-wider sortable-header" data-sort-key="actualCost" aria-sort="none">Costo Actual <i class="fas fa-sort" aria-hidden="true"></i></th>
+                                    <th class="px-4 py-3 border-b border-gray-200 dark:border-gray-600 text-left text-xs font-semibold uppercase tracking-wider">Diferencia</th>
+                                    <th class="px-4 py-3 border-b border-gray-200 dark:border-gray-600 text-left text-xs font-semibold uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="project-cost-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                                 <tr><td colspan="5" class="text-center py-10 text-gray-500 dark:text-gray-400">Cargando costos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                 <section id="finance-content" class="tab-content" role="tabpanel" aria-labelledby="tab-finance" hidden>
+                    <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6">Finanzas Mensuales</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-green-50 dark:bg-green-900 p-4 rounded-lg shadow border border-green-200 dark:border-green-800">
+                            <label for="monthly-income" class="block text-sm font-medium text-green-800 dark:text-green-200 mb-1">Ingreso Mensual Estimado</label>
+                            <div class="relative mt-1">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
+                                </div>
+                                <input type="number" id="monthly-income" name="monthly-income" min="0" step="0.01"
+                                       class="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-lg font-semibold text-green-900 dark:text-green-100 bg-white dark:bg-gray-700">
+                            </div>
+                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 italic">Ingresa tu ingreso neto mensual.</p>
+                        </div>
+                        <div class="bg-red-50 dark:bg-red-900 p-4 rounded-lg shadow border border-red-200 dark:border-red-800 flex flex-col justify-center items-center md:items-start">
+                            <h3 class="text-sm font-medium text-red-800 dark:text-red-200">Total Gastos Fijos</h3>
+                            <p id="total-fixed-expenses" class="text-2xl font-bold text-red-900 dark:text-red-100">$0.00</p>
+                        </div>
+                        <div class="bg-indigo-50 dark:bg-indigo-900 p-4 rounded-lg shadow border border-indigo-200 dark:border-indigo-800 flex flex-col justify-center items-center md:items-start">
+                            <h3 class="text-sm font-medium text-indigo-800 dark:text-indigo-200">Neto Mensual Disponible</h3>
+                            <p id="net-monthly-amount" class="text-2xl font-bold text-indigo-900 dark:text-indigo-100">$0.00</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-4">Gastos Fijos Mensuales</h3>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600">
+                                <h4 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">Agregar Gasto Fijo</h4>
+                                <form id="add-expense-form" class="space-y-3" novalidate>
+                                    <div>
+                                        <label for="expense-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre del Gasto <span class="text-red-500">*</span></label>
+                                        <input type="text" id="expense-name" required maxlength="100" placeholder="Ej: Alquiler, Internet"
+                                               class="mt-1 block w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-800">
+                                         <span id="expense-name-error" class="error-message hidden"></span>
+                                    </div>
+                                    <div>
+                                        <label for="expense-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Monto Mensual <span class="text-red-500">*</span></label>
+                                        <div class="mt-1 relative rounded-md shadow-sm">
+                                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <span class="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
+                                             </div>
+                                             <input type="number" id="expense-amount" required min="0.01" step="0.01" placeholder="150.00"
+                                                class="block w-full pl-7 pr-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-800">
+                                        </div>
+                                         <span id="expense-amount-error" class="error-message hidden"></span>
+                                    </div>
+                                    <div class="pt-2">
+                                        <button type="submit" id="add-expense-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-300 text-sm flex items-center justify-center space-x-2">
+                                            <i class="fas fa-plus-circle" aria-hidden="true"></i>
+                                            <span>Agregar Gasto</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                                 <h4 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">Lista de Gastos</h4>
+                                  <!-- Input de Búsqueda para Gastos Fijos -->
+                                <div class="mb-4">
+                                    <label for="search-fixed-expenses" class="sr-only">Buscar Gastos Fijos</label>
+                                    <div class="relative rounded-md shadow-sm">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <i class="fas fa-search text-gray-400" aria-hidden="true"></i>
+                                        </div>
+                                        <input type="search" id="search-fixed-expenses" name="search-fixed-expenses"
+                                            class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                            placeholder="Buscar por nombre de gasto...">
+                                    </div>
+                                </div>
+                                 <div class="overflow-x-auto">
+                                    <table id="fixed-expenses-table" class="text-gray-800 dark:text-gray-200">
+                                        <thead class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"> <tr>
+                                                <th class="py-2 px-2 border-b border-gray-200 dark:border-gray-600 text-left text-xs font-semibold uppercase tracking-wider sortable-header" data-sort-key="name" aria-sort="none">Nombre <i class="fas fa-sort" aria-hidden="true"></i></th>
+                                                <th class="py-2 px-2 border-b border-gray-200 dark:border-gray-600 text-right text-xs font-semibold uppercase tracking-wider sortable-header" data-sort-key="amount" aria-sort="none">Monto <i class="fas fa-sort" aria-hidden="true"></i></th>
+                                                <th class="py-2 px-2 border-b border-gray-200 dark:border-gray-600 text-right text-xs font-semibold uppercase tracking-wider">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="fixed-expenses-table-body">
+                                            <tr><td colspan="3" class="text-center py-6 text-sm text-gray-500 dark:text-gray-400 italic">No hay gastos fijos registrados.</td></tr>
+                                        </tbody>
+                                    </table>
+                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="setup-content" class="tab-content" role="tabpanel" aria-labelledby="tab-setup" hidden>
+                    <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Configuración de Listas</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2" id="status-list-heading">Estados de Tarea</h3>
+                            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600">
+                                 <ul id="status-list" class="space-y-1 mb-3 setup-list text-gray-700 dark:text-gray-300" aria-labelledby="status-list-heading">
+                                     <li class="text-xs text-gray-500 dark:text-gray-400 italic p-2">Cargando estados...</li>
+                                 </ul>
+                                <div class="flex space-x-2 mt-2">
+                                    <input type="text" id="new-status-input" placeholder="Nuevo estado" maxlength="50" aria-label="Nuevo estado de tarea"
+                                           class="flex-grow px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800">
+                                    <button id="add-status-button" title="Agregar Estado" aria-label="Agregar nuevo estado de tarea"
+                                            class="flex-shrink-0 bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1 rounded-md transition duration-200"><i class="fas fa-plus" aria-hidden="true"></i></button>
+                                </div>
+                                 <span id="new-status-error" class="error-message hidden"></span>
+                            </div>
+                        </div>
+                        <div>
+                             <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2" id="project-list-heading">Nombres de Proyecto</h3>
+                             <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600">
+                                 <ul id="project-name-list" class="space-y-1 mb-3 setup-list text-gray-700 dark:text-gray-300" aria-labelledby="project-list-heading">
+                                     <li class="text-xs text-gray-500 dark:text-gray-400 italic p-2">Cargando proyectos...</li>
+                                 </ul>
+                                 <div class="flex space-x-2 mt-2">
+                                    <input type="text" id="new-project-name-input" placeholder="Nuevo proyecto" maxlength="100" aria-label="Nuevo nombre de proyecto"
+                                           class="flex-grow px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800">
+                                    <button id="add-project-name-button" title="Agregar Proyecto" aria-label="Agregar nuevo nombre de proyecto"
+                                            class="flex-shrink-0 bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1 rounded-md transition duration-200"><i class="fas fa-plus" aria-hidden="true"></i></button>
+                                </div>
+                                  <span id="new-project-name-error" class="error-message hidden"></span>
+                             </div>
+                        </div>
+                    </div>
+                     <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                         <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Gestión de Datos</h3>
+                         <div class="flex flex-wrap items-center gap-4">
+                             <button id="export-data-button" title="Exportar todos los datos a un archivo JSON" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded-lg shadow-md transition duration-300 flex items-center space-x-2">
+                                <i class="fas fa-download" aria-hidden="true"></i>
+                                <span>Exportar Datos</span>
+                            </button>
+                             <button id="import-data-button" title="Importar datos desde un archivo JSON" class="bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-2 rounded-lg shadow-md transition duration-300 flex items-center space-x-2">
+                                <i class="fas fa-upload" aria-hidden="true"></i>
+                                <span>Importar Datos</span>
+                                 <input type="file" id="import-file-input" accept=".json" class="hidden" aria-label="Seleccionar archivo JSON para importar">
+                            </button>
+                             <button id="reset-data-button" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-300 flex items-center space-x-2 text-sm">
+                                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                                <span>Restablecer Datos de Ejemplo</span>
+                            </button>
+                         </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Cuidado: Restablecer eliminará todos los datos actuales (proyectos y finanzas) y cargará los datos de ejemplo iniciales.</p>
+                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Importar datos reemplazará completamente los datos actuales con los del archivo.</p>
+                    </div>
+                </section>
+            </main>
+
+            <div id="toast-container" class="fixed bottom-4 right-4 space-y-2 z-[100]" role="status" aria-live="polite" aria-atomic="true">
+            </div>
+        </div>
+    </div>
+
+
+    <footer class="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-600 dark:text-gray-400">
+        <p class="mb-1">Made By Wiggles Vz</p>
+        <p>© <span id="current-year"></span> Wiggles Vz. Todos los derechos reservados.</p>
+    </footer>
+
+    <!-- Modals -->
+    <div id="task-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50"
+         role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 transform scale-95 text-gray-800 dark:text-gray-200">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 id="task-modal-title" class="text-xl font-semibold text-gray-800 dark:text-gray-200">Agregar Tarea</h3>
+                <button id="close-task-modal" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400 text-2xl leading-none" aria-label="Cerrar modal de tarea">×</button>
+            </div>
+            <form id="task-form" novalidate>
+                 <input type="hidden" id="task-id">
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="task-project-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Proyecto: <span class="text-red-500">*</span></label>
+                        <select id="task-project-name" name="task-project-name" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                            <option value="">Seleccione Proyecto</option>
+                        </select>
+                         <span id="task-project-name-error" class="error-message hidden"></span>
+                    </div>
+                    <div>
+                         <label for="task-status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado: <span class="text-red-500">*</span></label>
+                        <select id="task-status" name="task-status" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                             <option value="">Seleccione Estado</option>
+                        </select>
+                         <span id="task-status-error" class="error-message hidden"></span>
+                    </div>
+                </div>
+                 <div class="mb-4">
+                    <label for="task-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre de la Tarea: <span class="text-red-500">*</span></label>
+                    <input type="text" id="task-name" name="task-name" required maxlength="100"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200" placeholder="Ej: Diseñar pantalla de inicio">
+                     <span id="task-name-error" class="error-message hidden"></span>
+                </div>
+                <div class="mb-4">
+                    <label for="task-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción:</label>
+                    <textarea id="task-description" name="task-description" rows="3" maxlength="500"
+                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200" placeholder="Detalles adicionales de la tarea..."></textarea>
+                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                     <div>
+                        <label for="task-start-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de Inicio: <span class="text-red-500">*</span></label>
+                        <input type="date" id="task-start-date" name="task-start-date" required
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                         <span id="task-start-date-error" class="error-message hidden"></span>
+                    </div>
+                    <div>
+                        <label for="task-end-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de Fin: <span class="text-red-500">*</span></label>
+                        <input type="date" id="task-end-date" name="task-end-date" required
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                         <span id="task-end-date-error" class="error-message hidden"></span>
+                    </div>
+                 </div>
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" id="cancel-task-modal" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition duration-300 text-sm">Cancelar</button>
+                    <button type="submit" id="save-task-button" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-300 text-sm">Guardar Tarea</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="cost-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50"
+         role="dialog" aria-modal="true" aria-labelledby="cost-modal-title">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 transform scale-95 text-gray-800 dark:text-gray-200">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 id="cost-modal-title" class="text-xl font-semibold text-gray-800 dark:text-gray-200">Editar Costos</h3>
+                <button id="close-cost-modal" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400 text-2xl leading-none" aria-label="Cerrar modal de costos">×</button>
+            </div>
+            <form id="cost-form" novalidate>
+                 <input type="hidden" id="cost-id">
+                 <div class="mb-4">
+                     <label for="cost-project-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Proyecto</label>
+                     <input type="text" id="cost-project-name" name="cost-project-name" readonly
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-sm text-gray-500 dark:text-gray-400">
+                 </div>
+                 <div class="mb-4">
+                    <label for="cost-budget" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Presupuesto <span class="text-red-500">*</span></label>
+                    <div class="relative mt-1">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
+                        </div>
+                        <input type="number" id="cost-budget" name="cost-budget" required min="0" step="0.01"
+                               class="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200" placeholder="25000.00">
+                    </div>
+                     <span id="cost-budget-error" class="error-message hidden"></span>
+                 </div>
+                 <div class="mb-6">
+                    <label for="cost-actual" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Actual <span class="text-red-500">*</span></label>
+                     <div class="relative mt-1">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
+                        </div>
+                        <input type="number" id="cost-actual" name="cost-actual" required min="0" step="0.01"
+                               class="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200" placeholder="20000.00">
+                    </div>
+                     <span id="cost-actual-error" class="error-message hidden"></span>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" id="cancel-cost-modal" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition duration-300 text-sm">Cancelar</button>
+                    <button type="submit" id="save-cost-button" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-300 text-sm">Guardar Costos</button>
+                </div>
+            </form>
+        </div>
+     </div>
+
+    <div id="confirmation-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50"
+         role="dialog" aria-modal="true" aria-labelledby="confirmation-modal-title" aria-describedby="confirmation-modal-body">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 transform scale-95 text-gray-800 dark:text-gray-200">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 id="confirmation-modal-title" class="text-xl font-semibold text-gray-800 dark:text-gray-200">Confirmar Acción</h3>
+                <button id="close-confirmation-modal" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400 text-2xl leading-none" aria-label="Cerrar modal de confirmación">×</button>
+            </div>
+            <div id="confirmation-modal-body" class="mb-6 text-gray-700 dark:text-gray-300">
+                ¿Está seguro de realizar esta acción?
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button type="button" id="cancel-confirmation-modal" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition duration-300 text-sm">Cancelar</button>
+                <button type="button" id="confirm-confirmation-button" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-300 text-sm">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/js/main.js"></script>
+</body>
+</html>

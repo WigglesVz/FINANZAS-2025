@@ -1,0 +1,269 @@
+/* src/styles.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tus estilos personalizados van DESPUÉS de las directivas de Tailwind */
+
+/* Use Inter font for the body */
+body {
+    font-family: 'Inter', sans-serif;
+}
+/* Styles for active/inactive tabs */
+.tab-button.active {
+    border-bottom-color: #4f46e5; /* indigo-600 */
+    color: #4f46e5;
+    font-weight: 600;
+}
+/* Dark mode tab active state */
+.dark .tab-button.active {
+     border-bottom-color: #818cf8; /* indigo-300 */
+     color: #818cf8;
+}
+
+.tab-button {
+    border-bottom-width: 2px;
+    border-bottom-color: transparent;
+    transition: all 0.3s ease;
+    padding-bottom: 0.5rem; /* Align bottom border */
+    margin-bottom: -2px; /* Overlap border for seamless look */
+}
+/* Hide inactive tab content */
+.tab-content {
+    display: none;
+}
+/* Ensure active tab content is displayed, overriding Tailwind's 'hidden' if necessary */
+.tab-content.active {
+    display: block !important;
+}
+/* Ensure sections explicitly marked as hidden are indeed hidden */
+section[hidden] {
+    display: none !important;
+}
+
+
+/* Style for overdue tasks (applied to TR for full row highlight) */
+.overdue-task {
+     background-color: #fee2e2; /* red-100 */
+     color: #b91c1c; /* red-700 */
+}
+.overdue-task:hover {
+    background-color: #fecaca; /* red-200 for hover, slightly darker */
+}
+
+ .dark .overdue-task {
+      background-color: #450a0a; /* red-950 */
+      color: #fecaca; /* red-200 */
+ }
+ .dark .overdue-task:hover {
+    background-color: #591717; /* A slightly lighter red for dark mode hover */
+ }
+.overdue-task td {
+    color: inherit;
+}
+.overdue-task .status-badge {
+     background-color: #fecaca;
+     color: #991b1b;
+}
+ .dark .overdue-task .status-badge {
+      background-color: #7f1d1d;
+      color: #fecaca;
+ }
+
+
+/* Styles for modals */
+.modal {
+    transition: opacity 0.25s ease;
+}
+body.modal-active {
+    overflow: hidden;
+}
+.modal-content {
+    transition: transform 0.25s ease;
+}
+ .dark .modal-content {
+     background-color: #1f2937;
+     color: #d1d5db;
+ }
+ .dark .modal-content h3 {
+     color: #f3f4f6;
+ }
+ .dark .modal-content label {
+      color: #d1d5db;
+ }
+ .dark .modal-content input[type="text"],
+ .dark .modal-content input[type="number"],
+ .dark .modal-content input[type="date"],
+ .dark .modal-content select,
+ .dark .modal-content textarea {
+     background-color: #374151;
+     border-color: #4b5563;
+     color: #f3f4f6;
+ }
+  .dark .modal-content input[readonly] {
+      background-color: #4b5563;
+      border-color: #6b7280;
+      color: #9ca3af;
+  }
+
+
+/* Style for Net Amount */
+.net-positive { color: #059669; } /* green-700 */
+.net-negative { color: #dc2626; } /* red-600 */
+ .dark .net-positive { color: #34d399; } /* green-400 */
+ .dark .net-negative { color: #f87171; } /* red-400 */
+
+
+/* --- ESTILOS DE TABLA GENERALES --- */
+/* Sticky table headers */
+#fixed-expenses-table thead,
+#project-details-table thead,
+#project-cost-table thead {
+     position: sticky;
+     top: 0;
+     background-color: white; /* Tailwind: bg-white */
+     z-index: 10;
+}
+.dark #fixed-expenses-table thead,
+.dark #project-details-table thead,
+.dark #project-cost-table thead {
+     background-color: #374151; /* Tailwind: dark:bg-gray-700 */
+     color: #d1d5db; /* Tailwind: dark:text-gray-300 */
+ }
+
+/* Table and row layout */
+#fixed-expenses-table,
+#project-details-table,
+#project-cost-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+/* Dark mode table borders */
+ .dark table th, .dark table td {
+     border-bottom-color: #4b5563; /* Tailwind: dark:border-gray-600 */
+ }
+ .dark table tbody.divide-y > tr { /* Specific to Tailwind's divide utility */
+    --tw-divide-y-reverse: 0;
+    border-top-width: calc(1px * calc(1 - var(--tw-divide-y-reverse)));
+    border-bottom-width: calc(1px * var(--tw-divide-y-reverse));
+    border-top-color: #4b5563; /* Tailwind: dark:divide-gray-600 */
+    border-bottom-color: #4b5563; /* Tailwind: dark:divide-gray-600 */
+ }
+ .dark table tbody tr:hover {
+     background-color: #4b5563; /* Tailwind: dark:hover:bg-gray-600 (o similar) */
+ }
+
+
+ /* Style for project summaries */
+ #project-summary-container {
+     max-height: 20rem; overflow-y: auto; border: 1px solid #e5e7eb; /* Tailwind: border-gray-200 */
+     border-radius: 0.5rem; padding: 0.5rem; background-color: #f9fafb; /* Tailwind: bg-gray-50 */
+ }
+ .dark #project-summary-container {
+     border-color: #4b5563; /* Tailwind: dark:border-gray-600 */
+     background-color: #1f2937; /* Tailwind: dark:bg-gray-800 */
+ }
+ .dark #project-summary-container > p.text-sm { color: #9ca3af; } /* Tailwind: dark:text-gray-400 */
+ .dark #project-summary-container div.bg-white {
+     background-color: #374151; /* Tailwind: dark:bg-gray-700 */
+     border-color: #4b5563; /* Tailwind: dark:border-gray-600 */
+ }
+ .dark #project-summary-container div.bg-white:hover {
+     /* Este estilo de sombra es difícil de replicar exactamente sin Tailwind,
+        pero Tailwind lo manejaría con sus clases de sombra.
+        Si necesitas el mismo efecto exacto, Tailwind lo hace más fácil. */
+     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+ }
+ .dark #project-summary-container h4 { color: #a5b4fc; } /* Tailwind: dark:text-indigo-300 o similar */
+
+
+  /* Style for setup lists */
+ .setup-list { max-height: 12rem; overflow-y: auto; padding-right: 0.5rem; }
+ .dark .setup-list li { color: #d1d5db; } /* Tailwind: dark:text-gray-300 */
+ .dark .setup-list li:hover { background-color: #374151; } /* Tailwind: dark:hover:bg-gray-700 */
+
+ /* Toast Animation */
+ @keyframes fadeInOut {
+     0% { opacity: 0; transform: translateY(10px); }
+     10% { opacity: 1; transform: translateY(0); }
+     90% { opacity: 1; transform: translateY(0); }
+     100% { opacity: 0; transform: translateY(10px); }
+ }
+ .animate-fade { animation: fadeInOut 3s ease forwards; }
+
+ /* Form validation error text */
+ .error-message { color: #ef4444; font-size: 0.75rem; margin-top: 0.25rem; display: block; } /* Tailwind: text-red-500 text-xs mt-1 block */
+ .dark .error-message { color: #fca5a5; } /* Tailwind: dark:text-red-400 */
+
+ /* Style for sortable table headers */
+ .sortable-header { cursor: pointer; user-select: none; display: flex; align-items: center; }
+  .sortable-header i { margin-left: 0.25rem; font-size: 0.75rem; color: #9ca3af; } /* Tailwind: text-gray-400 */
+ .sortable-header.sorted i { color: #4f46e5; } /* Tailwind: text-indigo-600 */
+ .dark .sortable-header i { color: #6b7280; } /* Tailwind: dark:text-gray-500 */
+  .dark .sortable-header.sorted i { color: #a5b4fc; } /* Tailwind: dark:text-indigo-300 */
+
+ /* Button loading state */
+ button:disabled { opacity: 0.75; cursor: not-allowed; }
+
+
+/* ================================================ */
+/* === RESPONSIVE ADJUSTMENTS & TABLE STYLING === */
+/* ================================================ */
+@media (max-width: 768px) {
+
+    .tab-button { padding-left: 0.25rem; padding-right: 0.25rem; font-size: 0.8rem; }
+    #toast-container { bottom: 1rem; right: 1rem; left: auto; width: calc(100% - 2rem); max-width: 320px; }
+
+    #project-cost-table th, #project-cost-table td,
+    #fixed-expenses-table th, #fixed-expenses-table td,
+    #project-details-table th, #project-details-table td {
+        padding: 0.6rem 0.4rem;
+        font-size: 0.75rem;
+        vertical-align: middle;
+        line-height: 1.4;
+    }
+    #project-cost-table th, #fixed-expenses-table th, #project-details-table th {
+        font-size: 0.65rem;
+        text-align: left;
+    }
+
+    #project-cost-table,
+    #fixed-expenses-table,
+    #project-details-table {
+        min-width: 500px; 
+        table-layout: fixed;
+    }
+
+    #fixed-expenses-table { min-width: 380px; }
+    #fixed-expenses-table th:first-child,
+    #fixed-expenses-table td:first-child { width: 55%; word-break: break-word; white-space: normal; }
+    #fixed-expenses-table th:nth-child(2),
+    #fixed-expenses-table td:nth-child(2) { width: 25%; white-space: nowrap; text-align: right; }
+    #fixed-expenses-table th:nth-child(3),
+    #fixed-expenses-table td:nth-child(3) { width: 20%; text-align: center; }
+
+    #project-cost-table { min-width: 500px; }
+    #project-cost-table th:nth-child(1), #project-cost-table td:nth-child(1) { width: 120px; word-break:break-word; white-space: normal; }
+    #project-cost-table th:nth-child(2), #project-cost-table td:nth-child(2) { width: 90px; text-align:right; white-space:nowrap; }
+    #project-cost-table th:nth-child(3), #project-cost-table td:nth-child(3) { width: 90px; text-align:right; white-space:nowrap; }
+    #project-cost-table th:nth-child(4), #project-cost-table td:nth-child(4) { width: 90px; text-align:right; white-space:nowrap; }
+    #project-cost-table th:nth-child(4) { text-align: center; }
+    #project-cost-table th:nth-child(5), #project-cost-table td:nth-child(5) { width: 60px; text-align:center; }
+    #project-cost-table th:nth-child(5) { text-align: center; }
+
+    #project-details-table { min-width: 700px; }
+    #project-details-table th:nth-child(1), #project-details-table td:nth-child(1) { width: 100px; word-break:break-word; white-space: normal;}
+    #project-details-table th:nth-child(2), #project-details-table td:nth-child(2) { width: 130px; word-break:break-word; white-space: normal;}
+    #project-details-table th:nth-child(3), #project-details-table td:nth-child(3) { width: 180px; word-break:break-word; white-space: normal;}
+    #project-details-table th:nth-child(4), #project-details-table td:nth-child(4) { width: 80px; white-space:nowrap; text-align:center;}
+    #project-details-table th:nth-child(5), #project-details-table td:nth-child(5) { width: 80px; white-space:nowrap; text-align:center;}
+    #project-details-table th:nth-child(6), #project-details-table td:nth-child(6) { width: 90px; white-space:nowrap; text-align:center; }
+    #project-details-table th:nth-child(7), #project-details-table td:nth-child(7) { width: 70px; text-align:center; }
+    #project-details-table th:nth-child(4),
+    #project-details-table th:nth-child(5),
+    #project-details-table th:nth-child(6),
+    #project-details-table th:nth-child(7) {
+        text-align: center;
+    }
+}

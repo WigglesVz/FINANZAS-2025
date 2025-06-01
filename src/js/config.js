@@ -1,23 +1,23 @@
+// src/js/config.js
 export const APP_PREFIX = 'projectTracker_vFin_Optimized_';
 export const THEME_PREFERENCE_KEY = `${APP_PREFIX}themePreference`;
-export const MAIN_TITLE_KEY = `${APP_PREFIX}mainTitle`;
+export const MAIN_TITLE_KEY = `${APP_PREFIX}mainTitle`; // Clave para appConfig en Dexie
 
-// Project Data Keys
-export const STATUS_LIST_KEY = `${APP_PREFIX}statusList`;
-export const PROJECT_NAME_LIST_KEY = `${APP_PREFIX}projectNameList`;
-export const PROJECT_DETAILS_KEY = `${APP_PREFIX}projectDetails`;
-export const PROJECT_COSTS_KEY = `${APP_PREFIX}projectCosts`;
-
-// Finance Data Keys
-export const MONTHLY_INCOME_KEY = `${APP_PREFIX}monthlyIncome`;
-export const FIXED_EXPENSES_KEY = `${APP_PREFIX}fixedExpenses`;
+// Ya no usaremos estas claves para el almacenamiento principal con Dexie,
+// pero pueden quedar para referencia o si alguna vez se usa localStorage para algo temporal.
+// export const STATUS_LIST_KEY = `${APP_PREFIX}statusList`;
+// export const PROJECT_NAME_LIST_KEY = `${APP_PREFIX}projectNameList`;
+// export const PROJECT_DETAILS_KEY = `${APP_PREFIX}projectDetails`;
+// export const PROJECT_COSTS_KEY = `${APP_PREFIX}projectCosts`;
+// export const MONTHLY_INCOME_KEY = `${APP_PREFIX}monthlyIncome`;
+// export const FIXED_EXPENSES_KEY = `${APP_PREFIX}fixedExpenses`;
 
 // Default Project Data
 export const DEFAULT_STATUS_LIST = [
-    { id: 'status-ni', name: 'No Iniciado' },
-    { id: 'status-ep', name: 'En Progreso' },
-    { id: 'status-c', name: 'Completado' },
-    { id: 'status-b', name: 'Bloqueado' }
+    { id: 'status-ni', name: 'No Iniciado', color: '#D1D5DB' }, // Gris claro (Tailwind gray-300)
+    { id: 'status-ep', name: 'En Progreso', color: '#F59E0B' }, // Ámbar (Tailwind amber-500)
+    { id: 'status-c', name: 'Completado', color: '#10B981' },  // Esmeralda (Tailwind emerald-500)
+    { id: 'status-b', name: 'Bloqueado', color: '#EF4444' }   // Rojo (Tailwind red-500)
 ];
 export const DEFAULT_PROJECT_NAME_LIST = [
      { id: 'proj-wr', name: 'Website Redesign' },
@@ -54,5 +54,6 @@ export const SORT_STATE_DEFAULTS = {
     fixedExpenses: { key: 'name', direction: 'asc' }
 };
 
-export const USER_CREDENTIALS_PREFIX_KEY = `${APP_PREFIX}user_`; // Para USER_STORAGE_KEY + username
+// Claves para localStorage (solo para tema y estado de autenticación)
+export const USER_CREDENTIALS_PREFIX_KEY = `${APP_PREFIX}user_`;
 export const AUTH_STATUS_KEY = `${APP_PREFIX}authStatus`;

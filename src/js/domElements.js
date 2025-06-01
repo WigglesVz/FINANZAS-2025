@@ -25,11 +25,15 @@ export const projectDetailsTable = document.getElementById('project-details-tabl
 export const projectDetailsTableBody = document.getElementById('project-details-table-body');
 export const addTaskButton = document.getElementById('add-task-button');
 export const searchProjectTasksInput = document.getElementById('search-project-tasks');
+export const projectDetailsSortHeaders = document.getElementById('project-details-sort-headers');
+
 
 // Project Costs Elements
 export const projectCostTable = document.getElementById('project-cost-table');
 export const projectCostTableBody = document.getElementById('project-cost-table-body');
-export const searchProjectCostsInput = document.getElementById('search-project-costs'); // DESCOMENTADO Y AÑADIDO
+export const searchProjectCostsInput = document.getElementById('search-project-costs');
+export const projectCostSortHeaders = document.getElementById('project-cost-sort-headers');
+
 
 // Finance Elements
 export const monthlyIncomeInput = document.getElementById('monthly-income');
@@ -43,7 +47,9 @@ export const expenseNameError = document.getElementById('expense-name-error');
 export const expenseAmountError = document.getElementById('expense-amount-error');
 export const fixedExpensesTable = document.getElementById('fixed-expenses-table');
 export const fixedExpensesTableBody = document.getElementById('fixed-expenses-table-body');
-export const searchFixedExpensesInput = document.getElementById('search-fixed-expenses'); // DESCOMENTADO Y AÑADIDO
+export const searchFixedExpensesInput = document.getElementById('search-fixed-expenses');
+export const fixedExpensesSortHeaders = document.getElementById('fixed-expenses-sort-headers');
+
 
 // Setup Elements
 export const statusListEl = document.getElementById('status-list');

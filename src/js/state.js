@@ -9,12 +9,18 @@ import {
     DEFAULT_MONTHLY_INCOME,
     DEFAULT_FIXED_EXPENSES
 } from './config.js';
-import { generateId } from './utils.js';
+import { generateId, sortArray } from './utils.js'; 
 
-// Estado inicial. searchTerms ya está incluido.
+// Estado inicial en memoria. Se llenará desde IndexedDB por loadData.
+// Los valores aquí son más bien placeholders o fallbacks si la carga inicial falla.
+// Asegurarse que DEFAULT_STATUS_LIST incluya la propiedad 'color'.
 let currentState = {
     mainTitle: 'Rastreador de Proyectos y Finanzas',
-    statusList: DEFAULT_STATUS_LIST.map(item => ({ ...item, id: item.id || generateId() })),
+    statusList: DEFAULT_STATUS_LIST.map(item => ({ 
+        id: item.id || generateId(), 
+        name: item.name, 
+        color: item.color || '#CCCCCC' // Fallback color si no está definido
+    })),
     projectNameList: DEFAULT_PROJECT_NAME_LIST.map(item => ({ ...item, id: item.id || generateId() })),
     projectDetails: DEFAULT_PROJECT_DETAILS.map(item => ({ ...item, id: item.id || generateId() })),
     projectCosts: DEFAULT_PROJECT_COSTS.map(item => ({
@@ -35,26 +41,21 @@ let currentState = {
     currentUser: null,
     searchTerms: {
         projectDetails: '',
-        projectCosts: '',   // Ya estaba
-        fixedExpenses: ''   // Ya estaba
+        projectCosts: '',
+        fixedExpenses: ''
     }
 };
 
 export const getAppState = () => {
-    // Devolver una copia para proteger el estado original de mutaciones directas accidentales.
-    // Un spread superficial es suficiente para el primer nivel.
-    // Si las propiedades del estado son objetos y se modifican profundamente,
-    // se necesitaría una clonación profunda para esas propiedades específicas o para todo el estado.
     return { 
         ...currentState,
-        // Clonar explícitamente objetos anidados que podrían ser modificados
         statusList: currentState.statusList.map(item => ({...item})),
         projectNameList: currentState.projectNameList.map(item => ({...item})),
         projectDetails: currentState.projectDetails.map(item => ({...item})),
         projectCosts: currentState.projectCosts.map(item => ({...item})),
         fixedExpenses: currentState.fixedExpenses.map(item => ({...item})),
-        sortState: JSON.parse(JSON.stringify(currentState.sortState)), // Clonación profunda para sortState
-        searchTerms: { ...currentState.searchTerms } // Clonación superficial para searchTerms
+        sortState: JSON.parse(JSON.stringify(currentState.sortState)),
+        searchTerms: { ...currentState.searchTerms }
     };
 };
 
@@ -65,12 +66,11 @@ export const setAppState = (newState) => {
         projectCosts: '',
         fixedExpenses: ''
     };
+    const defaultStatusColor = '#CCCCCC';
 
-    // Al establecer un nuevo estado, asegurarse de que todas las claves esperadas estén presentes
-    // y con tipos de datos válidos, usando valores por defecto si es necesario.
     currentState = {
         mainTitle: typeof newState.mainTitle === 'string' ? newState.mainTitle : 'Rastreador de Proyectos y Finanzas',
-        statusList: Array.isArray(newState.statusList) ? newState.statusList : [],
+        statusList: Array.isArray(newState.statusList) ? newState.statusList.map(s => ({...s, color: s.color || defaultStatusColor })) : [],
         projectNameList: Array.isArray(newState.projectNameList) ? newState.projectNameList : [],
         projectDetails: Array.isArray(newState.projectDetails) ? newState.projectDetails : [],
         projectCosts: Array.isArray(newState.projectCosts) ? newState.projectCosts : [],
@@ -82,22 +82,16 @@ export const setAppState = (newState) => {
         currentUser: newState.currentUser || null,
         searchTerms: newState.searchTerms ? { ...defaultSearchTerms, ...newState.searchTerms } : defaultSearchTerms
     };
-    // console.log("App state set/replaced:", getAppState());
 };
 
 export const updateAppState = (updates) => {
-    // Si se actualiza searchTerms, asegurarse de fusionar con los searchTerms existentes
     if (updates.searchTerms) {
         currentState.searchTerms = {
             ...currentState.searchTerms,
             ...updates.searchTerms
         };
-        // Eliminar searchTerms de 'updates' para que no sobreescriba el merge anterior
-        // al hacer el spread de ...updates
         delete updates.searchTerms; 
     }
-
-    // Si se actualiza sortState, asegurarse de fusionar correctamente
     if (updates.sortState) {
         currentState.sortState = {
             ...currentState.sortState,
@@ -105,18 +99,16 @@ export const updateAppState = (updates) => {
         };
         delete updates.sortState;
     }
+    // Si se actualiza statusList, asegurarse de que cada estado tenga una propiedad color
+    if (Array.isArray(updates.statusList)) {
+        updates.statusList = updates.statusList.map(s => ({...s, color: s.color || '#CCCCCC'}));
+    }
     
     currentState = { ...currentState, ...updates };
-    // console.log("App state updated with:", updates, "New state:", getAppState());
 };
 
-
-// Las funciones getStatePart y setStatePart pueden ser útiles para granularidad,
-// pero updateAppState es a menudo preferible para claridad y para asegurar
-// que el estado se trata de forma inmutable (creando nuevos objetos/arrays).
 export const getStatePart = (key) => {
     const part = currentState[key];
-    // Si la parte es un array u objeto, considera devolver una copia para evitar mutaciones.
     if (Array.isArray(part)) {
         return [...part.map(item => typeof item === 'object' && item !== null ? {...item} : item)];
     }
@@ -127,7 +119,61 @@ export const getStatePart = (key) => {
 };
 
 export const setStatePart = (key, value) => {
-    // Esta función muta directamente una parte del estado. Usar con precaución.
-    // Es mejor usar updateAppState({ [key]: value }) para mantener la inmutabilidad a nivel superior.
     currentState[key] = value;
+};
+
+/**
+ * Obtiene datos filtrados y ordenados de una sección específica del estado.
+ * @param {string} dataTypeKey - La clave del array de datos en el estado (ej. 'projectDetails', 'projectCosts', 'fixedExpenses').
+ * @param {string} searchTerm - El término de búsqueda actual.
+ * @param {object} sortConfig - El objeto de configuración de ordenación { key, direction }.
+ * @returns {Array} Los datos filtrados y ordenados.
+ */
+export const getFilteredAndSortedData = (dataTypeKey, searchTerm, sortConfig) => {
+    const data = Array.isArray(currentState[dataTypeKey]) ? currentState[dataTypeKey] : [];
+    
+    let filteredData = [...data];
+
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+
+    if (lowerCaseSearchTerm) {
+        filteredData = filteredData.filter(item => {
+            // Lógica de filtrado específica para cada tipo de dato
+            if (dataTypeKey === 'projectDetails') {
+                return (item.task && item.task.toLowerCase().includes(lowerCaseSearchTerm)) || 
+                       (item.description && item.description.toLowerCase().includes(lowerCaseSearchTerm)) ||
+                       (item.projectName && item.projectName.toLowerCase().includes(lowerCaseSearchTerm));
+            } else if (dataTypeKey === 'projectCosts') {
+                return (item.projectName && item.projectName.toLowerCase().includes(lowerCaseSearchTerm));
+            } else if (dataTypeKey === 'fixedExpenses') {
+                return (item.name && item.name.toLowerCase().includes(lowerCaseSearchTerm));
+            }
+            // Fallback: si no hay un filtro específico, no lo filtra por término de búsqueda
+            return true;
+        });
+    }
+
+    const { key, direction } = sortConfig;
+    const sortedData = sortArray(filteredData, key, direction);
+
+    return sortedData;
+};
+
+/**
+ * Calcula un resumen detallado para un proyecto específico.
+ * @param {string} projectName - El nombre del proyecto.
+ * @returns {object} Un objeto con el costo actual y el número total de tareas del proyecto.
+ */
+export const calculateProjectSummary = (projectName) => { // ¡'export' añadido aquí!
+    const projectCosts = Array.isArray(currentState.projectCosts) ? currentState.projectCosts : [];
+    const projectDetails = Array.isArray(currentState.projectDetails) ? currentState.projectDetails : [];
+
+    const costData = projectCosts.find(c => c.projectName === projectName);
+    const actualCost = costData ? (Number(costData.actualCost) || 0) : 0;
+    const taskCount = projectDetails.filter(t => t.projectName === projectName).length;
+
+    return {
+        actualCost: actualCost,
+        taskCount: taskCount
+    };
 };

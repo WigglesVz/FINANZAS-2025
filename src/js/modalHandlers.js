@@ -6,11 +6,9 @@ import {
     confirmationModal, confirmationModalTitle, confirmationModalBody, confirmConfirmationButton,
     mainTitleEl
 } from './domElements.js';
-// MODIFICADO: Importar getAppState y updateAppState
 import { getAppState, updateAppState } from './state.js';
 import { sanitizeHTML, clearAllValidationErrors, showToast } from './utils.js';
-import db from './db.js'; // Importar db para persistir mainTitle
-// saveData de storage.js ya no es necesaria aquí para guardar el título, se hará directo con Dexie
+import db from './db.js';
 
 /** Opens a modal. @param {HTMLElement} modalElement */
 export const openModal = (modalElement) => {
@@ -24,7 +22,8 @@ export const openModal = (modalElement) => {
         modalContent.classList.remove('scale-95');
         modalContent.classList.add('scale-100');
     }
-    const firstFocusable = modalElement.querySelector('input, select, textarea, button');
+    // Enfocar el primer elemento interactivo para accesibilidad
+    const firstFocusable = modalElement.querySelector('input, select, textarea, button:not([aria-label="Cerrar modal de tarea"]):not([aria-label="Cerrar modal de costos"]):not([aria-label="Cerrar modal de confirmación"])');
     if (firstFocusable) firstFocusable.focus();
 };
 
@@ -34,6 +33,7 @@ export const closeModal = (modalElement) => {
 
     if (modalElement.id === 'task-modal' && taskForm) clearAllValidationErrors(taskForm);
     if (modalElement.id === 'cost-modal' && costForm) clearAllValidationErrors(costForm);
+    if (modalElement.id === 'confirmation-modal') updateAppState({ currentConfirmationAction: null }); // Limpiar acción de confirmación
 
     document.body.classList.remove('modal-active');
     modalElement.classList.remove('opacity-100');
@@ -69,90 +69,157 @@ export const updateTaskModalDropdowns = () => {
     });
 };
 
-/** Opens the Task Modal for adding. */
-export const openAddTaskModal = () => {
-    if (!taskModalTitle || !taskForm || !taskIdInput) return;
-    taskModalTitle.textContent = 'Agregar Nueva Tarea';
-    taskForm.reset();
-    taskIdInput.value = ''; // Asegurarse que el ID esté vacío para nueva tarea
-    clearAllValidationErrors(taskForm);
-    updateTaskModalDropdowns();
-    openModal(taskModal);
-    if(taskProjectNameSelect) taskProjectNameSelect.focus();
+/**
+ * Función genérica para mostrar diferentes tipos de modales.
+ * @param {object} options - Objeto de configuración del modal.
+ * @param {string} options.type - Tipo de modal ('task', 'cost', 'confirmation').
+ * @param {string} options.title - Título del modal.
+ * @param {object} [options.data] - Objeto de datos para modales de edición (ej. taskToEdit, costToEdit).
+ * @param {string} [options.message] - Mensaje para el modal de confirmación.
+ * @param {string} [options.confirmButtonText] - Texto del botón de confirmación.
+ * @param {string} [options.confirmButtonClass] - Clase de color del botón de confirmación (ej. 'red', 'teal').
+ * @param {function} [options.actionCallback] - Callback a ejecutar al confirmar el modal.
+ * @param {any} [options.actionData] - Datos a pasar al actionCallback.
+ */
+export const showDynamicModal = (options) => {
+    const { type, title, data, message, confirmButtonText, confirmButtonClass, actionCallback, actionData } = options;
+
+    let modalElement;
+    let modalTitleEl;
+    let formElement;
+
+    // Determinar qué modal mostrar y qué elementos usar
+    switch (type) {
+        case 'task':
+            modalElement = taskModal;
+            modalTitleEl = taskModalTitle;
+            formElement = taskForm;
+            break;
+        case 'cost':
+            modalElement = costModal;
+            modalTitleEl = costModalTitle;
+            formElement = costForm;
+            break;
+        case 'confirmation':
+            modalElement = confirmationModal;
+            modalTitleEl = confirmationModalTitle;
+            formElement = null; // No hay formulario para el modal de confirmación
+            break;
+        default:
+            console.error(`showDynamicModal: Tipo de modal desconocido: ${type}`);
+            return;
+    }
+
+    if (!modalElement || !modalTitleEl) {
+        console.error(`showDynamicModal: Elementos DOM no encontrados para el tipo ${type}.`);
+        return;
+    }
+
+    // Configurar el título del modal
+    modalTitleEl.textContent = sanitizeHTML(title);
+
+    // Limpiar y resetear el formulario si existe
+    if (formElement) {
+        formElement.reset();
+        clearAllValidationErrors(formElement);
+    }
+
+    // Lógica específica para cada tipo de modal
+    switch (type) {
+        case 'task':
+            updateTaskModalDropdowns(); // Llenar dropdowns de proyectos y estados
+            if (data) { // Modo edición de tarea
+                if (!taskIdInput || !taskProjectNameSelect || !taskStatusSelect ||
+                    !taskNameInput || !taskDescriptionInput || !taskStartDateInput || !taskEndDateInput) return;
+                taskIdInput.value = data.id || '';
+                taskProjectNameSelect.value = data.projectName || '';
+                taskStatusSelect.value = data.status || '';
+                taskNameInput.value = data.task || '';
+                taskDescriptionInput.value = data.description || '';
+                taskStartDateInput.value = data.startDate || '';
+                taskEndDateInput.value = data.endDate || '';
+            } else { // Modo añadir tarea
+                if (taskIdInput) taskIdInput.value = '';
+            }
+            break;
+        case 'cost':
+            if (data) { // Modo edición de costo
+                if (!costIdInput || !costProjectNameInput || !costBudgetInput || !costActualInput) return;
+                costIdInput.value = data.id || '';
+                costProjectNameInput.value = data.projectName || '';
+                costBudgetInput.value = (data.budget >= 0) ? data.budget.toFixed(2) : '';
+                costActualInput.value = (data.actualCost >= 0) ? data.actualCost.toFixed(2) : '';
+            } else {
+                // No debería haber un modo "añadir costo" sin un proyecto asociado
+                // Los costos se asocian a proyectos existentes al editar un proyecto.
+            }
+            break;
+        case 'confirmation':
+            if (!confirmationModalBody || !confirmConfirmationButton) return;
+            confirmationModalBody.innerHTML = message;
+            confirmConfirmationButton.textContent = confirmButtonText;
+            confirmConfirmationButton.className = `font-medium py-2 px-4 rounded-lg shadow transition duration-300 text-sm text-white`;
+            confirmConfirmationButton.classList.remove('bg-red-600', 'hover:bg-red-700', 'bg-teal-600', 'hover:bg-teal-700', 'bg-blue-600', 'hover:bg-blue-700');
+            confirmConfirmationButton.classList.add(`bg-${confirmButtonClass}-600`, `hover:bg-${confirmButtonClass}-700`);
+            updateAppState({ currentConfirmationAction: { callback: actionCallback, data: actionData } });
+            break;
+    }
+
+    // Abrir el modal genérico
+    openModal(modalElement);
 };
 
-/** Opens Task Modal for editing. @param {string} taskIdToEdit */
+// Refactorizar las funciones existentes para usar showDynamicModal
+export const openAddTaskModal = () => {
+    showDynamicModal({
+        type: 'task',
+        title: 'Agregar Nueva Tarea'
+    });
+};
+
 export const openEditTaskModal = (taskIdToEdit) => {
     const currentState = getAppState();
     const taskToEdit = currentState.projectDetails.find(task => task.id === taskIdToEdit);
     if (!taskToEdit) return showToast("Error: Tarea no encontrada.", "error");
 
-    if (!taskModalTitle || !taskForm || !taskIdInput || !taskProjectNameSelect || !taskStatusSelect ||
-        !taskNameInput || !taskDescriptionInput || !taskStartDateInput || !taskEndDateInput) return;
-
-    taskModalTitle.textContent = 'Editar Tarea';
-    taskForm.reset();
-    clearAllValidationErrors(taskForm);
-    updateTaskModalDropdowns();
-
-    taskIdInput.value = taskToEdit.id;
-    taskProjectNameSelect.value = taskToEdit.projectName;
-    taskStatusSelect.value = taskToEdit.status;
-    taskNameInput.value = taskToEdit.task;
-    taskDescriptionInput.value = taskToEdit.description;
-    taskStartDateInput.value = taskToEdit.startDate;
-    taskEndDateInput.value = taskToEdit.endDate;
-
-    openModal(taskModal);
-    if(taskNameInput) taskNameInput.focus();
+    showDynamicModal({
+        type: 'task',
+        title: 'Editar Tarea',
+        data: taskToEdit
+    });
 };
 
-/** Opens Cost Modal for editing. @param {string} costIdToEdit */
 export const openEditCostModal = (costIdToEdit) => {
     const currentState = getAppState();
     const costToEdit = currentState.projectCosts.find(cost => cost.id === costIdToEdit);
     if (!costToEdit) return showToast("Error: Costo no encontrado.", "error");
 
-    if (!costModalTitle || !costForm || !costIdInput || !costProjectNameInput ||
-        !costBudgetInput || !costActualInput) return;
-
-    costModalTitle.textContent = `Editar Costos: ${sanitizeHTML(costToEdit.projectName)}`;
-    costForm.reset();
-    clearAllValidationErrors(costForm);
-
-    costIdInput.value = costToEdit.id;
-    costProjectNameInput.value = costToEdit.projectName;
-    costBudgetInput.value = costToEdit.budget >= 0 ? costToEdit.budget.toFixed(2) : '';
-    costActualInput.value = costToEdit.actualCost >= 0 ? costToEdit.actualCost.toFixed(2) : '';
-
-    openModal(costModal);
-    if(costBudgetInput) costBudgetInput.focus();
+    showDynamicModal({
+        type: 'cost',
+        title: `Editar Costos: ${sanitizeHTML(costToEdit.projectName)}`,
+        data: costToEdit
+    });
 };
 
-
-/** Opens the confirmation modal. */
- export const openConfirmationModal = (title, message, confirmButtonText, confirmButtonClass, actionCallback, actionData = null) => {
-    if (!confirmationModal || !confirmationModalTitle || !confirmationModalBody || !confirmConfirmationButton) return;
-    confirmationModalTitle.textContent = sanitizeHTML(title);
-    confirmationModalBody.innerHTML = message;
-    confirmConfirmationButton.textContent = confirmButtonText;
-
-    confirmConfirmationButton.className = `font-medium py-2 px-4 rounded-lg shadow transition duration-300 text-sm text-white`;
-    confirmConfirmationButton.classList.remove('bg-red-600', 'hover:bg-red-700', 'bg-teal-600', 'hover:bg-teal-700', 'bg-blue-600', 'hover:bg-blue-700'); // Remover clases antiguas
-    confirmConfirmationButton.classList.add(`bg-${confirmButtonClass}-600`, `hover:bg-${confirmButtonClass}-700`);
-
-    updateAppState({ currentConfirmationAction: { callback: actionCallback, data: actionData } });
-    openModal(confirmationModal);
+export const openConfirmationModal = (title, message, confirmButtonText, confirmButtonClass, actionCallback, actionData = null) => {
+    showDynamicModal({
+        type: 'confirmation',
+        title,
+        message,
+        confirmButtonText,
+        confirmButtonClass,
+        actionCallback,
+        actionData
+    });
 };
 
-/** Closes the confirmation modal. */
+/** Closes the confirmation modal. (Esta función se mantiene igual ya que se llama desde eventHandlers para manejar el confirm) */
 export const closeConfirmationModal = () => {
-    updateAppState({ currentConfirmationAction: null });
     closeModal(confirmationModal);
 };
 
 /** Handles changing the main application title. */
-export const handleChangeAppTitle = async () => { // Hacerla async
+export const handleChangeAppTitle = async () => {
     if (!mainTitleEl) {
          console.error("Elemento H1 del título principal no encontrado.");
          showToast("Error interno: No se pudo encontrar el título.", "error");
@@ -178,7 +245,7 @@ export const handleChangeAppTitle = async () => { // Hacerla async
             await db.appConfig.put({ key: 'mainTitle', value: sanitizedNewTitle });
             mainTitleEl.textContent = sanitizedNewTitle;
             updateAppState({ mainTitle: sanitizedNewTitle });
-            showToast("Título actualizado.", 'success'); // Usar showToast de utils
+            showToast("Título actualizado.", 'success');
         } catch (error) {
             console.error("Error saving title to DB:", error);
             showToast("Error al guardar el título en la base de datos.", "error");

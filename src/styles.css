@@ -115,21 +115,9 @@ body.modal-active {
 
 
 /* --- ESTILOS DE TABLA GENERALES --- */
-/* Sticky table headers */
-#fixed-expenses-table thead,
-#project-details-table thead,
-#project-cost-table thead {
-     position: sticky;
-     top: 0;
-     background-color: white; /* Tailwind: bg-white */
-     z-index: 10;
-}
-.dark #fixed-expenses-table thead,
-.dark #project-details-table thead,
-.dark #project-cost-table thead {
-     background-color: #374151; /* Tailwind: dark:bg-gray-700 */
-     color: #d1d5db; /* Tailwind: dark:text-gray-300 */
- }
+/* Los thead ya no existen en el HTML, por lo tanto, no hay sticky headers CSS directo para ellos */
+/* Las propiedades sticky se aplican a los nuevos div de encabezado si se desean. */
+
 
 /* Table and row layout */
 #fixed-expenses-table,
@@ -137,51 +125,65 @@ body.modal-active {
 #project-cost-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: auto; /* ¡CRUCIAL! Layout automático para ambas vistas por defecto */
+}
+
+/* Celdas de datos generales (desktop y móvil para valores) */
+/* th ya no existe, estas reglas se aplican a td */
+table td {
+    padding: 12px 15px; 
+    border-bottom: 1px solid #e5e7eb; 
+    font-size: 0.875rem; 
+    color: #6b7280; 
+    white-space: normal; /* Permitir que el texto de las celdas se envuelva por defecto */
+    overflow: visible;
+    text-overflow: clip;
+}
+.dark table td {
+    border-bottom-color: #4b5563; 
+    color: #9ca3af; 
 }
 
 /* Dark mode table borders */
- .dark table th, .dark table td {
-     border-bottom-color: #4b5563; /* Tailwind: dark:border-gray-600 */
- }
- .dark table tbody.divide-y > tr { /* Specific to Tailwind's divide utility */
+.dark table tbody.divide-y > tr { 
     --tw-divide-y-reverse: 0;
     border-top-width: calc(1px * calc(1 - var(--tw-divide-y-reverse)));
     border-bottom-width: calc(1px * var(--tw-divide-y-reverse));
-    border-top-color: #4b5563; /* Tailwind: dark:divide-gray-600 */
-    border-bottom-color: #4b5563; /* Tailwind: dark:divide-gray-600 */
- }
- .dark table tbody tr:hover {
-     background-color: #4b5563; /* Tailwind: dark:hover:bg-gray-600 (o similar) */
- }
+    border-top-color: #4b5563; 
+    border-bottom-color: #4b5563; 
+}
+table tbody tr:hover {
+    background-color: #f3f4f6; /* gray-50 */
+}
+.dark table tbody tr:hover {
+    background-color: #374151; /* gray-700 */
+}
 
-
+/* Resto de estilos generales */
  /* Style for project summaries */
  #project-summary-container {
-     max-height: 20rem; overflow-y: auto; border: 1px solid #e5e7eb; /* Tailwind: border-gray-200 */
-     border-radius: 0.5rem; padding: 0.5rem; background-color: #f9fafb; /* Tailwind: bg-gray-50 */
+     max-height: 20rem; overflow-y: auto; border: 1px solid #e5e7eb; 
+     border-radius: 0.5rem; padding: 0.5rem; background-color: #f9fafb; 
  }
  .dark #project-summary-container {
-     border-color: #4b5563; /* Tailwind: dark:border-gray-600 */
-     background-color: #1f2937; /* Tailwind: dark:bg-gray-800 */
+     border-color: #4b5563; 
+     background-color: #1f2937; 
  }
- .dark #project-summary-container > p.text-sm { color: #9ca3af; } /* Tailwind: dark:text-gray-400 */
+ .dark #project-summary-container > p.text-sm { color: #9ca3af; } 
  .dark #project-summary-container div.bg-white {
-     background-color: #374151; /* Tailwind: dark:bg-gray-700 */
-     border-color: #4b5563; /* Tailwind: dark:border-gray-600 */
+     background-color: #374151; 
+     border-color: #4b5563; 
  }
  .dark #project-summary-container div.bg-white:hover {
-     /* Este estilo de sombra es difícil de replicar exactamente sin Tailwind,
-        pero Tailwind lo manejaría con sus clases de sombra.
-        Si necesitas el mismo efecto exacto, Tailwind lo hace más fácil. */
      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
  }
- .dark #project-summary-container h4 { color: #a5b4fc; } /* Tailwind: dark:text-indigo-300 o similar */
+ .dark #project-summary-container h4 { color: #a5b4fc; } 
 
 
   /* Style for setup lists */
  .setup-list { max-height: 12rem; overflow-y: auto; padding-right: 0.5rem; }
- .dark .setup-list li { color: #d1d5db; } /* Tailwind: dark:text-gray-300 */
- .dark .setup-list li:hover { background-color: #374151; } /* Tailwind: dark:hover:bg-gray-700 */
+ .dark .setup-list li { color: #d1d5db; } 
+ .dark .setup-list li:hover { background-color: #374151; } 
 
  /* Toast Animation */
  @keyframes fadeInOut {
@@ -193,77 +195,225 @@ body.modal-active {
  .animate-fade { animation: fadeInOut 3s ease forwards; }
 
  /* Form validation error text */
- .error-message { color: #ef4444; font-size: 0.75rem; margin-top: 0.25rem; display: block; } /* Tailwind: text-red-500 text-xs mt-1 block */
- .dark .error-message { color: #fca5a5; } /* Tailwind: dark:text-red-400 */
+ .error-message { color: #ef4444; font-size: 0.75rem; margin-top: 0.25rem; display: block; } 
+ .dark .error-message { color: #fca5a5; } 
 
- /* Style for sortable table headers */
- .sortable-header { cursor: pointer; user-select: none; display: flex; align-items: center; }
-  .sortable-header i { margin-left: 0.25rem; font-size: 0.75rem; color: #9ca3af; } /* Tailwind: text-gray-400 */
- .sortable-header.sorted i { color: #4f46e5; } /* Tailwind: text-indigo-600 */
- .dark .sortable-header i { color: #6b7280; } /* Tailwind: dark:text-gray-500 */
-  .dark .sortable-header.sorted i { color: #a5b4fc; } /* Tailwind: dark:text-indigo-300 */
+ /* Style for sortable header BUTTONS (these are now actual buttons) */
+ .sortable-header { 
+    cursor: pointer; 
+    user-select: none; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; /* Centrar texto e icono en los botones de ordenación */
+    gap: 0.25rem; /* Espacio entre texto e icono */
+    flex-shrink: 0; 
+    padding: 0; 
+    background: none; 
+    border: none; 
+    font-size: 0.75rem; 
+    font-weight: 600;
+    color: inherit; 
+    text-transform: uppercase; 
+    white-space: nowrap; /* Evitar que el texto del botón se envuelva */
+    overflow: hidden;    
+    text-overflow: ellipsis;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+.sortable-header:hover {
+    color: #4f46e5; 
+    background-color: rgba(79, 70, 229, 0.1); 
+    border-radius: 0.25rem; 
+}
+.dark .sortable-header:hover {
+    color: #818cf8; 
+    background-color: rgba(129, 140, 248, 0.1); 
+}
 
- /* Button loading state */
- button:disabled { opacity: 0.75; cursor: not-allowed; }
+.sortable-header i { 
+    font-size: 0.75rem; 
+    color: #9ca3af; 
+    flex-shrink: 0; 
+    display: inline-block; 
+}
+.sortable-header.sorted {
+    color: #4f46e5; 
+    background-color: rgba(79, 70, 229, 0.05); 
+}
+.dark .sortable-header.sorted {
+    color: #818cf8;
+    background-color: rgba(129, 140, 248, 0.05);
+}
+.sortable-header.sorted i { 
+    color: #4f46e5; 
+}
+.dark .sortable-header.sorted i { 
+    color: #818cf8; 
+}
+
+
+/* Button loading state */
+button:disabled { opacity: 0.75; cursor: not-allowed; }
 
 
 /* ================================================ */
 /* === RESPONSIVE ADJUSTMENTS & TABLE STYLING === */
 /* ================================================ */
-@media (max-width: 768px) {
 
+/* Media query para pantallas GRANDES (Desktop) */
+@media (min-width: 769px) { /* A partir de este tamaño, aplicar layout de tabla de escritorio */
+    /* table-layout: auto ya está por defecto para la tabla */
+
+    /* Los min-width para las tablas en desktop */
+    #project-details-table { min-width: 900px; } 
+    #project-cost-table { min-width: 700px; } 
+    #fixed-expenses-table { min-width: 500px; } 
+
+    /* Estilos para las CELDAS DE DATOS (td) en desktop */
+    /* Estas reglas son vitales para definir los anchos de columna ahora que no hay thead */
+    /* #project-details-table (Tareas del Proyecto) - Desktop */
+    #project-details-table td:nth-child(1) { width: 10%; text-align: left; } /* Proyecto */
+    #project-details-table td:nth-child(2) { width: 15%; text-align: left; } /* Tarea */
+    #project-details-table td:nth-child(3) { width: 25%; text-align: left; } /* Descripción */
+    #project-details-table td:nth-child(4) { width: 10%; text-align: center; } /* Inicio */
+    #project-details-table td:nth-child(5) { width: 10%; text-align: center; } /* Fin */
+    #project-details-table td:nth-child(6) { width: 15%; text-align: center; } /* Estado */
+    #project-details-table td:nth-child(7) { width: 15%; text-align: center; } /* Acciones */
+
+
+    /* #project-cost-table (Costos por Proyecto) - Desktop */
+    #project-cost-table td:nth-child(1) { width: 25%; text-align: left; } /* Proyecto */
+    #project-cost-table td:nth-child(2) { width: 20%; text-align: right; } /* Presupuesto */
+    #project-cost-table td:nth-child(3) { width: 20%; text-align: right; } /* Costo Actual */
+    #project-cost-table td:nth-child(4) { width: 20%; text-align: right; } /* Diferencia */
+    #project-cost-table td:nth-child(5) { width: 15%; text-align: center; } /* Acciones */
+
+
+    /* #fixed-expenses-table (Gastos Fijos Mensuales) - Desktop */
+    #fixed-expenses-table td:nth-child(1) { width: 50%; text-align: left; } /* Nombre */
+    #fixed-expenses-table td:nth-child(2) { width: 30%; text-align: right; } /* Monto */
+    #fixed-expenses-table td:nth-child(3) { width: 20%; text-align: center; } /* Acción */
+}
+
+/* Media query para pantallas PEQUEÑAS (móviles) */
+@media (max-width: 768px) {
     .tab-button { padding-left: 0.25rem; padding-right: 0.25rem; font-size: 0.8rem; }
     #toast-container { bottom: 1rem; right: 1rem; left: auto; width: calc(100% - 2rem); max-width: 320px; }
 
-    #project-cost-table th, #project-cost-table td,
-    #fixed-expenses-table th, #fixed-expenses-table td,
-    #project-details-table th, #project-details-table td {
-        padding: 0.6rem 0.4rem;
-        font-size: 0.75rem;
-        vertical-align: middle;
-        line-height: 1.4;
-    }
-    #project-cost-table th, #fixed-expenses-table th, #project-details-table th {
-        font-size: 0.65rem;
-        text-align: left;
+    /* Ocultar los nuevos contenedores de títulos y botones en móvil */
+    #project-details-sort-headers,
+    #project-cost-sort-headers,
+    #fixed-expenses-sort-headers {
+        display: none !important;
     }
 
-    #project-cost-table,
-    #fixed-expenses-table,
+    /* Transformar las tablas y filas en un diseño de "tarjeta" o "lista" */
+    #project-cost-table, 
+    #fixed-expenses-table, 
     #project-details-table {
-        min-width: 500px; 
-        table-layout: fixed;
+        border: none; 
+        width: 100%; 
+        max-width: none; 
+        table-layout: auto; 
     }
 
-    #fixed-expenses-table { min-width: 380px; }
-    #fixed-expenses-table th:first-child,
-    #fixed-expenses-table td:first-child { width: 55%; word-break: break-word; white-space: normal; }
-    #fixed-expenses-table th:nth-child(2),
-    #fixed-expenses-table td:nth-child(2) { width: 25%; white-space: nowrap; text-align: right; }
-    #fixed-expenses-table th:nth-child(3),
-    #fixed-expenses-table td:nth-child(3) { width: 20%; text-align: center; }
+    /* Estilizar cada fila (<tr>) como una tarjeta individual */
+    #project-cost-table tbody, #project-details-table tbody, #fixed-expenses-table tbody {
+        display: block; 
+        width: 100%;
+        border-bottom: none; 
+    }
 
-    #project-cost-table { min-width: 500px; }
-    #project-cost-table th:nth-child(1), #project-cost-table td:nth-child(1) { width: 120px; word-break:break-word; white-space: normal; }
-    #project-cost-table th:nth-child(2), #project-cost-table td:nth-child(2) { width: 90px; text-align:right; white-space:nowrap; }
-    #project-cost-table th:nth-child(3), #project-cost-table td:nth-child(3) { width: 90px; text-align:right; white-space:nowrap; }
-    #project-cost-table th:nth-child(4), #project-cost-table td:nth-child(4) { width: 90px; text-align:right; white-space:nowrap; }
-    #project-cost-table th:nth-child(4) { text-align: center; }
-    #project-cost-table th:nth-child(5), #project-cost-table td:nth-child(5) { width: 60px; text-align:center; }
-    #project-cost-table th:nth-child(5) { text-align: center; }
+    #project-cost-table tr, #project-details-table tr, #fixed-expenses-table tr {
+        display: block; 
+        margin-bottom: 1rem; 
+        padding: 1rem; 
+        border: 1px solid #e5e7eb; 
+        border-radius: 0.5rem; 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+        background-color: white; 
+    }
+    /* Estilos de hover para las "tarjetas" */
+    #project-cost-table tr:hover, #project-details-table tr:hover, #fixed-expenses-table tr:hover {
+        background-color: #f9fafb; 
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15); 
+    }
 
-    #project-details-table { min-width: 700px; }
-    #project-details-table th:nth-child(1), #project-details-table td:nth-child(1) { width: 100px; word-break:break-word; white-space: normal;}
-    #project-details-table th:nth-child(2), #project-details-table td:nth-child(2) { width: 130px; word-break:break-word; white-space: normal;}
-    #project-details-table th:nth-child(3), #project-details-table td:nth-child(3) { width: 180px; word-break:break-word; white-space: normal;}
-    #project-details-table th:nth-child(4), #project-details-table td:nth-child(4) { width: 80px; white-space:nowrap; text-align:center;}
-    #project-details-table th:nth-child(5), #project-details-table td:nth-child(5) { width: 80px; white-space:nowrap; text-align:center;}
-    #project-details-table th:nth-child(6), #project-details-table td:nth-child(6) { width: 90px; white-space:nowrap; text-align:center; }
-    #project-details-table th:nth-child(7), #project-details-table td:nth-child(7) { width: 70px; text-align:center; }
-    #project-details-table th:nth-child(4),
-    #project-details-table th:nth-child(5),
-    #project-details-table th:nth-child(6),
-    #project-details-table th:nth-child(7) {
-        text-align: center;
+    /* Estilos de modo oscuro para las "tarjetas" */
+    .dark #project-cost-table tr, .dark #project-details-table tr, .dark #fixed-expenses-table tr {
+        background-color: #1f2937; 
+        border-color: #4b5563; 
+    }
+    .dark #project-cost-table tr:hover, .dark #project-details-table tr:hover, .dark #fixed-expenses-table tr:hover {
+        background-color: #374151; 
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    /* Anular el divide-y para el tbody en móvil */
+    .dark table tbody.divide-y > tr {
+        border-top-width: 0 !important;
+        border-bottom-width: 0 !important;
+    }
+
+
+    /* Estilizar cada celda (<td>) dentro de la tarjeta */
+    #project-cost-table td, #project-details-table td, #fixed-expenses-table td {
+        border: none; 
+        display: block; 
+        text-align: right; 
+        padding: 0.25rem 0; 
+        font-size: 0.8rem; 
+        position: relative; 
+        /* Anular white-space y overflow del desktop */
+        white-space: normal !important; 
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }
+
+    /* Mostrar el data-label como una etiqueta antes del valor */
+    #project-cost-table td::before, #project-details-table td::before, #fixed-expenses-table td::before {
+        content: attr(data-label); 
+        float: left; 
+        font-weight: 600; 
+        margin-right: 0.5rem; 
+        text-align: left; 
+        color: #6b7280; 
+        font-size: 0.8rem; 
+        white-space: nowrap; 
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 50%; 
+    }
+    .dark #project-cost-table td::before, .dark #project-details-table td::before, .dark #fixed-expenses-table td::before {
+        color: #9ca3af; 
+    }
+
+    /* Ajustes específicos para la columna de Acciones si necesitan estar centradas */
+    #project-details-table td:nth-child(7), 
+    #project-cost-table td:nth-child(5),   
+    #fixed-expenses-table td:nth-child(3) { 
+        text-align: center; 
+        padding-top: 1rem; 
+        display: flex; 
+        justify-content: center;
+        align-items: center;
+        border-top: 1px solid #e5e7eb; 
+        margin-top: 0.5rem;
+    }
+    .dark #project-details-table td:nth-child(7), 
+    .dark #project-cost-table td:nth-child(5),   
+    .dark #fixed-expenses-table td:nth-child(3) { 
+        border-top-color: #4b5563; 
+    }
+
+    /* Anular anchos fijos de columnas y min-width de tablas para el modo "card" */
+    #fixed-expenses-table th, #fixed-expenses-table td,
+    #project-cost-table th, #project-cost-table td,
+    #project-details-table th, #project-details-table td {
+        width: auto !important; 
+        min-width: auto !important; 
+    }
+    /* Resetear estilos de sortable-header en móvil (ya no se usan en el thead oculto) */
+    .sortable-header {
+        display: none; 
+        white-space: normal; 
     }
 }

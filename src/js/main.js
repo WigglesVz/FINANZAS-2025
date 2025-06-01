@@ -11,26 +11,34 @@ import {
     addTaskButton, taskForm, taskModal, 
     closeTaskModalButton, cancelTaskModalButton,
     projectDetailsTableBody, projectDetailsTable, searchProjectTasksInput,
+    // ¡NUEVO! Importar los nuevos contenedores de títulos/ordenación
+    projectDetailsSortHeaders, 
     // Elementos de Costos (Cost)
     costForm, costModal, 
     closeCostModalButton, cancelCostModalButton,
-    projectCostTableBody, projectCostTable, searchProjectCostsInput, // AÑADIDO searchProjectCostsInput
+    projectCostTableBody, projectCostTable, searchProjectCostsInput,
+    // ¡NUEVO! Importar los nuevos contenedores de títulos/ordenación
+    projectCostSortHeaders,
     // Elementos de Finanzas (Finance)
-    monthlyIncomeInput, addExpenseForm, fixedExpensesTableBody, fixedExpensesTable, searchFixedExpensesInput, // AÑADIDO searchFixedExpensesInput
+    monthlyIncomeInput, addExpenseForm, fixedExpensesTableBody, fixedExpensesTable, searchFixedExpensesInput,
+    // ¡NUEVO! Importar los nuevos contenedores de títulos/ordenación
+    fixedExpensesSortHeaders,
     // Elementos de Modales
     confirmationModal, closeConfirmationModalButton, cancelConfirmationModalButton, confirmConfirmationButton,
     // Elementos de Gráficos (Overview)
     chartTypeSelect,
     // Elementos de Autenticación
     loginForm, registerForm,
-    showRegisterFormButton, logoutButton
+    showRegisterFormButton, logoutButton,
+    // Añadir el segundo botón de showLoginFormButton si existe y es diferente
+    // Si ambos botones #show-login-form-button son idénticos en funcionalidad, querySelectorAll está bien.
 } from './domElements.js';
 
 import { loadData } from './storage.js';
-import { getAppState } from './state.js';
+import { getAppState } from './state.js'; // Solo se necesita getAppState si no modificamos estado directamente aquí.
 
 import { loadThemePreference, toggleDarkMode } from './theme.js';
-// renderAll no se llama directamente desde aquí si la autenticación lo maneja
+// renderAll es llamado desde auth.js después de un login/registro exitoso o en checkAuthStatus.
 // import { renderAll } from './uiRender.js'; 
 import {
     openAddTaskModal, closeModal,
@@ -46,8 +54,9 @@ import {
     handleTableSort, handleConfirmAction,
     handleChartTypeChange,
     handleSearchProjectTasks, 
-    handleSearchProjectCosts,   // AÑADIDO handler
-    handleSearchFixedExpenses // AÑADIDO handler
+    handleSearchProjectCosts,
+    handleSearchFixedExpenses,
+    handleStatusColorChange // Importar el handler para el cambio de color
 } from './eventHandlers.js';
 import {
     handleLogin, handleRegister, handleLogout,
@@ -55,7 +64,7 @@ import {
     checkAuthStatus, checkForRegisteredUser
 } from './auth.js';
 import { showToast } from './utils.js';
-// renderSelectedChart no se llama directamente desde aquí, se maneja en auth.js o eventHandlers.js
+// renderSelectedChart se llama desde auth.js (en hideAuthScreenAndShowApp) y eventHandlers.js (handleTabClick)
 
 const attachStaticListeners = () => {
     if (tabButtons && tabButtons.length) {
@@ -98,24 +107,25 @@ const attachStaticListeners = () => {
     }
     if(addExpenseForm) addExpenseForm.addEventListener('submit', handleAddFixedExpense);
 
-    [projectDetailsTable, projectCostTable, fixedExpensesTable].forEach(table => {
-        if (table) {
-            const sortableHeaders = table.querySelectorAll('thead th.sortable-header');
-            sortableHeaders.forEach(header => header.addEventListener('click', handleTableSort));
-        }
-    });
+    // ¡ELIMINADO! Listener en thead para ordenar, ya no existe.
+    // [projectDetailsTable, projectCostTable, fixedExpensesTable].forEach(table => {
+    //     if (table) {
+    //         const sortableHeaders = table.querySelectorAll('thead th.sortable-header');
+    //         sortableHeaders.forEach(header => header.addEventListener('click', handleTableSort));
+    //     }
+    // });
 
     if(chartTypeSelect) chartTypeSelect.addEventListener('change', handleChartTypeChange);
     
-    // Listeners para búsqueda
     if(searchProjectTasksInput) searchProjectTasksInput.addEventListener('input', handleSearchProjectTasks);
-    if(searchProjectCostsInput) searchProjectCostsInput.addEventListener('input', handleSearchProjectCosts); // AÑADIDO
-    if(searchFixedExpensesInput) searchFixedExpensesInput.addEventListener('input', handleSearchFixedExpenses); // AÑADIDO
+    if(searchProjectCostsInput) searchProjectCostsInput.addEventListener('input', handleSearchProjectCosts);
+    if(searchFixedExpensesInput) searchFixedExpensesInput.addEventListener('input', handleSearchFixedExpenses);
 
     // Auth Listeners
     if(loginForm) loginForm.addEventListener('submit', handleLogin);
     if(registerForm) registerForm.addEventListener('submit', handleRegister);
     if(showRegisterFormButton) showRegisterFormButton.addEventListener('click', showRegisterForm);
+    // Si tienes múltiples botones con el mismo ID (lo cual no es ideal, pero si es el caso)
     document.querySelectorAll('#show-login-form-button').forEach(btn => {
         if (btn) btn.addEventListener('click', showLoginForm);
     });
@@ -127,7 +137,12 @@ const attachDelegatedListeners = () => {
         if(parentElement) {
             parentElement.addEventListener('click', (event) => {
                 const targetButton = event.target.closest(selector);
-                if (targetButton && targetButton.hasAttribute(idAttribute)) {
+                // Para los nuevos botones de ordenación, el ID lo sacamos del data-table-id
+                // y la clave de ordenación del data-sort-key.
+                // Asegurarse de que el elemento sea un botón y tenga los atributos correctos.
+                if (targetButton && targetButton.matches('button.sortable-header') && targetButton.dataset.sortKey && targetButton.dataset.tableId) {
+                    handlerFn(event); // Pasamos el evento completo para que handleTableSort pueda leer el target
+                } else if (targetButton && targetButton.hasAttribute(idAttribute)) { // Para botones con data-id tradicional
                     handlerFn(targetButton.getAttribute(idAttribute));
                 }
             });
@@ -153,6 +168,43 @@ const attachDelegatedListeners = () => {
             if (editBtn && editBtn.dataset.id) openEditCostModal(editBtn.dataset.id);
         });
     }
+
+    // Listener delegado para los inputs de color de estado en la lista de configuración
+    if(statusListEl) {
+        statusListEl.addEventListener('input', (event) => {
+            const colorInput = event.target.closest('.status-color-picker');
+            if (colorInput) {
+                handleStatusColorChange(event); 
+            }
+        });
+    }
+    
+    // ¡NUEVO! Listeners delegados para los nuevos contenedores de ordenación
+    if(projectDetailsSortHeaders) {
+        projectDetailsSortHeaders.addEventListener('click', (event) => {
+            const sortButton = event.target.closest('.sortable-header');
+            if (sortButton && sortButton.matches('button')) { // Asegurar que es un botón
+                handleTableSort(event); // Pasar el evento completo a handleTableSort
+            }
+        });
+    }
+    if(projectCostSortHeaders) {
+        projectCostSortHeaders.addEventListener('click', (event) => {
+            const sortButton = event.target.closest('.sortable-header');
+            if (sortButton && sortButton.matches('button')) {
+                handleTableSort(event);
+            }
+        });
+    }
+    if(fixedExpensesSortHeaders) {
+        fixedExpensesSortHeaders.addEventListener('click', (event) => {
+            const sortButton = event.target.closest('.sortable-header');
+            if (sortButton && sortButton.matches('button')) {
+                handleTableSort(event);
+            }
+        });
+    }
+
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -163,17 +215,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isAuthenticated = await checkAuthStatus(); 
         
         if (isAuthenticated) {
-            // No es necesario llamar a loadData() o renderAll() aquí,
-            // ya que hideAuthScreenAndShowApp (llamado desde checkAuthStatus) lo hace.
+            // La función hideAuthScreenAndShowApp (llamada desde checkAuthStatus)
+            // ya se encarga de loadData, renderAll y renderizar el gráfico inicial.
+            // El toast y el log también se manejan allí.
         } else {
-            checkForRegisteredUser();
+            checkForRegisteredUser(); // Muestra el formulario de login o registro.
         }
 
         attachStaticListeners();
         attachDelegatedListeners();
 
-        // El toast y el log de "Aplicación cargada" se manejan dentro de hideAuthScreenAndShowApp
-        // o podrían mostrarse aquí si ya estaba autenticado, pero es mejor centralizarlo.
+        // No es necesario un toast/log adicional aquí si ya se maneja en el flujo de autenticación.
 
     } catch (error) {
         console.error("Error durante la inicialización de la aplicación:", error);

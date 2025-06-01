@@ -2,7 +2,7 @@
 
 import db, { populateDefaultData } from './db.js'; // Importar db y populateDefaultData
 import { getAppState, setAppState } from './state.js'; // Solo necesitamos get y set aquí
-import { generateId, showToast, sanitizeHTML } from './utils.js';
+import { generateId, showToast, sanitizeHTML, isHexColor } from './utils.js'; // ¡NUEVO! Importar isHexColor
 import { mainTitleEl } from './domElements.js';
 import { renderAll } from './uiRender.js';
 import { refreshCurrentChart } from './charts.js';
@@ -157,7 +157,17 @@ export const importData = async (importedData, fileName) => {
                 { key: 'mainTitle', value: sanitizeHTML(importedData.mainTitle) || 'Rastreador de Proyectos y Finanzas' },
                 { key: 'monthlyIncome', value: Number(importedData.monthlyIncome) || 0 }
             ]);
-            await db.statusList.bulkPut(importedData.statusList.map(item => typeof item === 'string' ? { id: generateId(), name: item } : ensureId(item)));
+            // MEJORA APLICADA AQUÍ: Asegurar que el color esté presente Y sea válido al importar statusList
+            await db.statusList.bulkPut(importedData.statusList.map(item => {
+                const baseItem = typeof item === 'string' ? { name: item } : { ...item };
+                const importedColor = baseItem.color;
+                return {
+                    id: baseItem.id || generateId(),
+                    name: baseItem.name,
+                    // Usar el color importado si es un hex válido, de lo contrario, usar un color por defecto
+                    color: (importedColor && isHexColor(importedColor)) ? importedColor : '#CCCCCC' 
+                };
+            }));
             await db.projectNameList.bulkPut(importedData.projectNameList.map(item => typeof item === 'string' ? { id: generateId(), name: item } : ensureId(item)));
             await db.projectDetails.bulkPut(importedData.projectDetails.map(ensureId));
             const formattedProjectCosts = importedData.projectCosts.map(cost => ({ ...ensureId(cost), budget: Number(cost.budget) || 0, actualCost: Number(cost.actualCost) || 0 }));

@@ -1,6 +1,5 @@
 // src/js/charts.js
 import Chart from 'chart.js/auto';
-// La importación ya es correcta según tu domElements.js corregido:
 import { overviewChartCanvas, chartNoDataEl, chartTitleEl, chartTypeSelect } from './domElements.js';
 import { getAppState } from './state.js';
 import { getCurrentChartColors } from './utils.js';
@@ -21,7 +20,7 @@ const destroyCurrentChart = () => {
 };
 
 const showNoDataMessage = (show = true) => {
-    if (chartNoDataEl) { // Usar chartNoDataEl como se importa
+    if (chartNoDataEl) {
         chartNoDataEl.classList.toggle('hidden', !show);
     }
     if (overviewChartCanvas) {
@@ -30,7 +29,7 @@ const showNoDataMessage = (show = true) => {
 };
 
 const updateChartTitle = (chartType) => {
-    if (chartTitleEl && CHART_TITLES[chartType]) { // chartTitleEl se importa correctamente
+    if (chartTitleEl && CHART_TITLES[chartType]) {
         chartTitleEl.textContent = CHART_TITLES[chartType];
     }
 };
@@ -40,7 +39,9 @@ const renderStatusDistributionChart = () => {
     updateChartTitle('statusDistribution');
     const appData = getAppState();
     const tasks = Array.isArray(appData.projectDetails) ? appData.projectDetails : [];
-    const taskStatusOptions = Array.isArray(appData.statusList) ? appData.statusList.map(s => s.name) : [];
+    const statusListFromState = Array.isArray(appData.statusList) ? appData.statusList : [];
+    const taskStatusOptions = statusListFromState.map(s => s.name);
+
 
     if (!tasks || tasks.length === 0 || !taskStatusOptions || taskStatusOptions.length === 0) {
         showNoDataMessage(true);
@@ -59,17 +60,29 @@ const renderStatusDistributionChart = () => {
         }
     });
 
-    const currentColors = getCurrentChartColors();
-    const statusColorKeys = Object.keys(currentColors.status);
-    const backgroundColors = taskStatusOptions.map((status, index) => {
-        const normalizedStatusForLookup = status.toLowerCase().replace(/\s+/g, '');
-        const matchingColorKey = Object.keys(currentColors.status).find(key =>
-            key.toLowerCase().replace(/\s+/g, '') === normalizedStatusForLookup
-        );
-        return currentColors.status[matchingColorKey] ||
-               currentColors.status[statusColorKeys[index % statusColorKeys.length]] ||
-               currentColors.status.default;
+    // MODIFICADO: Pasar appData.statusList a getCurrentChartColors
+    const currentColors = getCurrentChartColors(statusListFromState); 
+    
+    // console.log("Task Status Options for Chart:", taskStatusOptions);
+    // console.log("Current Colors Object for Chart:", currentColors);
+    // console.log("Status colors from currentColors:", currentColors.status);
+
+
+    const backgroundColors = taskStatusOptions.map((statusName) => {
+        const normalizedStatusForLookup = statusName.toLowerCase().replace(/\s+/g, '');
+        // Intentar encontrar el color usando la clave normalizada en el objeto status de currentColors
+        let color = currentColors.status[normalizedStatusForLookup];
+        
+        // Si no se encuentra, intentar un fallback a un color default dentro del objeto status
+        if (!color) {
+            // console.warn(`Color not found for status: ${statusName} (normalized: ${normalizedStatusForLookup}). Using default.`);
+            color = currentColors.status.default || '#CCCCCC'; // Fallback si 'default' tampoco está
+        }
+        return color;
     });
+    
+    // console.log("Generated Background Colors for Chart:", backgroundColors);
+
 
     const chartData = {
         labels: taskStatusOptions,
@@ -98,9 +111,12 @@ const renderStatusDistributionChart = () => {
                     labels: { color: currentColors.text, padding: 15, font: { family: 'Inter, sans-serif'} }
                 },
                 tooltip: {
-                    callbacks: { label: (c) => `${c.label || ''}: ${c.parsed || 0} (${tasks.length > 0 ? ((c.parsed / tasks.length) * 100).toFixed(1) + '%' : '0%'})`},
+                    callbacks: { label: (c) => {
+                        const totalTasksInChart = c.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        return `${c.label || ''}: ${c.parsed || 0} (${totalTasksInChart > 0 ? ((c.parsed / totalTasksInChart) * 100).toFixed(1) + '%' : '0%'})`;
+                    }},
                     bodyFont: { family: 'Inter, sans-serif' }, titleFont: { family: 'Inter, sans-serif' },
-                    backgroundColor: currentColors.border === '#ffffff' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(31, 41, 55, 0.95)',
+                    backgroundColor: currentColors.border === '#ffffff' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(31, 41, 55, 0.95)', 
                     borderColor: currentColors.grid,
                     borderWidth: 1, titleColor: currentColors.text, bodyColor: currentColors.text
                 }
@@ -133,7 +149,8 @@ const renderTasksPerProjectChart = () => {
         }
     });
     
-    const currentColors = getCurrentChartColors();
+    // No es necesario pasar statusList aquí si este gráfico no usa colores de estado dinámicos
+    const currentColors = getCurrentChartColors(); 
     const chartData = {
         labels: projectNames,
         datasets: [{
@@ -194,7 +211,8 @@ const renderProjectCostsComparisonChart = () => {
     const labels = projectCosts.map(pc => pc.projectName);
     const budgetData = projectCosts.map(pc => pc.budget);
     const actualCostData = projectCosts.map(pc => pc.actualCost);
-    const currentColors = getCurrentChartColors();
+    // No es necesario pasar statusList aquí
+    const currentColors = getCurrentChartColors(); 
 
     const chartData = {
         labels: labels,
@@ -259,9 +277,13 @@ export const renderSelectedChart = (chartType = 'statusDistribution') => {
         showNoDataMessage(true);
         return;
     }
+    // Se obtiene el estado aquí para pasarlo a las funciones de renderizado si lo necesitan
+    // y para asegurar que getCurrentChartColors (llamado dentro de cada renderXChart) tenga acceso a statusList
+    const appData = getAppState(); 
+
     switch (chartType) {
         case 'statusDistribution':
-            renderStatusDistributionChart();
+            renderStatusDistributionChart(); // Ya llama a getAppState internamente, y ahora pasará statusList a getCurrentChartColors
             break;
         case 'tasksPerProject':
             renderTasksPerProjectChart();

@@ -1,13 +1,7 @@
 // src/js/utils.js
 
 import { htmlElement, toastContainer } from './domElements.js';
-// import { appState } from './state.js'; // ELIMINADO: appState ya no se importa directamente
 
-/**
- * Formats a number as currency (USD).
- * @param {number} amount - The number to format.
- * @returns {string} Formatted currency string (e.g., $1,234.56).
- */
 export const formatCurrency = (amount) => {
     if (typeof amount !== 'number' || isNaN(amount)) return '$0.00';
     return new Intl.NumberFormat('en-US', {
@@ -18,30 +12,60 @@ export const formatCurrency = (amount) => {
     }).format(amount);
 };
 
-/**
- * Generates a simple unique ID.
- * @returns {string} A unique ID string.
- */
 export const generateId = () => `id-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`;
 
 /**
- * Gets Tailwind CSS classes for a given task status.
- * @param {string} status - The task status string.
- * @returns {string} Tailwind classes for background and text color.
+ * Determina un color de texto contrastante (blanco o negro) para un color de fondo dado.
+ * @param {string} backgroundColor - El color de fondo en formato hexadecimal (ej. "#RRGGBB").
+ * @returns {string} "#FFFFFF" (blanco) o "#000000" (negro).
  */
-export const getStatusColor = (status) => {
-    const lowerStatus = status?.toLowerCase() || '';
-    if (lowerStatus === 'completado') return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-    if (lowerStatus === 'en progreso') return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-    if (lowerStatus === 'bloqueado') return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-    if (lowerStatus === 'no iniciado') return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-    return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'; // Default
+export const getContrastingTextColor = (backgroundColor) => {
+    if (!backgroundColor || typeof backgroundColor !== 'string') return '#000000';
+
+    const hexToRgb = (hex) => {
+        const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+        hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
+    };
+
+    const rgb = hexToRgb(backgroundColor);
+    if (!rgb) return '#000000';
+
+    const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+    return luminance > 0.5 ? '#000000' : '#FFFFFF';
 };
 
-/**
- * Gets the current date in YYYY-MM-DD format.
- * @returns {string} The current date string.
- */
+// Devuelve un objeto con backgroundColor y textColor para los badges de estado.
+// Usa el color personalizado del estado si está disponible.
+export const getStatusStyle = (statusName, statusListFromState = []) => {
+    const defaultStyle = { backgroundColor: '#E5E7EB', textColor: getContrastingTextColor('#E5E7EB') }; // Gris claro por defecto
+    if (!statusName || !Array.isArray(statusListFromState)) return defaultStyle;
+
+    const statusObj = statusListFromState.find(s => s.name === statusName);
+    
+    if (statusObj && statusObj.color) {
+        return {
+            backgroundColor: statusObj.color,
+            textColor: getContrastingTextColor(statusObj.color)
+        };
+    }
+    // Fallbacks si el estado no se encuentra en la lista o no tiene color personalizado
+    const lowerStatus = statusName.toLowerCase();
+    // Estos colores de fallback deberían ser consistentes con los defaults en config.js si es posible
+    if (lowerStatus === 'completado') return { backgroundColor: '#10B981', textColor: getContrastingTextColor('#10B981') };
+    if (lowerStatus === 'en progreso') return { backgroundColor: '#F59E0B', textColor: getContrastingTextColor('#F59E0B') };
+    if (lowerStatus === 'bloqueado') return { backgroundColor: '#EF4444', textColor: getContrastingTextColor('#EF4444') };
+    if (lowerStatus === 'no iniciado') return { backgroundColor: '#D1D5DB', textColor: getContrastingTextColor('#D1D5DB') };
+    
+    return defaultStyle;
+};
+
+
 export const getCurrentDate = () => {
     const today = new Date();
     const offset = today.getTimezoneOffset() * 60000;
@@ -49,11 +73,6 @@ export const getCurrentDate = () => {
     return localDate.toISOString().split('T')[0];
 };
 
-/**
-* Sanitizes HTML string to prevent XSS.
-* @param {string} str - The string to sanitize.
-* @returns {string} The sanitized string.
-*/
 export const sanitizeHTML = (str) => {
     if (str === null || str === undefined) return '';
     const temp = document.createElement('div');
@@ -61,11 +80,6 @@ export const sanitizeHTML = (str) => {
     return temp.innerHTML;
 };
 
-/**
- * Sets a validation error message for a given input.
- * @param {HTMLElement} errorElement - The span element to display the error.
- * @param {string} message - The error message.
- */
 export const setValidationError = (errorElement, message) => {
     if (errorElement) {
         errorElement.textContent = message;
@@ -74,10 +88,6 @@ export const setValidationError = (errorElement, message) => {
     }
 };
 
-/**
- * Clears a validation error message.
- * @param {HTMLElement} errorElement - The span element displaying the error.
- */
  export const clearValidationError = (errorElement) => {
      if (errorElement) {
          errorElement.textContent = '';
@@ -86,21 +96,12 @@ export const setValidationError = (errorElement, message) => {
      }
  };
 
- /**
- * Clears all validation error messages in a form.
- * @param {HTMLElement} formElement - The form element.
- */
  export const clearAllValidationErrors = (formElement) => {
      if (formElement && typeof formElement.querySelectorAll === 'function') {
         formElement.querySelectorAll('.error-message').forEach(el => clearValidationError(el));
      }
  };
 
-/**
- * Displays a toast notification.
- * @param {string} message - The message to display.
- * @param {'success' | 'error' | 'info'} type - The type of toast (controls color). Defaults to 'success'.
- */
 export const showToast = (message, type = 'success') => {
     if (!toastContainer) return;
     const toast = document.createElement('div');
@@ -127,21 +128,14 @@ export const showToast = (message, type = 'success') => {
     }
     toastContainer.appendChild(toast);
     setTimeout(() => {
-        if (toast.parentNode === toastContainer) { // Verificar si el toast sigue siendo hijo
+        if (toast.parentNode === toastContainer) {
             toast.remove();
         }
     }, 3000);
 };
 
-/**
- * Sorts an array of objects by a key and direction.
- * @param {Array<Object>} data - The array to sort.
- * @param {string} key - The key to sort by.
- * @param {'asc' | 'desc'} direction - The sort direction.
- * @returns {Array<Object>} The sorted array.
- */
 export const sortArray = (data, key, direction) => {
-    if (!Array.isArray(data)) return []; // Devolver array vacío si data no es un array
+    if (!Array.isArray(data)) return [];
     return [...data].sort((a, b) => {
         const valueA = a[key];
         const valueB = b[key];
@@ -154,41 +148,44 @@ export const sortArray = (data, key, direction) => {
     });
 };
 
- /**
- * Updates the sort icons and aria-sort attribute in a table header.
- * @param {HTMLElement} tableElement - The table element.
- * @param {string} sortedKey - The key that is currently sorted.
- * @param {'asc' | 'desc'} direction - The sort direction.
- */
- export const updateSortIcons = (tableElement, sortedKey, direction) => {
-    if (!tableElement || typeof tableElement.querySelectorAll !== 'function') return;
-     tableElement.querySelectorAll('.sortable-header').forEach(header => {
-         const headerKey = header.dataset.sortKey;
-         const icon = header.querySelector('i');
-         header.classList.remove('sorted');
-         header.setAttribute('aria-sort', 'none');
-         if (icon) {
-             icon.classList.remove('fa-sort-up', 'fa-sort-down', 'fa-sort');
-             if (headerKey === sortedKey) {
-                 icon.classList.add(direction === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
-                 header.classList.add('sorted');
-                 header.setAttribute('aria-sort', direction === 'asc' ? 'ascending' : 'descending');
-             } else {
-                 icon.classList.add('fa-sort');
-             }
-         }
-     });
- };
-
 /**
- * Handles button loading state. Saves and restores original HTML.
- * @param {HTMLElement} button - The button element.
- * @param {boolean} isLoading - True to set loading state, false to restore.
- * @param {string} [loadingText='Procesando...'] - Text to display when loading.
- * @param {string} [loadingIconClass='fas fa-spinner fa-spin'] - Icon class for loading.
+ * Actualiza los iconos de ordenación en un contenedor de botones.
+ * @param {HTMLElement} sortButtonsContainer - El div que contiene los botones sortable-header.
+ * @param {string} sortedKey - La clave por la que se está ordenando actualmente.
+ * @param {string} direction - La dirección de ordenación ('asc' o 'desc').
  */
+export const updateSortIcons = (sortButtonsContainer, sortedKey, direction) => {
+    if (!sortButtonsContainer || typeof sortButtonsContainer.querySelectorAll !== 'function') {
+        console.warn('updateSortIcons: Contenedor de botones de ordenación no válido.', sortButtonsContainer);
+        return;
+    }
+
+    sortButtonsContainer.querySelectorAll('.sortable-header').forEach(button => {
+        const buttonKey = button.dataset.sortKey;
+        const icon = button.querySelector('i');
+
+        // Limpiar clases de estado anterior y aria-sort
+        button.classList.remove('sorted');
+        button.setAttribute('aria-sort', 'none'); 
+
+        if (icon) {
+            icon.classList.remove('fa-sort-up', 'fa-sort-down', 'fa-sort');
+            if (buttonKey === sortedKey) {
+                // Si este botón es el que se está ordenando
+                icon.classList.add(direction === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
+                button.classList.add('sorted');
+                button.setAttribute('aria-sort', direction === 'asc' ? 'ascending' : 'descending');
+            } else {
+                // Si este botón no es el que se está ordenando
+                icon.classList.add('fa-sort');
+                // button.setAttribute('aria-sort', 'none'); // Ya se limpió al inicio del bucle
+            }
+        }
+    });
+};
+
 export const setButtonLoadingState = (button, isLoading, loadingText = 'Procesando...', loadingIconClass = 'fas fa-spinner fa-spin') => {
-    if (!button) return; // Protección
+    if (!button) return;
     if (isLoading) {
         if (!button.dataset.originalHtml) {
             button.dataset.originalHtml = button.innerHTML;
@@ -204,47 +201,231 @@ export const setButtonLoadingState = (button, isLoading, loadingText = 'Procesan
     }
 };
 
-// Colores para gráficos
-export const chartColors = {
-    light: {
-        text: '#374151', 
-        grid: '#e5e7eb', 
-        border: '#ffffff', 
-        status: {
-            noIniciado: '#9ca3af',
-            enProgreso: '#facc15',
-            completado: '#22c55e',
-            bloqueado: '#ef4444',
-            sds: '#3b82f6', // Añadido para el estado 'sds' si es un estado válido
-            default: '#60a5fa', 
-        },
-        projectTasks: '#6366f1', 
-        budget: '#60a5fa',       
-        actualCost: '#34d399'    
-    },
-    dark: {
-        text: '#d1d5db', 
-        grid: '#4b5563', 
-        border: '#374151', 
-        status: {
-            noIniciado: '#6b7280',
-            enProgreso: '#f59e0b',
-            completado: '#10b981',
-            bloqueado: '#f87171',
-            sds: '#818cf8', // Añadido para el estado 'sds'
-            default: '#818cf8', 
-        },
-        projectTasks: '#818cf8', 
-        budget: '#93c5fd',       
-        actualCost: '#6ee7b7'    
+// Modificada para que `status` sea un objeto derivado de statusListFromState
+export const getCurrentChartColors = (statusListFromState = []) => {
+    if (!htmlElement) {
+        console.warn("htmlElement not found, defaulting to light theme colors for charts.");
+        return {
+            text: '#374151', grid: '#e5e7eb', border: '#ffffff',
+            status: { noIniciado: '#9ca3af', enProgreso: '#facc15', completado: '#22c55e', bloqueado: '#ef4444', default: '#60a5fa', sds: '#3b82f6' }, // Añadido sds
+            projectTasks: '#6366f1', budget: '#60a5fa', actualCost: '#34d399'
+        };
+    }
+    const isDark = htmlElement.classList.contains('dark');
+    const themeColors = isDark ? {
+        text: '#d1d5db', grid: '#4b5563', border: '#374151',
+        projectTasks: '#818cf8', budget: '#93c5fd', actualCost: '#6ee7b7'
+    } : {
+        text: '#374151', grid: '#e5e7eb', border: '#ffffff',
+        projectTasks: '#6366f1', budget: '#60a5fa', actualCost: '#34d399'
+    };
+
+    const dynamicStatusColors = {};
+    if(Array.isArray(statusListFromState)) {
+        statusListFromState.forEach(status => {
+            const key = status.name.toLowerCase().replace(/\s+/g, ''); // Normalizar nombre de estado para la clave
+            dynamicStatusColors[key] = status.color || (isDark ? '#818cf8' : '#60a5fa'); // Usar color del estado o un default del tema
+        });
+    }
+    // Asegurar un color 'default' si no se encuentra uno específico.
+    dynamicStatusColors.default = dynamicStatusColors.default || (isDark ? '#818cf8' : '#60a5fa');
+
+    return {
+        ...themeColors,
+        status: dynamicStatusColors // Este objeto 'status' será usado por charts.js
+    };
+};
+
+/* --- NUEVAS FUNCIONES DE UTILIDAD --- */
+
+/**
+ * Retrasa la ejecución de una función hasta que haya pasado un cierto tiempo sin que se vuelva a llamar.
+ * Útil para eventos como 'input' o 'resize'.
+ * @param {function} func - La función a ejecutar.
+ * @param {number} delay - El tiempo de espera en milisegundos.
+ * @returns {function} Una función 'debounced'.
+ */
+export const debounce = (func, delay) => {
+    let timeoutId;
+    return function(...args) {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            func.apply(this, args);
+        }, delay);
+    };
+};
+
+/**
+ * Formatea una cadena de fecha (YYYY-MM-DD) a un formato de fecha relativa o amigable.
+ * @param {string} dateString - La fecha en formato 'YYYY-MM-DD'.
+ * @returns {string} La fecha formateada (ej. "hace 3 días", "mañana", "15 de enero de 2024").
+ */
+export const formatRelativeDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString + 'T00:00:00'); // Añadir T00:00:00 para evitar problemas de zona horaria
+
+    // Si la fecha no es válida, retorna la cadena original
+    if (isNaN(date.getTime())) {
+        return dateString;
+    }
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    const targetDateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    const diffTime = targetDateOnly.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+        return 'Hoy';
+    } else if (diffDays === 1) {
+        return 'Mañana';
+    } else if (diffDays === -1) {
+        return 'Ayer';
+    } else if (diffDays > 1 && diffDays <= 7) {
+        return `En ${diffDays} día${diffDays === 1 ? '' : 's'}`;
+    } else if (diffDays < -1 && diffDays >= -7) {
+        return `Hace ${Math.abs(diffDays)} día${Math.abs(diffDays) === 1 ? '' : 's'}`;
+    } else {
+        // Formato de fecha más tradicional para fechas más lejanas
+        return new Intl.DateTimeFormat('es-ES', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        }).format(date);
     }
 };
 
-// Función para obtener los colores del gráfico según el tema actual
-export const getCurrentChartColors = () => {
-    if (!htmlElement) { 
-        console.warn("htmlElement not found, defaulting to light theme colors for charts.");
-        return chartColors.light;
+/**
+ * Valida si una cadena de texto es un código de color hexadecimal válido (ej. #RRGGBB o #RGB).
+ * @param {string} colorString - La cadena a validar.
+ * @returns {boolean} True si es un color hex válido, false en caso contrario.
+ */
+export const isHexColor = (colorString) => {
+    if (typeof colorString !== 'string') return false;
+    const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+    return hexRegex.test(colorString);
+};
+
+/**
+ * Realiza una validación genérica de un formulario basada en reglas definidas.
+ * Los mensajes de error se muestran u ocultan automáticamente.
+ * @param {HTMLFormElement} formElement - El elemento del formulario a validar.
+ * @param {Array<Object>} validationRules - Un array de objetos que definen las reglas para cada campo.
+ *   Cada objeto de regla debe tener:
+ *   - field: string (el ID del elemento de entrada)
+ *   - errorElementId: string (el ID del elemento donde se mostrará el error)
+ *   - checks: Array<Object> (un array de objetos de verificación para este campo)
+ *     Cada objeto de verificación puede tener:
+ *     - type: string (ej. 'required', 'minlength', 'maxlength', 'min', 'max', 'pattern', 'custom', 'selectRequired', 'dateComparison')
+ *     - value: any (valor para la regla, ej. longitud mínima, patrón regex, número, etc.)
+ *     - message: string (mensaje de error si la verificación falla)
+ *     - compareTo: string (ID de otro campo para comparaciones de fechas/números)
+ *     - operator: string (para 'dateComparison': 'lessThan', 'greaterThan', 'lessThanOrEqualTo', 'greaterThanOrEqualTo')
+ *     - validate: function(value, formElement) (para 'custom' type, debe retornar true/false)
+ * @returns {boolean} True si el formulario es válido, false en caso contrario.
+ */
+export const validateForm = (formElement, validationRules) => {
+    if (!formElement || !validationRules || !Array.isArray(validationRules)) {
+        console.error("validateForm: formElement o validationRules no son válidos.");
+        return false;
     }
-    return htmlElement.classList.contains('dark') ? chartColors.dark : chartColors.light;
+
+    let formIsValid = true;
+    clearAllValidationErrors(formElement); // Limpiar errores antes de revalidar
+
+    validationRules.forEach(rule => {
+        const inputElement = formElement.querySelector(`#${rule.field}`);
+        const errorElement = formElement.querySelector(`#${rule.errorElementId}`);
+
+        if (!inputElement || !errorElement) {
+            console.warn(`validateForm: Elemento de entrada o error no encontrado para la regla: ${rule.field}`);
+            return; // Saltar esta regla si los elementos no existen
+        }
+
+        let fieldIsValid = true;
+        const inputValue = inputElement.value.trim();
+        const inputType = inputElement.type;
+
+        for (const check of rule.checks) {
+            let isValidCheck = true;
+
+            switch (check.type) {
+                case 'required':
+                    isValidCheck = inputValue !== '';
+                    break;
+                case 'minlength':
+                    isValidCheck = inputValue.length >= check.value;
+                    break;
+                case 'maxlength':
+                    isValidCheck = inputValue.length <= check.value;
+                    break;
+                case 'min':
+                    const numValueMin = parseFloat(inputValue);
+                    isValidCheck = !isNaN(numValueMin) && numValueMin >= check.value;
+                    break;
+                case 'max':
+                    const numValueMax = parseFloat(inputValue);
+                    isValidCheck = !isNaN(numValueMax) && numValueMax <= check.value;
+                    break;
+                case 'pattern':
+                    isValidCheck = check.value.test(inputValue);
+                    break;
+                case 'custom':
+                    isValidCheck = check.validate(inputValue, formElement);
+                    break;
+                case 'selectRequired': // Para <select> elementos
+                    isValidCheck = inputElement.value !== '';
+                    break;
+                case 'dateComparison':
+                    const compareToElement = formElement.querySelector(`#${check.compareTo}`);
+                    if (compareToElement) {
+                        const date1 = new Date(inputValue);
+                        const date2 = new Date(compareToElement.value);
+                        if (isNaN(date1.getTime()) || isNaN(date2.getTime())) {
+                            isValidCheck = false; // Las fechas deben ser válidas para la comparación
+                            break;
+                        }
+                        switch (check.operator) {
+                            case 'lessThan':
+                                isValidCheck = date1 < date2;
+                                break;
+                            case 'greaterThan':
+                                isValidCheck = date1 > date2;
+                                break;
+                            case 'lessThanOrEqualTo':
+                                isValidCheck = date1 <= date2;
+                                break;
+                            case 'greaterThanOrEqualTo':
+                                isValidCheck = date1 >= date2;
+                                break;
+                            default:
+                                console.warn(`validateForm: Operador de comparación de fecha desconocido: ${check.operator}`);
+                                isValidCheck = true; // No falla si el operador es desconocido
+                        }
+                    } else {
+                        console.warn(`validateForm: Elemento para comparar fecha (${check.compareTo}) no encontrado.`);
+                        isValidCheck = true; // No falla si el elemento de comparación no existe
+                    }
+                    break;
+                default:
+                    console.warn(`validateForm: Tipo de verificación desconocido: ${check.type}`);
+                    isValidCheck = true; // Por defecto, si el tipo no es reconocido, no falla la validación
+            }
+
+            if (!isValidCheck) {
+                setValidationError(errorElement, check.message);
+                fieldIsValid = false;
+                formIsValid = false; // Si un campo falla, el formulario completo falla
+                break; // Detener las verificaciones para este campo una vez que una falla
+            }
+        }
+    });
+
+    return formIsValid;
 };

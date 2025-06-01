@@ -14,9 +14,10 @@ import {
     monthlyIncomeInput, addExpenseForm, addExpenseButton, expenseNameInput, expenseAmountInput,
     expenseNameError, expenseAmountError,
     confirmationModal, closeConfirmationModalButton, cancelConfirmationModalButton, confirmConfirmationButton,
+    projectDetailsSortHeaders, projectCostSortHeaders, fixedExpensesSortHeaders,
     projectDetailsTable, projectCostTable, fixedExpensesTable, htmlElement, mainTitleEl,
     chartTypeSelect,
-    searchProjectTasksInput, searchProjectCostsInput, searchFixedExpensesInput // Asegurarse que estén importados
+    searchProjectTasksInput, searchProjectCostsInput, searchFixedExpensesInput
 } from './domElements.js';
 import { getAppState, updateAppState } from './state.js';
 import {
@@ -32,14 +33,16 @@ import db from './db.js';
 import { resetToDefaultData, importData } from './storage.js';
 import {
     sanitizeHTML, generateId, showToast,
-    clearValidationError, setValidationError,
     clearAllValidationErrors,
-    getCurrentDate, setButtonLoadingState
+    getCurrentDate, setButtonLoadingState,
+    debounce, validateForm 
 } from './utils.js';
 import { renderSelectedChart, refreshCurrentChart } from './charts.js';
 
-// --- Handlers de Búsqueda ---
-export const handleSearchProjectTasks = (event) => {
+// --- Handlers de Búsqueda (Ahora con debounce) ---
+
+// Funciones internas que contienen la lógica real de búsqueda
+const _handleSearchProjectTasks = (event) => {
     const searchTerm = event.target.value;
     const currentState = getAppState();
     updateAppState({
@@ -51,7 +54,7 @@ export const handleSearchProjectTasks = (event) => {
     renderProjectDetailsTable();
 };
 
-export const handleSearchProjectCosts = (event) => {
+const _handleSearchProjectCosts = (event) => {
     const searchTerm = event.target.value;
     const currentState = getAppState();
     updateAppState({
@@ -63,7 +66,7 @@ export const handleSearchProjectCosts = (event) => {
     renderProjectCostTable();
 };
 
-export const handleSearchFixedExpenses = (event) => {
+const _handleSearchFixedExpenses = (event) => {
     const searchTerm = event.target.value;
     const currentState = getAppState();
     updateAppState({
@@ -74,6 +77,11 @@ export const handleSearchFixedExpenses = (event) => {
     });
     renderFixedExpensesList();
 };
+
+// Exportar las versiones debounced de los handlers de búsqueda
+export const handleSearchProjectTasks = debounce(_handleSearchProjectTasks, 300);
+export const handleSearchProjectCosts = debounce(_handleSearchProjectCosts, 300);
+export const handleSearchFixedExpenses = debounce(_handleSearchFixedExpenses, 300);
 // --- FIN Handlers de Búsqueda ---
 
 export const handleTabClick = (event) => {
@@ -109,28 +117,79 @@ export const handleTabClick = (event) => {
     if (tabId === 'finance') renderFinanceTab();
 };
 
+// --- Handler para el cambio de color de estado ---
+export const handleStatusColorChange = async (event) => {
+    const colorInput = event.target;
+    if (!colorInput || colorInput.type !== 'color' || !colorInput.classList.contains('status-color-picker')) return;
+
+    const statusId = colorInput.dataset.id;
+    const newColor = colorInput.value;
+    const currentState = getAppState();
+
+    const statusIndex = currentState.statusList.findIndex(s => s.id === statusId);
+    if (statusIndex === -1) {
+        showToast("Error: Estado no encontrado para actualizar color.", "error");
+        return;
+    }
+
+    // Optimistic UI update
+    const updatedStatusList = currentState.statusList.map(s => 
+        s.id === statusId ? { ...s, color: newColor } : s
+    );
+    updateAppState({ statusList: updatedStatusList });
+    
+    // Re-render la lista de setup para mostrar el nuevo color inmediatamente
+    renderSetupLists(); 
+
+    try {
+        await db.statusList.update(statusId, { color: newColor });
+        showToast("Color de estado actualizado.", "success");
+        // Refrescar componentes que usan colores de estado
+        refreshCurrentChart();
+        renderProjectDetailsTable(); // Para actualizar badges de estado
+    } catch (error) {
+        console.error("Error updating status color in DB:", error);
+        showToast("Error al guardar el color del estado.", "error");
+        // Revertir el cambio en el estado si la DB falla (opcional, pero bueno para consistencia)
+        // Para esto, necesitarías guardar el color original antes de la actualización optimista.
+        // Por simplicidad, por ahora solo mostramos error.
+    }
+};
+// --- FIN Handler para el cambio de color de estado ---
+
 
 const handleAddListItem = async (inputEl, errorEl, listKeyInState, listNameSingular, successMsg, maxLength, renderFn, otherRenderFns = []) => {
     if (!inputEl || !errorEl) return false;
-    clearValidationError(errorEl);
+    clearAllValidationErrors(inputEl.closest('form') || inputEl.parentNode); // Limpiar errores del contenedor o formulario
     const newItemName = inputEl.value.trim();
     const currentState = getAppState();
     const list = Array.isArray(currentState[listKeyInState]) ? currentState[listKeyInState] : [];
 
-    if (!newItemName) {
-        setValidationError(errorEl, `Ingrese un nombre para el ${listNameSingular}.`);
-        return false;
-    }
-    if (newItemName.length > maxLength) {
-        setValidationError(errorEl, `El nombre no puede exceder ${maxLength} caracteres.`);
-        return false;
-    }
-    if (list.some(item => item.name.toLowerCase() === newItemName.toLowerCase())) {
-        setValidationError(errorEl, `El ${listNameSingular} "${sanitizeHTML(newItemName)}" ya existe.`);
-        return false;
-    }
+    const rules = [
+        {
+            field: inputEl.id,
+            errorElementId: errorEl.id,
+            checks: [
+                { type: 'required', message: `Ingrese un nombre para el ${listNameSingular}.` },
+                { type: 'maxlength', value: maxLength, message: `El nombre no puede exceder ${maxLength} caracteres.` },
+                {
+                    type: 'custom',
+                    message: `El ${listNameSingular} "${sanitizeHTML(newItemName)}" ya existe.`,
+                    validate: (value) => !list.some(item => item.name.toLowerCase() === value.toLowerCase())
+                }
+            ]
+        }
+    ];
 
+    if (!validateForm(inputEl.closest('form') || inputEl.parentNode, rules)) { // Validar el input en su contexto
+        return false;
+    }
+    
+    // Para nuevos estados, asignar un color por defecto
     const newItem = { id: generateId(), name: newItemName };
+    if (listKeyInState === 'statusList') {
+        newItem.color = '#CCCCCC'; // Color gris por defecto para nuevos estados
+    }
     
     try {
         if (listNameSingular === 'proyecto') {
@@ -291,36 +350,54 @@ export const handleResetData = () => {
 export const handleTaskFormSubmit = async (event) => { 
     event.preventDefault();
     if (!taskForm) return; 
-    clearAllValidationErrors(taskForm);
-    let isValid = true;
-
-    if (!taskProjectNameSelect || !taskProjectNameSelect.value) { setValidationError(taskProjectNameError, "Seleccione un proyecto."); isValid = false; }
-    if (!taskStatusSelect || !taskStatusSelect.value) { setValidationError(taskStatusError, "Seleccione un estado."); isValid = false; }
     
-    const taskNameVal = taskNameInput ? taskNameInput.value.trim() : "";
-    if (!taskNameVal) { setValidationError(taskNameError, "Ingrese el nombre de la tarea."); isValid = false; }
-    if (taskNameVal.length > 100) { setValidationError(taskNameError, "Máx 100 caracteres."); isValid = false; }
-    
-    const startDateVal = taskStartDateInput ? taskStartDateInput.value : "";
-    const endDateVal = taskEndDateInput ? taskEndDateInput.value : "";
+    const validationRules = [
+        {
+            field: 'task-project-name',
+            errorElementId: 'task-project-name-error',
+            checks: [{ type: 'selectRequired', message: "Seleccione un proyecto." }]
+        },
+        {
+            field: 'task-status',
+            errorElementId: 'task-status-error',
+            checks: [{ type: 'selectRequired', message: "Seleccione un estado." }]
+        },
+        {
+            field: 'task-name',
+            errorElementId: 'task-name-error',
+            checks: [
+                { type: 'required', message: "Ingrese el nombre de la tarea." },
+                { type: 'maxlength', value: 100, message: "Máx 100 caracteres." }
+            ]
+        },
+        {
+            field: 'task-start-date',
+            errorElementId: 'task-start-date-error',
+            checks: [{ type: 'required', message: "Ingrese fecha de inicio." }]
+        },
+        {
+            field: 'task-end-date',
+            errorElementId: 'task-end-date-error',
+            checks: [
+                { type: 'required', message: "Ingrese fecha de fin." },
+                { type: 'dateComparison', compareTo: 'task-start-date', operator: 'greaterThanOrEqualTo', message: "La fecha de fin no puede ser anterior a la de inicio." }
+            ]
+        }
+    ];
 
-    if (!startDateVal) { setValidationError(taskStartDateError, "Ingrese fecha de inicio."); isValid = false; }
-    if (!endDateVal) { setValidationError(taskEndDateError, "Ingrese fecha de fin."); isValid = false; }
-    if (startDateVal && endDateVal && endDateVal < startDateVal) {
-        setValidationError(taskEndDateError, "La fecha de fin no puede ser anterior."); isValid = false;
+    if (!validateForm(taskForm, validationRules)) {
+        showToast('Complete los campos requeridos (*).', 'error'); // Mantener este toast general
+        return;
     }
-    if (!isValid) { showToast('Complete los campos requeridos (*).', 'error'); return; }
 
     const existingTaskId = taskIdInput ? taskIdInput.value : null;
-    const taskDescriptionVal = taskDescriptionInput ? taskDescriptionInput.value.trim() : "";
-
     const taskData = {
         id: existingTaskId || generateId(),
         projectName: taskProjectNameSelect.value,
-        task: taskNameVal,
-        description: taskDescriptionVal,
-        startDate: startDateVal,
-        endDate: endDateVal,
+        task: taskNameInput.value.trim(),
+        description: taskDescriptionInput.value.trim(),
+        startDate: taskStartDateInput.value,
+        endDate: taskEndDateInput.value,
         status: taskStatusSelect.value
     };
     
@@ -348,7 +425,8 @@ export const handleTaskFormSubmit = async (event) => {
         showToast(existingTaskId ? "Tarea actualizada." : "Tarea agregada.", 'success');
         renderProjectDetailsTable(); renderOverview(); renderProjectSummaries(); refreshCurrentChart();
         closeModal(taskModal);
-    } catch (error) {
+    }
+     catch (error) { // ¡CORREGIDO! Asegurar el catch block
         console.error("Error saving task to DB:", error);
         showToast("Error al guardar la tarea en la base de datos.", "error");
     } finally {
@@ -387,14 +465,33 @@ export const handleDeleteTask = (taskId) => {
 export const handleCostFormSubmit = async (event) => { 
     event.preventDefault();
     if (!costForm) return; 
-    clearAllValidationErrors(costForm); 
-    let isValid = true;
-    const budget = costBudgetInput ? parseFloat(costBudgetInput.value) : NaN;
-    const actualCost = costActualInput ? parseFloat(costActualInput.value) : NaN;
+    
+    const validationRules = [
+        {
+            field: 'cost-budget',
+            errorElementId: 'cost-budget-error',
+            checks: [
+                { type: 'required', message: "Presupuesto es requerido." },
+                { type: 'min', value: 0, message: "Presupuesto inválido (>= 0)." }
+            ]
+        },
+        {
+            field: 'cost-actual',
+            errorElementId: 'cost-actual-error',
+            checks: [
+                { type: 'required', message: "Costo actual es requerido." },
+                { type: 'min', value: 0, message: "Costo actual inválido (>= 0)." }
+            ]
+        }
+    ];
 
-    if (isNaN(budget) || budget < 0) { setValidationError(costBudgetError, "Presupuesto inválido (>= 0)."); isValid = false; }
-    if (isNaN(actualCost) || actualCost < 0) { setValidationError(costActualError, "Costo actual inválido (>= 0)."); isValid = false; }
-    if (!isValid) { showToast('Ingrese valores numéricos válidos.', 'error'); return; }
+    if (!validateForm(costForm, validationRules)) {
+        showToast('Ingrese valores numéricos válidos.', 'error'); // Mantener este toast general
+        return;
+    }
+
+    const budget = parseFloat(costBudgetInput.value);
+    const actualCost = parseFloat(costActualInput.value);
 
     const costId = costForm['cost-id'] ? costForm['cost-id'].value : null;
     if (!costId) {
@@ -457,24 +554,45 @@ export const handleIncomeChange = async (event) => {
 export const handleAddFixedExpense = async (event) => { 
     event.preventDefault();
     if(!addExpenseForm) return; 
-    clearAllValidationErrors(addExpenseForm);
-    let isValid = true;
-    const name = expenseNameInput ? expenseNameInput.value.trim() : "";
-    const amount = expenseAmountInput ? parseFloat(expenseAmountInput.value) : NaN;
+    
     const currentState = getAppState();
+    const rules = [
+        {
+            field: 'expense-name',
+            errorElementId: 'expense-name-error',
+            checks: [
+                { type: 'required', message: "Ingrese nombre del gasto." },
+                { type: 'maxlength', value: 100, message: "Máx 100 caracteres." },
+                {
+                    type: 'custom',
+                    message: `El gasto "${sanitizeHTML(expenseNameInput.value.trim())}" ya existe.`,
+                    validate: (value) => !currentState.fixedExpenses.some(exp => exp.name.toLowerCase() === value.toLowerCase())
+                }
+            ]
+        },
+        {
+            field: 'expense-amount',
+            errorElementId: 'expense-amount-error',
+            checks: [
+                { type: 'required', message: "Ingrese un monto." },
+                { type: 'min', value: 0.01, message: "Monto debe ser positivo." }
+            ]
+        }
+    ];
 
-    if (!name) { setValidationError(expenseNameError, "Ingrese nombre del gasto."); isValid = false; }
-    if (name.length > 100) { setValidationError(expenseNameError, "Máx 100 caracteres."); isValid = false; }
-    if (currentState.fixedExpenses.some(exp => exp.name.toLowerCase() === name.toLowerCase())) {
-        setValidationError(expenseNameError, `El gasto "${sanitizeHTML(name)}" ya existe.`); isValid = false;
+    if (!validateForm(addExpenseForm, rules)) {
+        showToast("Complete los campos requeridos (*).", "error"); // Mantener este toast general
+        return;
     }
-    if (isNaN(amount) || amount <= 0) { setValidationError(expenseAmountError, "Ingrese un monto positivo."); isValid = false; }
-    if (!isValid) { showToast("Complete los campos requeridos (*).", "error"); return; }
     
     if (!addExpenseButton) return; 
     setButtonLoadingState(addExpenseButton, true, 'Agregando...');
     
-    const newExpense = { id: generateId(), name, amount };
+    const newExpense = { 
+        id: generateId(), 
+        name: expenseNameInput.value.trim(), 
+        amount: parseFloat(expenseAmountInput.value) 
+    };
     try {
         await db.fixedExpenses.add(newExpense);
         const updatedFixedExpenses = [...currentState.fixedExpenses, newExpense];
@@ -576,10 +694,10 @@ export const handleImportFile = (event) => {
                     if (!success && importFileInput) importFileInput.value = ''; 
                 }
             );
-        } catch (error) {
+        } catch (error) { // ¡CORREGIDO! Asegurar el catch block
             console.error("Error parsing imported JSON:", error);
             showToast('Error al procesar el archivo JSON.', 'error');
-        } finally {
+        } finally { // ¡CORREGIDO! Asegurar el finally block
             if (importFileInput) importFileInput.value = '';
         }
     };
@@ -591,26 +709,28 @@ export const handleImportFile = (event) => {
 };
 
 export const handleTableSort = (event) => {
-    const header = event.target.closest('.sortable-header');
-    if (!header) return;
+    const sortButton = event.target.closest('.sortable-header'); // El elemento clicado es el botón
+    if (!sortButton) return;
 
-    const tableElement = header.closest('table');
-    if (!tableElement || !tableElement.id) return;
+    // Obtener tableId y sortKey directamente del botón
+    const tableId = sortButton.dataset.tableId; 
+    const sortKey = sortButton.dataset.sortKey;
 
-    const tableId = tableElement.id.replace(/-/g, '_'); 
     let sortConfigKey;
-    if (tableId === 'project_details_table') sortConfigKey = 'projectDetails';
-    else if (tableId === 'project_cost_table') sortConfigKey = 'projectCosts';
-    else if (tableId === 'fixed_expenses_table') sortConfigKey = 'fixedExpenses';
-    else return; 
+    if (tableId === 'project-details-table') sortConfigKey = 'projectDetails';
+    else if (tableId === 'project-cost-table') sortConfigKey = 'projectCosts';
+    else if (tableId === 'fixed-expenses-table') sortConfigKey = 'fixedExpenses';
+    else {
+        console.warn(`handleTableSort: tableId desconocido o no encontrado: ${tableId}`);
+        return; 
+    }
 
     const currentState = getAppState();
     if (!currentState.sortState || !currentState.sortState[sortConfigKey]) {
         console.warn(`Sort state no configurado para ${sortConfigKey}`);
         return; 
     }
-
-    const sortKey = header.dataset.sortKey;
+    
     let currentSortDirection = currentState.sortState[sortConfigKey].direction;
     let newSortDirection;
 
@@ -626,6 +746,7 @@ export const handleTableSort = (event) => {
     };
     updateAppState({ sortState: newSortState });
 
+    // Disparar la re-renderización de la tabla para que los cambios se visualicen
     if (sortConfigKey === 'projectDetails') renderProjectDetailsTable();
     else if (sortConfigKey === 'projectCosts') renderProjectCostTable();
     else if (sortConfigKey === 'fixedExpenses') renderFixedExpensesList();

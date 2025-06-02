@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zenithtrack App</title> <!-- Título actualizado para reflejar el nombre de tu PWA -->
-    <!-- ... y el resto de tu HTML ... -->
+
+    <!-- PWA: Configuración del Manifiesto y Metadatos para App en Pantalla de Inicio -->
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#007bff"> <!-- Color de la barra de título/tema, debe coincidir con el manifest -->
+    <link rel="apple-touch-icon" href="/pwa-192x192.png"> <!-- Icono para dispositivos iOS (iPhone/iPad) -->
+    <!-- Fin PWA -->
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -12,6 +17,25 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/styles.css">
+
+    <!-- ESTAS SON LAS LÍNEAS DE SCRIPT Y CSS QUE VITE Y VITE-PLUGIN-PWA GENERAN/GESTIONAN -->
+    <script type="module" crossorigin src="/assets/index-Ca_M-oUd.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CrouF7qJ.css">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <!-- ¡IMPORTANTE! Esta línea es la que VitePWA usa para registrar el Service Worker.
+         No necesitas añadir otra llamada a navigator.serviceWorker.register(). -->
+    <script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script>
+    <!-- FIN DE LÍNEAS GENERADAS/GESTIONADAS POR VITE/VITE-PLUGIN-PWA -->
+
+    <!-- <script>
+        // ¡ESTE BLOQUE HA SIDO ELIMINADO!
+        // No lo necesitas porque VitePWA ya maneja el registro con el script de arriba.
+        // if('serviceWorker' in navigator) {
+        //     window.addEventListener('load', () => {
+        //         navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        //     });
+        // }
+    </script> -->
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen text-gray-800 dark:text-gray-200">
 
@@ -321,62 +345,6 @@
                         </div>
                     </div>
                 </section>
-
-                <section id="setup-content" class="tab-content" role="tabpanel" aria-labelledby="tab-setup" hidden>
-                    <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Configuración de Listas</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2" id="status-list-heading">Estados de Tarea</h3>
-                            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600">
-                                 <ul id="status-list" class="space-y-1 mb-3 setup-list text-gray-700 dark:text-gray-300" aria-labelledby="status-list-heading">
-                                     <li class="text-xs text-gray-500 dark:text-gray-400 italic p-2">Cargando estados...</li>
-                                 </ul>
-                                <div class="flex space-x-2 mt-2">
-                                    <input type="text" id="new-status-input" placeholder="Nuevo estado" maxlength="50" aria-label="Nuevo estado de tarea"
-                                           class="flex-grow px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800">
-                                    <button id="add-status-button" title="Agregar Estado" aria-label="Agregar nuevo estado de tarea"
-                                            class="flex-shrink-0 bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1 rounded-md transition duration-200"><i class="fas fa-plus" aria-hidden="true"></i></button>
-                                </div>
-                                 <span id="new-status-error" class="error-message hidden"></span>
-                            </div>
-                        </div>
-                        <div>
-                             <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2" id="project-list-heading">Nombres de Proyecto</h3>
-                             <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600">
-                                 <ul id="project-name-list" class="space-y-1 mb-3 setup-list text-gray-700 dark:text-gray-300" aria-labelledby="project-list-heading">
-                                     <li class="text-xs text-gray-500 dark:text-gray-400 italic p-2">Cargando proyectos...</li>
-                                 </ul>
-                                 <div class="flex space-x-2 mt-2">
-                                    <input type="text" id="new-project-name-input" placeholder="Nuevo proyecto" maxlength="100" aria-label="Nuevo nombre de proyecto"
-                                           class="flex-grow px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800">
-                                    <button id="add-project-name-button" title="Agregar Proyecto" aria-label="Agregar nuevo nombre de proyecto"
-                                            class="flex-shrink-0 bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1 rounded-md transition duration-200"><i class="fas fa-plus" aria-hidden="true"></i></button>
-                                </div>
-                                  <span id="new-project-name-error" class="error-message hidden"></span>
-                             </div>
-                        </div>
-                    </div>
-                     <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-                         <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Gestión de Datos</h3>
-                         <div class="flex flex-wrap items-center gap-4">
-                             <button id="export-data-button" title="Exportar todos los datos a un archivo JSON" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded-lg shadow-md transition duration-300 flex items-center space-x-2">
-                                <i class="fas fa-download" aria-hidden="true"></i>
-                                <span>Exportar Datos</span>
-                            </button>
-                             <button id="import-data-button" title="Importar datos desde un archivo JSON" class="bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-2 rounded-lg shadow-md transition duration-300 flex items-center space-x-2">
-                                <i class="fas fa-upload" aria-hidden="true"></i>
-                                <span>Importar Datos</span>
-                                 <input type="file" id="import-file-input" accept=".json" class="hidden" aria-label="Seleccionar archivo JSON para importar">
-                            </button>
-                             <button id="reset-data-button" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-300 flex items-center space-x-2 text-sm">
-                                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-                                <span>Restablecer Datos de Ejemplo</span>
-                            </button>
-                         </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Cuidado: Restablecer eliminará todos los datos actuales (proyectos y finanzas) y cargará los datos de ejemplo iniciales.</p>
-                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Importar datos reemplazará completamente los datos actuales con los del archivo.</p>
-                    </div>
-                </section>
             </main>
 
             <div id="toast-container" class="fixed bottom-4 right-4 space-y-2 z-[100]" role="status" aria-live="polite" aria-atomic="true">
@@ -384,6 +352,14 @@
         </div> <!-- Cierre del div max-w-7xl -->
     </div> <!-- Cierre del div app-content -->
 
+    <!-- CONTENEDOR DEL BOTÓN DE INSTALACIÓN PWA -->
+    <div id="pwa-install-container" class="fixed bottom-16 left-4 right-4 z-[90] flex justify-center hidden">
+        <button id="my-custom-install-button"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-xl transition duration-300 transform hover:scale-105 flex items-center space-x-2 text-lg">
+            <i class="fas fa-download mr-2"></i>
+            <span>Instalar Zenithtrack App</span>
+        </button>
+    </div>
 
     <footer class="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-600 dark:text-gray-400">
         <p class="mb-1">Made By Wiggles Vz</p>

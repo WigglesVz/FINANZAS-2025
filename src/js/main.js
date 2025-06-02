@@ -8,13 +8,13 @@ import {
     addProjectNameButton, newProjectNameInput, projectNameListEl,
     resetDataButton, exportDataButton, importDataButton, importFileInput,
     // Elementos de Tareas (Details)
-    addTaskButton, taskForm, taskModal, 
+    addTaskButton, taskForm, taskModal,
     closeTaskModalButton, cancelTaskModalButton,
     projectDetailsTableBody, projectDetailsTable, searchProjectTasksInput,
     // ¡NUEVO! Importar los nuevos contenedores de títulos/ordenación
-    projectDetailsSortHeaders, 
+    projectDetailsSortHeaders,
     // Elementos de Costos (Cost)
-    costForm, costModal, 
+    costForm, costModal,
     closeCostModalButton, cancelCostModalButton,
     projectCostTableBody, projectCostTable, searchProjectCostsInput,
     // ¡NUEVO! Importar los nuevos contenedores de títulos/ordenación
@@ -39,7 +39,7 @@ import { getAppState } from './state.js'; // Solo se necesita getAppState si no 
 
 import { loadThemePreference, toggleDarkMode } from './theme.js';
 // renderAll es llamado desde auth.js después de un login/registro exitoso o en checkAuthStatus.
-// import { renderAll } from './uiRender.js'; 
+// import { renderAll } from './uiRender.js';
 import {
     openAddTaskModal, closeModal,
     handleChangeAppTitle, closeConfirmationModal,
@@ -53,7 +53,7 @@ import {
     handleExportData, triggerImportFile, handleImportFile,
     handleTableSort, handleConfirmAction,
     handleChartTypeChange,
-    handleSearchProjectTasks, 
+    handleSearchProjectTasks,
     handleSearchProjectCosts,
     handleSearchFixedExpenses,
     handleStatusColorChange // Importar el handler para el cambio de color
@@ -62,9 +62,14 @@ import {
     handleLogin, handleRegister, handleLogout,
     showLoginForm, showRegisterForm,
     checkAuthStatus, checkForRegisteredUser
+    // La función hideAuthScreenAndShowApp debería estar en auth.js y ser llamada por checkAuthStatus o login/register exitoso.
+    // No necesitamos importarla aquí directamente a menos que la estemos llamando explícitamente desde main.js
 } from './auth.js';
 import { showToast } from './utils.js';
 // renderSelectedChart se llama desde auth.js (en hideAuthScreenAndShowApp) y eventHandlers.js (handleTabClick)
+
+// Variable para almacenar el evento beforeinstallprompt
+let deferredPrompt;
 
 const attachStaticListeners = () => {
     if (tabButtons && tabButtons.length) {
@@ -76,10 +81,10 @@ const attachStaticListeners = () => {
 
     if(addStatusButton) addStatusButton.addEventListener('click', handleAddStatus);
     if(newStatusInput) newStatusInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddStatus(); }});
-    
+
     if(addProjectNameButton) addProjectNameButton.addEventListener('click', handleAddProjectName);
     if(newProjectNameInput) newProjectNameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddProjectName(); }});
-    
+
     if(resetDataButton) resetDataButton.addEventListener('click', handleResetData);
     if(exportDataButton) exportDataButton.addEventListener('click', handleExportData);
     if(importDataButton) importDataButton.addEventListener('click', triggerImportFile);
@@ -107,16 +112,8 @@ const attachStaticListeners = () => {
     }
     if(addExpenseForm) addExpenseForm.addEventListener('submit', handleAddFixedExpense);
 
-    // ¡ELIMINADO! Listener en thead para ordenar, ya no existe.
-    // [projectDetailsTable, projectCostTable, fixedExpensesTable].forEach(table => {
-    //     if (table) {
-    //         const sortableHeaders = table.querySelectorAll('thead th.sortable-header');
-    //         sortableHeaders.forEach(header => header.addEventListener('click', handleTableSort));
-    //     }
-    // });
-
     if(chartTypeSelect) chartTypeSelect.addEventListener('change', handleChartTypeChange);
-    
+
     if(searchProjectTasksInput) searchProjectTasksInput.addEventListener('input', handleSearchProjectTasks);
     if(searchProjectCostsInput) searchProjectCostsInput.addEventListener('input', handleSearchProjectCosts);
     if(searchFixedExpensesInput) searchFixedExpensesInput.addEventListener('input', handleSearchFixedExpenses);
@@ -174,11 +171,11 @@ const attachDelegatedListeners = () => {
         statusListEl.addEventListener('input', (event) => {
             const colorInput = event.target.closest('.status-color-picker');
             if (colorInput) {
-                handleStatusColorChange(event); 
+                handleStatusColorChange(event);
             }
         });
     }
-    
+
     // ¡NUEVO! Listeners delegados para los nuevos contenedores de ordenación
     if(projectDetailsSortHeaders) {
         projectDetailsSortHeaders.addEventListener('click', (event) => {
@@ -210,10 +207,67 @@ const attachDelegatedListeners = () => {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("DOM Cargado. Inicializando Rastreador...");
 
+    // --- INICIO DE CÓDIGO AÑADIDO PARA PWA INSTALL PROMPT ---
+    const installButton = document.getElementById('my-custom-install-button');
+    const installContainer = document.getElementById('pwa-install-container');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevenir que el banner nativo aparezca automáticamente (si el navegador lo permite)
+        e.preventDefault();
+        // Almacenar el evento para poder dispararlo más tarde
+        deferredPrompt = e;
+
+        // Mostrar tu botón o banner personalizado para la instalación
+        if (installContainer) {
+            installContainer.classList.remove('hidden'); // Mostrar el contenedor (si Tailwind CSS)
+            // Opcional: si no usas Tailwind o quieres asegurar visibilidad:
+            // installContainer.style.display = 'flex';
+            showToast("¿Quieres instalar Zenithtrack App?", "info", 5000); // Opcional: una pequeña notificación
+        }
+        console.log("Evento beforeinstallprompt disparado.");
+    });
+
+    if (installButton) {
+        installButton.addEventListener('click', () => {
+            if (installContainer) {
+                installContainer.classList.add('hidden'); // Ocultar el contenedor del botón (si Tailwind CSS)
+                // Opcional: si no usas Tailwind:
+                // installContainer.style.display = 'none';
+            }
+            if (deferredPrompt) {
+                // Disparar la solicitud de instalación del navegador
+                deferredPrompt.prompt();
+                // Esperar la respuesta del usuario (aceptar o cancelar)
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('Usuario aceptó la instalación de la PWA');
+                        showToast("¡Zenithtrack App instalada!", "success");
+                    } else {
+                        console.log('Usuario canceló la instalación de la PWA');
+                        showToast("Instalación cancelada.", "error");
+                        // Opcional: si el usuario cancela, podrías mostrar el botón de nuevo
+                        // setTimeout(() => { if(installContainer) installContainer.classList.remove('hidden'); }, 3000);
+                    }
+                    deferredPrompt = null; // Limpiar el evento
+                });
+            }
+        });
+    }
+
+    // Escuchar el evento appinstalled para saber cuándo se ha instalado la PWA
+    window.addEventListener('appinstalled', () => {
+        console.log('Zenithtrack App instalada exitosamente!');
+        if (installContainer) {
+            installContainer.classList.add('hidden'); // Ocultar cualquier UI relacionada con la instalación
+        }
+        deferredPrompt = null; // Limpiar el evento si se instala
+    });
+    // --- FIN DE CÓDIGO AÑADIDO PARA PWA INSTALL PROMPT ---
+
     try {
         loadThemePreference();
-        const isAuthenticated = await checkAuthStatus(); 
-        
+        const isAuthenticated = await checkAuthStatus();
+
         if (isAuthenticated) {
             // La función hideAuthScreenAndShowApp (llamada desde checkAuthStatus)
             // ya se encarga de loadData, renderAll y renderizar el gráfico inicial.

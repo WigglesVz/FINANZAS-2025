@@ -10,6 +10,9 @@ import { getAppState, updateAppState } from './state.js';
 import { sanitizeHTML, clearAllValidationErrors, showToast } from './utils.js';
 import db from './db.js';
 
+// Variable para almacenar la referencia al listener para poder removerlo si es necesario
+let taskStatusChangeListener = null;
+
 /** Opens a modal. @param {HTMLElement} modalElement */
 export const openModal = (modalElement) => {
     if (!modalElement) return;
@@ -31,9 +34,17 @@ export const openModal = (modalElement) => {
 export const closeModal = (modalElement) => {
     if (!modalElement) return;
 
-    if (modalElement.id === 'task-modal' && taskForm) clearAllValidationErrors(taskForm);
+    if (modalElement.id === 'task-modal' && taskForm) {
+        clearAllValidationErrors(taskForm);
+        // <--- INICIO CAMBIO: Remover el event listener del select de estado ---
+        if (taskStatusSelect && taskStatusChangeListener) {
+            taskStatusSelect.removeEventListener('change', taskStatusChangeListener);
+            taskStatusChangeListener = null; // Limpiar la referencia
+        }
+        // <--- FIN CAMBIO ---
+    }
     if (modalElement.id === 'cost-modal' && costForm) clearAllValidationErrors(costForm);
-    if (modalElement.id === 'confirmation-modal') updateAppState({ currentConfirmationAction: null }); // Limpiar acción de confirmación
+    if (modalElement.id === 'confirmation-modal') updateAppState({ currentConfirmationAction: null });
 
     document.body.classList.remove('modal-active');
     modalElement.classList.remove('opacity-100');
@@ -50,6 +61,9 @@ export const updateTaskModalDropdowns = () => {
     const currentState = getAppState();
     if (!taskProjectNameSelect || !taskStatusSelect) return;
 
+    const currentProjectValue = taskProjectNameSelect.value; // Guardar valor actual
+    const currentStatusValue = taskStatusSelect.value; // Guardar valor actual
+
     const projectNameList = Array.isArray(currentState.projectNameList) ? currentState.projectNameList : [];
     taskProjectNameSelect.innerHTML = '<option value="">Seleccione Proyecto</option>';
     [...projectNameList]
@@ -58,6 +72,7 @@ export const updateTaskModalDropdowns = () => {
             const safeName = sanitizeHTML(project.name);
             taskProjectNameSelect.add(new Option(safeName, project.name));
     });
+    taskProjectNameSelect.value = currentProjectValue; // Restaurar valor si es posible
 
     const statusList = Array.isArray(currentState.statusList) ? currentState.statusList : [];
     taskStatusSelect.innerHTML = '<option value="">Seleccione Estado</option>';
@@ -67,19 +82,12 @@ export const updateTaskModalDropdowns = () => {
              const safeStatus = sanitizeHTML(status.name);
              taskStatusSelect.add(new Option(safeStatus, status.name));
     });
+    taskStatusSelect.value = currentStatusValue; // Restaurar valor si es posible
 };
 
 /**
  * Función genérica para mostrar diferentes tipos de modales.
  * @param {object} options - Objeto de configuración del modal.
- * @param {string} options.type - Tipo de modal ('task', 'cost', 'confirmation').
- * @param {string} options.title - Título del modal.
- * @param {object} [options.data] - Objeto de datos para modales de edición (ej. taskToEdit, costToEdit).
- * @param {string} [options.message] - Mensaje para el modal de confirmación.
- * @param {string} [options.confirmButtonText] - Texto del botón de confirmación.
- * @param {string} [options.confirmButtonClass] - Clase de color del botón de confirmación (ej. 'red', 'teal').
- * @param {function} [options.actionCallback] - Callback a ejecutar al confirmar el modal.
- * @param {any} [options.actionData] - Datos a pasar al actionCallback.
  */
 export const showDynamicModal = (options) => {
     const { type, title, data, message, confirmButtonText, confirmButtonClass, actionCallback, actionData } = options;
@@ -88,7 +96,6 @@ export const showDynamicModal = (options) => {
     let modalTitleEl;
     let formElement;
 
-    // Determinar qué modal mostrar y qué elementos usar
     switch (type) {
         case 'task':
             modalElement = taskModal;
@@ -103,7 +110,7 @@ export const showDynamicModal = (options) => {
         case 'confirmation':
             modalElement = confirmationModal;
             modalTitleEl = confirmationModalTitle;
-            formElement = null; // No hay formulario para el modal de confirmación
+            formElement = null;
             break;
         default:
             console.error(`showDynamicModal: Tipo de modal desconocido: ${type}`);
@@ -115,19 +122,39 @@ export const showDynamicModal = (options) => {
         return;
     }
 
-    // Configurar el título del modal
     modalTitleEl.textContent = sanitizeHTML(title);
 
-    // Limpiar y resetear el formulario si existe
     if (formElement) {
         formElement.reset();
         clearAllValidationErrors(formElement);
     }
 
-    // Lógica específica para cada tipo de modal
     switch (type) {
         case 'task':
-            updateTaskModalDropdowns(); // Llenar dropdowns de proyectos y estados
+            updateTaskModalDropdowns(); // Llenar o rellenar dropdowns
+
+            // <--- INICIO CAMBIO: Lógica para limpiar fecha de inicio ---
+            if (taskStatusSelect && taskStartDateInput) {
+                // Remover listener anterior si existe para evitar duplicados
+                if (taskStatusChangeListener) {
+                    taskStatusSelect.removeEventListener('change', taskStatusChangeListener);
+                }
+                
+                taskStatusChangeListener = (event) => {
+                    const selectedStatusValue = event.target.value;
+                    const appState = getAppState();
+                    const notStartedStatus = appState.statusList.find(s => s.name.toLowerCase().includes('no iniciado')); // Más flexible
+                    const notStartedStatusName = notStartedStatus ? notStartedStatus.name : "No Iniciado"; // Fallback
+
+                    if (selectedStatusValue === notStartedStatusName) {
+                        taskStartDateInput.value = ''; // Limpiar fecha de inicio
+                        // console.log('Estado "No Iniciado" seleccionado, fecha de inicio limpiada.');
+                    }
+                };
+                taskStatusSelect.addEventListener('change', taskStatusChangeListener);
+            }
+            // <--- FIN CAMBIO ---
+
             if (data) { // Modo edición de tarea
                 if (!taskIdInput || !taskProjectNameSelect || !taskStatusSelect ||
                     !taskNameInput || !taskDescriptionInput || !taskStartDateInput || !taskEndDateInput) return;
@@ -138,8 +165,26 @@ export const showDynamicModal = (options) => {
                 taskDescriptionInput.value = data.description || '';
                 taskStartDateInput.value = data.startDate || '';
                 taskEndDateInput.value = data.endDate || '';
+
+                // <--- INICIO CAMBIO: Disparar el chequeo inicial por si la tarea cargada ya es "No Iniciado" ---
+                if (taskStatusSelect.value && taskStatusSelect.value === (getAppState().statusList.find(s => s.name.toLowerCase().includes('no iniciado'))?.name || "No Iniciado")) {
+                    if (taskStartDateInput) taskStartDateInput.value = '';
+                }
+                // <--- FIN CAMBIO ---
+
             } else { // Modo añadir tarea
                 if (taskIdInput) taskIdInput.value = '';
+                 // <--- INICIO CAMBIO: Al añadir, si el estado por defecto (si es "No Iniciado") o el primer estado seleccionado es "No Iniciado" ---
+                 if (taskStatusSelect && taskStartDateInput) {
+                    const initialStatusValue = taskStatusSelect.value;
+                    const appState = getAppState();
+                    const notStartedStatus = appState.statusList.find(s => s.name.toLowerCase().includes('no iniciado'));
+                    const notStartedStatusName = notStartedStatus ? notStartedStatus.name : "No Iniciado";
+                    if (initialStatusValue === notStartedStatusName) {
+                        taskStartDateInput.value = '';
+                    }
+                }
+                // <--- FIN CAMBIO ---
             }
             break;
         case 'cost':
@@ -149,9 +194,6 @@ export const showDynamicModal = (options) => {
                 costProjectNameInput.value = data.projectName || '';
                 costBudgetInput.value = (data.budget >= 0) ? data.budget.toFixed(2) : '';
                 costActualInput.value = (data.actualCost >= 0) ? data.actualCost.toFixed(2) : '';
-            } else {
-                // No debería haber un modo "añadir costo" sin un proyecto asociado
-                // Los costos se asocian a proyectos existentes al editar un proyecto.
             }
             break;
         case 'confirmation':
@@ -165,7 +207,6 @@ export const showDynamicModal = (options) => {
             break;
     }
 
-    // Abrir el modal genérico
     openModal(modalElement);
 };
 
@@ -213,7 +254,7 @@ export const openConfirmationModal = (title, message, confirmButtonText, confirm
     });
 };
 
-/** Closes the confirmation modal. (Esta función se mantiene igual ya que se llama desde eventHandlers para manejar el confirm) */
+/** Closes the confirmation modal. */
 export const closeConfirmationModal = () => {
     closeModal(confirmationModal);
 };
@@ -240,7 +281,7 @@ export const handleChangeAppTitle = async () => {
              return;
         }
         const sanitizedNewTitle = sanitizeHTML(trimmedTitle);
-        
+
         try {
             await db.appConfig.put({ key: 'mainTitle', value: sanitizedNewTitle });
             mainTitleEl.textContent = sanitizedNewTitle;

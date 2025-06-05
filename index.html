@@ -79,7 +79,7 @@
     </div>
 
     <!-- Contenido Principal de la Aplicación -->
-    <div id="app-content" class="hidden"> <!-- p-4 sm:p-8 aplicados aquí en lugar del body directo -->
+    <div id="app-content" class="hidden">
         <div class="max-w-7xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8 relative">
             <header class="mb-6 border-b pb-4 border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <h1 id="main-title" class="text-xl sm:text-4xl font-bold text-indigo-700 dark:text-indigo-300">Rastreador de Proyectos y Finanzas</h1>
@@ -121,6 +121,7 @@
 
             <main>
                 <section id="overview-content" class="tab-content active" role="tabpanel" aria-labelledby="tab-overview">
+                    <!-- ... Contenido de Vista General sin cambios ... -->
                     <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Resumen General de Proyectos</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                         <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg shadow border border-blue-100 dark:border-blue-800">
@@ -137,15 +138,13 @@
                         </div>
                     </div>
 
-                    <!-- Orden cambiado: Resumen por Proyecto primero -->
-                    <div class="mb-8"> <!-- Contenedor para el resumen por proyecto, puede ser un grid si se desea al lado del gráfico en pantallas grandes -->
+                    <div class="mb-8">
                         <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Resumen por Proyecto</h3>
-                        <div id="project-summary-container" class="max-h-80 md:max-h-96"> <!-- Altura ajustada, podría ser la misma que el gráfico -->
+                        <div id="project-summary-container" class="max-h-80 md:max-h-96">
                            <p class="text-sm text-gray-500 dark:text-gray-400 italic text-center mt-4">Cargando resúmenes...</p>
                         </div>
                     </div>
                     
-                    <!-- Sección de Gráficos ahora después del resumen por proyecto -->
                     <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4 mt-8">Análisis Gráfico de Proyectos</h2>
                     <div class="mb-4">
                         <label for="chart-type-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Seleccionar Tipo de Gráfico:</label>
@@ -166,7 +165,8 @@
                 </section>
 
                 <section id="details-content" class="tab-content" role="tabpanel" aria-labelledby="tab-details" hidden>
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                    <!-- ... Contenido de Detalles Proyecto sin cambios ... -->
+                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
                         <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Tareas del Proyecto</h2>
                         <button id="add-task-button" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-300 flex items-center justify-center space-x-2 text-sm">
                             <i class="fas fa-plus" aria-hidden="true"></i>
@@ -184,7 +184,6 @@
                                    placeholder="Buscar por tarea, descripción o proyecto...">
                         </div>
                     </div>
-                    <!-- Contenedor de títulos y botones de ordenación para PC -->
                     <div id="project-details-sort-headers" class="hidden sm:flex justify-between items-center bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-4 py-3 border-b border-gray-200 dark:border-gray-600 rounded-t-lg text-xs font-semibold uppercase tracking-wider">
                         <div class="w-[10%] text-left">Proyecto</div>
                         <div class="w-[15%] text-left">Tarea</div>
@@ -196,7 +195,6 @@
                     </div>
                     <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg shadow">
                         <table id="project-details-table" class="bg-white dark:bg-gray-800">
-                            <!-- thead eliminado permanentemente -->
                             <tbody id="project-details-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
                                 <tr><td colspan="7" class="text-center py-10 text-gray-500 dark:text-gray-400">Cargando tareas...</td></tr>
                             </tbody>
@@ -206,6 +204,7 @@
                 </section>
 
                 <section id="cost-content" class="tab-content" role="tabpanel" aria-labelledby="tab-cost" hidden>
+                    <!-- ... Contenido de Costos Proyecto sin cambios ... -->
                      <div class="flex justify-between items-center mb-4">
                         <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Costos por Proyecto</h2>
                      </div>
@@ -220,7 +219,6 @@
                                    placeholder="Buscar por nombre de proyecto...">
                         </div>
                     </div>
-                    <!-- Contenedor de títulos y botones de ordenación para PC -->
                     <div id="project-cost-sort-headers" class="hidden sm:flex justify-between items-center bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-4 py-3 border-b border-gray-200 dark:border-gray-600 rounded-t-lg text-xs font-semibold uppercase tracking-wider">
                         <div class="w-[25%] text-left">Proyecto</div>
                         <button class="sortable-header w-[20%] text-right" data-sort-key="budget" data-table-id="project-cost-table">Presupuesto <i class="fas fa-sort" aria-hidden="true"></i></button>
@@ -230,7 +228,6 @@
                     </div>
                      <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg shadow">
                         <table id="project-cost-table" class="bg-white dark:bg-gray-800">
-                            <!-- thead eliminado permanentemente -->
                             <tbody id="project-cost-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
                                  <tr><td colspan="5" class="text-center py-10 text-gray-500 dark:text-gray-400">Cargando costos...</td></tr>
                             </tbody>
@@ -239,6 +236,7 @@
                 </section>
 
                  <section id="finance-content" class="tab-content" role="tabpanel" aria-labelledby="tab-finance" hidden>
+                    <!-- ... Contenido de Finanzas Mensuales sin cambios ... -->
                     <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6">Finanzas Mensuales</h2>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <div class="bg-green-50 dark:bg-green-900 p-4 rounded-lg shadow border border-green-200 dark:border-green-800">
@@ -264,7 +262,6 @@
                     <div>
                         <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-4">Gastos Fijos Mensuales</h3>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <!-- "Lista de Gastos" AHORA PRIMERO -->
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
                                  <h4 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">Lista de Gastos</h4>
                                 <div class="mb-4">
@@ -280,14 +277,12 @@
                                 </div>
                                  <div class="overflow-x-auto">
                                     <table id="fixed-expenses-table" class="text-gray-800 dark:text-gray-200">
-                                        <!-- ¡ELIMINADO! thead no se mostrará en ninguna vista -->
                                         <tbody id="fixed-expenses-table-body">
                                             <tr><td colspan="3" class="text-center py-6 text-sm text-gray-500 dark:text-gray-400 italic">No hay gastos fijos registrados.</td></tr>
                                         </tbody>
                                     </table>
                                  </div>
                             </div>
-                             <!-- Formulario "Agregar Gasto Fijo" AHORA SEGUNDO -->
                             <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600">
                                 <h4 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">Agregar Gasto Fijo</h4>
                                 <form id="add-expense-form" class="space-y-3" novalidate>
@@ -325,7 +320,9 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2" id="status-list-heading">Estados de Tarea</h3>
-                            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600">
+                            <!-- INICIO CAMBIO: Añadir clase list-item-adder-container -->
+                            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600 list-item-adder-container">
+                            <!-- FIN CAMBIO -->
                                  <ul id="status-list" class="space-y-1 mb-3 setup-list text-gray-700 dark:text-gray-300" aria-labelledby="status-list-heading">
                                      <li class="text-xs text-gray-500 dark:text-gray-400 italic p-2">Cargando estados...</li>
                                  </ul>
@@ -335,12 +332,14 @@
                                     <button id="add-status-button" title="Agregar Estado" aria-label="Agregar nuevo estado de tarea"
                                             class="flex-shrink-0 bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1 rounded-md transition duration-200"><i class="fas fa-plus" aria-hidden="true"></i></button>
                                 </div>
-                                 <span id="new-status-error" class="error-message hidden"></span>
+                                 <span id="new-status-error" class="error-message hidden mt-1"></span>
                             </div>
                         </div>
                         <div>
                              <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2" id="project-list-heading">Nombres de Proyecto</h3>
-                             <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600">
+                             <!-- INICIO CAMBIO: Añadir clase list-item-adder-container -->
+                             <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600 list-item-adder-container">
+                             <!-- FIN CAMBIO -->
                                  <ul id="project-name-list" class="space-y-1 mb-3 setup-list text-gray-700 dark:text-gray-300" aria-labelledby="project-list-heading">
                                      <li class="text-xs text-gray-500 dark:text-gray-400 italic p-2">Cargando proyectos...</li>
                                  </ul>
@@ -350,7 +349,7 @@
                                     <button id="add-project-name-button" title="Agregar Proyecto" aria-label="Agregar nuevo nombre de proyecto"
                                             class="flex-shrink-0 bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1 rounded-md transition duration-200"><i class="fas fa-plus" aria-hidden="true"></i></button>
                                 </div>
-                                  <span id="new-project-name-error" class="error-message hidden"></span>
+                                  <span id="new-project-name-error" class="error-message hidden mt-1"></span>
                              </div>
                         </div>
                     </div>
@@ -391,6 +390,7 @@
     <!-- Modals -->
     <div id="task-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50"
          role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+        <!-- ... Contenido del modal de Tarea sin cambios ... -->
         <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 transform scale-95 text-gray-800 dark:text-gray-200">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
                 <h3 id="task-modal-title" class="text-xl font-semibold text-gray-800 dark:text-gray-200">Agregar Tarea</h3>
@@ -451,6 +451,7 @@
 
     <div id="cost-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50"
          role="dialog" aria-modal="true" aria-labelledby="cost-modal-title">
+        <!-- ... Contenido del modal de Costo sin cambios ... -->
         <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 transform scale-95 text-gray-800 dark:text-gray-200">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
                 <h3 id="cost-modal-title" class="text-xl font-semibold text-gray-800 dark:text-gray-200">Editar Costos</h3>
@@ -495,6 +496,7 @@
 
     <div id="confirmation-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50"
          role="dialog" aria-modal="true" aria-labelledby="confirmation-modal-title" aria-describedby="confirmation-modal-body">
+        <!-- ... Contenido del modal de Confirmación sin cambios ... -->
         <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 transform scale-95 text-gray-800 dark:text-gray-200">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
                 <h3 id="confirmation-modal-title" class="text-xl font-semibold text-gray-800 dark:text-gray-200">Confirmar Acción</h3>

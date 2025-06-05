@@ -47,7 +47,7 @@ export const getStatusStyle = (statusName, statusListFromState = []) => {
     if (!statusName || !Array.isArray(statusListFromState)) return defaultStyle;
 
     const statusObj = statusListFromState.find(s => s.name === statusName);
-    
+
     if (statusObj && statusObj.color) {
         return {
             backgroundColor: statusObj.color,
@@ -61,7 +61,7 @@ export const getStatusStyle = (statusName, statusListFromState = []) => {
     if (lowerStatus === 'en progreso') return { backgroundColor: '#F59E0B', textColor: getContrastingTextColor('#F59E0B') };
     if (lowerStatus === 'bloqueado') return { backgroundColor: '#EF4444', textColor: getContrastingTextColor('#EF4444') };
     if (lowerStatus === 'no iniciado') return { backgroundColor: '#D1D5DB', textColor: getContrastingTextColor('#D1D5DB') };
-    
+
     return defaultStyle;
 };
 
@@ -85,6 +85,10 @@ export const setValidationError = (errorElement, message) => {
         errorElement.textContent = message;
         errorElement.classList.remove('hidden');
         errorElement.setAttribute('aria-live', 'assertive');
+    } else {
+        // <--- NUEVO LOG ---
+        console.warn("setValidationError: Se intentó mostrar un error, pero errorElement es null. Mensaje:", message);
+        // --- FIN NUEVO LOG ---
     }
 };
 
@@ -166,7 +170,7 @@ export const updateSortIcons = (sortButtonsContainer, sortedKey, direction) => {
 
         // Limpiar clases de estado anterior y aria-sort
         button.classList.remove('sorted');
-        button.setAttribute('aria-sort', 'none'); 
+        button.setAttribute('aria-sort', 'none');
 
         if (icon) {
             icon.classList.remove('fa-sort-up', 'fa-sort-down', 'fa-sort');
@@ -178,7 +182,6 @@ export const updateSortIcons = (sortButtonsContainer, sortedKey, direction) => {
             } else {
                 // Si este botón no es el que se está ordenando
                 icon.classList.add('fa-sort');
-                // button.setAttribute('aria-sort', 'none'); // Ya se limpió al inicio del bucle
             }
         }
     });
@@ -315,72 +318,87 @@ export const isHexColor = (colorString) => {
 /**
  * Realiza una validación genérica de un formulario basada en reglas definidas.
  * Los mensajes de error se muestran u ocultan automáticamente.
- * @param {HTMLFormElement} formElement - El elemento del formulario a validar.
+ * @param {HTMLElement} formElement - El elemento contenedor de los campos (puede ser un form o un div).
  * @param {Array<Object>} validationRules - Un array de objetos que definen las reglas para cada campo.
- *   Cada objeto de regla debe tener:
- *   - field: string (el ID del elemento de entrada)
- *   - errorElementId: string (el ID del elemento donde se mostrará el error)
- *   - checks: Array<Object> (un array de objetos de verificación para este campo)
- *     Cada objeto de verificación puede tener:
- *     - type: string (ej. 'required', 'minlength', 'maxlength', 'min', 'max', 'pattern', 'custom', 'selectRequired', 'dateComparison')
- *     - value: any (valor para la regla, ej. longitud mínima, patrón regex, número, etc.)
- *     - message: string (mensaje de error si la verificación falla)
- *     - compareTo: string (ID de otro campo para comparaciones de fechas/números)
- *     - operator: string (para 'dateComparison': 'lessThan', 'greaterThan', 'lessThanOrEqualTo', 'greaterThanOrEqualTo')
- *     - validate: function(value, formElement) (para 'custom' type, debe retornar true/false)
  * @returns {boolean} True si el formulario es válido, false en caso contrario.
  */
 export const validateForm = (formElement, validationRules) => {
     if (!formElement || !validationRules || !Array.isArray(validationRules)) {
-        console.error("validateForm: formElement o validationRules no son válidos.");
+        console.error("--- [VALIDATION_FORM_ERROR] validateForm: formElement o validationRules no son válidos. ---");
         return false;
     }
+    console.log("--- [VALIDATION_FORM] Iniciando validación para formElement:", formElement);
 
     let formIsValid = true;
-    clearAllValidationErrors(formElement); // Limpiar errores antes de revalidar
+    clearAllValidationErrors(formElement);
 
     validationRules.forEach(rule => {
+        console.log(`--- [VALIDATION_FORM] Procesando regla para campo ID: ${rule.field}`);
         const inputElement = formElement.querySelector(`#${rule.field}`);
         const errorElement = formElement.querySelector(`#${rule.errorElementId}`);
 
-        if (!inputElement || !errorElement) {
-            console.warn(`validateForm: Elemento de entrada o error no encontrado para la regla: ${rule.field}`);
-            return; // Saltar esta regla si los elementos no existen
+        // <--- INICIO LOG DE VERIFICACIÓN DE ELEMENTOS ---
+        if (!inputElement) console.warn(`--- [VALIDATION_FORM_WARN] validateForm: NO SE ENCONTRÓ inputElement para rule.field: ${rule.field} (ID esperado: #${rule.field}) dentro de formElement:`, formElement);
+        if (!errorElement) console.warn(`--- [VALIDATION_FORM_WARN] validateForm: NO SE ENCONTRÓ errorElement para rule.errorElementId: ${rule.errorElementId} (ID esperado: #${rule.errorElementId}) dentro de formElement:`, formElement);
+        // <--- FIN LOG DE VERIFICACIÓN DE ELEMENTOS ---
+
+        if (!inputElement) { // Si el input no se encuentra, la regla no se puede aplicar, considerar inválido.
+            console.error(`--- [VALIDATION_FORM_ERROR] validateForm: Input con ID '${rule.field}' NO ENCONTRADO. Se considera el formulario inválido.`);
+            formIsValid = false;
+            return; // Salir de esta iteración de la regla
+        }
+        if (!errorElement) { // Si el elemento de error no se encuentra, no se puede mostrar el error, pero la validación del input puede continuar.
+            console.warn(`--- [VALIDATION_FORM_WARN] validateForm: Elemento de error con ID '${rule.errorElementId}' NO ENCONTRADO. Los errores para '${rule.field}' no serán visibles.`);
+            // No establecemos formIsValid a false aquí, porque el campo en sí podría ser válido.
+            // El problema es solo la visualización del error.
         }
 
-        let fieldIsValid = true;
+
         const inputValue = inputElement.value.trim();
-        const inputType = inputElement.type;
+        // <--- INICIO LOG DE VALOR DE INPUT ---
+        console.log(`--- [VALIDATION_FORM_FIELD] Campo '${rule.field}', valor (trimmed): '${inputValue}'`);
+        // <--- FIN LOG DE VALOR DE INPUT ---
 
         for (const check of rule.checks) {
             let isValidCheck = true;
+            console.log(`--- [VALIDATION_FORM_CHECK] Campo '${rule.field}', aplicando check tipo: '${check.type}'`);
 
             switch (check.type) {
                 case 'required':
                     isValidCheck = inputValue !== '';
+                    // <--- INICIO LOG DE VALIDACIÓN REQUIRED ---
+                    console.log(`--- [VALIDATION_FORM_CHECK_RESULT] Campo '${rule.field}', check 'required', valor: '${inputValue}', esValido: ${isValidCheck}`);
+                    // <--- FIN LOG DE VALIDACIÓN REQUIRED ---
                     break;
                 case 'minlength':
                     isValidCheck = inputValue.length >= check.value;
+                    console.log(`--- [VALIDATION_FORM_CHECK_RESULT] Campo '${rule.field}', check 'minlength (${check.value})', valor: '${inputValue}', esValido: ${isValidCheck}`);
                     break;
                 case 'maxlength':
                     isValidCheck = inputValue.length <= check.value;
+                    console.log(`--- [VALIDATION_FORM_CHECK_RESULT] Campo '${rule.field}', check 'maxlength (${check.value})', valor: '${inputValue}', esValido: ${isValidCheck}`);
                     break;
                 case 'min':
                     const numValueMin = parseFloat(inputValue);
                     isValidCheck = !isNaN(numValueMin) && numValueMin >= check.value;
+                    console.log(`--- [VALIDATION_FORM_CHECK_RESULT] Campo '${rule.field}', check 'min (${check.value})', valor: '${inputValue}', numParsed: ${numValueMin}, esValido: ${isValidCheck}`);
                     break;
                 case 'max':
                     const numValueMax = parseFloat(inputValue);
                     isValidCheck = !isNaN(numValueMax) && numValueMax <= check.value;
+                    console.log(`--- [VALIDATION_FORM_CHECK_RESULT] Campo '${rule.field}', check 'max (${check.value})', valor: '${inputValue}', numParsed: ${numValueMax}, esValido: ${isValidCheck}`);
                     break;
                 case 'pattern':
                     isValidCheck = check.value.test(inputValue);
+                    console.log(`--- [VALIDATION_FORM_CHECK_RESULT] Campo '${rule.field}', check 'pattern', valor: '${inputValue}', esValido: ${isValidCheck}`);
                     break;
                 case 'custom':
                     isValidCheck = check.validate(inputValue, formElement);
+                    console.log(`--- [VALIDATION_FORM_CHECK_RESULT] Campo '${rule.field}', check 'custom', valor: '${inputValue}', esValido: ${isValidCheck}`);
                     break;
-                case 'selectRequired': // Para <select> elementos
+                case 'selectRequired':
                     isValidCheck = inputElement.value !== '';
+                    console.log(`--- [VALIDATION_FORM_CHECK_RESULT] Campo '${rule.field}', check 'selectRequired', valor: '${inputElement.value}', esValido: ${isValidCheck}`);
                     break;
                 case 'dateComparison':
                     const compareToElement = formElement.querySelector(`#${check.compareTo}`);
@@ -388,44 +406,45 @@ export const validateForm = (formElement, validationRules) => {
                         const date1 = new Date(inputValue);
                         const date2 = new Date(compareToElement.value);
                         if (isNaN(date1.getTime()) || isNaN(date2.getTime())) {
-                            isValidCheck = false; // Las fechas deben ser válidas para la comparación
+                            isValidCheck = false;
+                            console.log(`--- [VALIDATION_FORM_CHECK_RESULT] Campo '${rule.field}', check 'dateComparison', una o ambas fechas no válidas.`);
                             break;
                         }
                         switch (check.operator) {
-                            case 'lessThan':
-                                isValidCheck = date1 < date2;
-                                break;
-                            case 'greaterThan':
-                                isValidCheck = date1 > date2;
-                                break;
-                            case 'lessThanOrEqualTo':
-                                isValidCheck = date1 <= date2;
-                                break;
-                            case 'greaterThanOrEqualTo':
-                                isValidCheck = date1 >= date2;
-                                break;
-                            default:
-                                console.warn(`validateForm: Operador de comparación de fecha desconocido: ${check.operator}`);
-                                isValidCheck = true; // No falla si el operador es desconocido
+                            case 'lessThan': isValidCheck = date1 < date2; break;
+                            case 'greaterThan': isValidCheck = date1 > date2; break;
+                            case 'lessThanOrEqualTo': isValidCheck = date1 <= date2; break;
+                            case 'greaterThanOrEqualTo': isValidCheck = date1 >= date2; break;
+                            default: console.warn(`validateForm: Operador de comparación de fecha desconocido: ${check.operator}`); isValidCheck = true;
                         }
+                        console.log(`--- [VALIDATION_FORM_CHECK_RESULT] Campo '${rule.field}', check 'dateComparison (${check.operator} ${check.compareTo})', date1: ${date1}, date2: ${date2}, esValido: ${isValidCheck}`);
                     } else {
                         console.warn(`validateForm: Elemento para comparar fecha (${check.compareTo}) no encontrado.`);
-                        isValidCheck = true; // No falla si el elemento de comparación no existe
+                        isValidCheck = true;
                     }
                     break;
                 default:
                     console.warn(`validateForm: Tipo de verificación desconocido: ${check.type}`);
-                    isValidCheck = true; // Por defecto, si el tipo no es reconocido, no falla la validación
+                    isValidCheck = true;
             }
 
             if (!isValidCheck) {
-                setValidationError(errorElement, check.message);
-                fieldIsValid = false;
-                formIsValid = false; // Si un campo falla, el formulario completo falla
-                break; // Detener las verificaciones para este campo una vez que una falla
+                console.log(`--- [VALIDATION_FORM_FAILURE] Campo '${rule.field}' falló la validación '${check.type}'. Mostrando error: "${check.message}"`);
+                // Solo intentar mostrar el error si errorElement fue encontrado
+                if (errorElement) {
+                    setValidationError(errorElement, check.message);
+                }
+                formIsValid = false; // Si CUALQUIER check de CUALQUIER regla falla, el formulario entero es inválido.
+                // No necesitamos 'break' aquí el bucle exterior (forEach rule), 
+                // porque queremos evaluar todas las reglas para mostrar todos los errores posibles.
+                // Pero sí rompemos el bucle interior (for check of rule.checks) para no aplicar más checks a un campo que ya falló.
+                break;
             }
         }
     });
 
+    // <--- INICIO LOG DE RESULTADO FINAL DE VALIDACIÓN ---
+    console.log(`--- [VALIDATION_FORM_END] Resultado final de validación del formElement: ${formIsValid}`, formElement);
+    // <--- FIN LOG DE RESULTADO FINAL DE VALIDACIÓN ---
     return formIsValid;
 };

@@ -18,7 +18,8 @@
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.4",
-    "vite": "^5.2.13"
+    "vite": "^5.2.13",
+    "vite-plugin-pwa": "^1.0.0"
   },
   "dependencies": {
     "chart.js": "^4.4.3",

@@ -3,13 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rastreador de Proyectos y Finanzas</title>
+    <title>Zenithtrack App</title> <!-- Título actualizado para reflejar el nombre de tu PWA -->
+
+    <!-- PWA: Configuración del Manifiesto y Metadatos para App en Pantalla de Inicio -->
+    <!-- Estos archivos (manifest.webmanifest, pwa-192x192.png) deben estar en tu carpeta /public/ -->
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#007bff"> <!-- Color de la barra de título/tema, debe coincidir con el manifest -->
+    <link rel="apple-touch-icon" href="/pwa-192x192.png"> <!-- Icono para dispositivos iOS (iPhone/iPad) -->
+    <!-- Fin PWA -->
+
+    <!-- Dependencias Externas -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tu hoja de estilos principal de origen (desde /src/) -->
     <link rel="stylesheet" href="/src/styles.css">
+
+    <!-- Script de registro de Service Worker de vite-plugin-pwa -->
+    <!-- Esta línea es importante si vite-plugin-pwa está configurado para registrar el SW de esta forma. -->
+    <!-- El archivo registerSW.js es usualmente generado o manejado por el plugin. -->
+    <script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script>
+
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen text-gray-800 dark:text-gray-200">
 
@@ -96,7 +113,7 @@
                 </div>
             </header>
 
-            <nav class="mb-6 flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-6 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="Navegación principal">
+            <nav class="mb-6 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-6 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="Navegación principal">
                 <button class="tab-button py-2 px-1 text-sm sm:text-base text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 active w-full sm:w-auto"
                         data-tab="overview" role="tab" aria-selected="true" aria-controls="overview-content" id="tab-overview">
                     <i class="fas fa-tachometer-alt mr-1" aria-hidden="true"></i> Vista General
@@ -121,7 +138,7 @@
 
             <main>
                 <section id="overview-content" class="tab-content active" role="tabpanel" aria-labelledby="tab-overview">
-                    <!-- ... Contenido de Vista General sin cambios ... -->
+                    <!-- ... Contenido de Vista General ... -->
                     <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Resumen General de Proyectos</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                         <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg shadow border border-blue-100 dark:border-blue-800">
@@ -137,14 +154,12 @@
                             <p id="cumulative-tasks" class="text-2xl font-bold text-purple-900 dark:text-purple-100">0</p>
                         </div>
                     </div>
-
                     <div class="mb-8">
                         <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Resumen por Proyecto</h3>
                         <div id="project-summary-container" class="max-h-80 md:max-h-96">
                            <p class="text-sm text-gray-500 dark:text-gray-400 italic text-center mt-4">Cargando resúmenes...</p>
                         </div>
                     </div>
-                    
                     <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4 mt-8">Análisis Gráfico de Proyectos</h2>
                     <div class="mb-4">
                         <label for="chart-type-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Seleccionar Tipo de Gráfico:</label>
@@ -165,7 +180,7 @@
                 </section>
 
                 <section id="details-content" class="tab-content" role="tabpanel" aria-labelledby="tab-details" hidden>
-                    <!-- ... Contenido de Detalles Proyecto sin cambios ... -->
+                    <!-- ... Contenido de Detalles Proyecto ... -->
                      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
                         <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Tareas del Proyecto</h2>
                         <button id="add-task-button" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-300 flex items-center justify-center space-x-2 text-sm">
@@ -204,7 +219,7 @@
                 </section>
 
                 <section id="cost-content" class="tab-content" role="tabpanel" aria-labelledby="tab-cost" hidden>
-                    <!-- ... Contenido de Costos Proyecto sin cambios ... -->
+                    <!-- ... Contenido de Costos Proyecto ... -->
                      <div class="flex justify-between items-center mb-4">
                         <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Costos por Proyecto</h2>
                      </div>
@@ -235,8 +250,8 @@
                     </div>
                 </section>
 
-                 <section id="finance-content" class="tab-content" role="tabpanel" aria-labelledby="tab-finance" hidden>
-                    <!-- ... Contenido de Finanzas Mensuales sin cambios ... -->
+                <section id="finance-content" class="tab-content" role="tabpanel" aria-labelledby="tab-finance" hidden>
+                    <!-- ... Contenido de Finanzas Mensuales ... -->
                     <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6">Finanzas Mensuales</h2>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <div class="bg-green-50 dark:bg-green-900 p-4 rounded-lg shadow border border-green-200 dark:border-green-800">
@@ -316,13 +331,12 @@
                 </section>
 
                 <section id="setup-content" class="tab-content" role="tabpanel" aria-labelledby="tab-setup" hidden>
+                    <!-- ... Contenido de Configuración ... -->
                     <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Configuración de Listas</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2" id="status-list-heading">Estados de Tarea</h3>
-                            <!-- INICIO CAMBIO: Añadir clase list-item-adder-container -->
                             <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600 list-item-adder-container">
-                            <!-- FIN CAMBIO -->
                                  <ul id="status-list" class="space-y-1 mb-3 setup-list text-gray-700 dark:text-gray-300" aria-labelledby="status-list-heading">
                                      <li class="text-xs text-gray-500 dark:text-gray-400 italic p-2">Cargando estados...</li>
                                  </ul>
@@ -337,9 +351,7 @@
                         </div>
                         <div>
                              <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2" id="project-list-heading">Nombres de Proyecto</h3>
-                             <!-- INICIO CAMBIO: Añadir clase list-item-adder-container -->
                              <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600 list-item-adder-container">
-                             <!-- FIN CAMBIO -->
                                  <ul id="project-name-list" class="space-y-1 mb-3 setup-list text-gray-700 dark:text-gray-300" aria-labelledby="project-list-heading">
                                      <li class="text-xs text-gray-500 dark:text-gray-400 italic p-2">Cargando proyectos...</li>
                                  </ul>
@@ -381,16 +393,23 @@
         </div> <!-- Cierre del div max-w-7xl -->
     </div> <!-- Cierre del div app-content -->
 
+    <!-- CONTENEDOR DEL BOTÓN DE INSTALACIÓN PWA -->
+    <div id="pwa-install-container" class="fixed bottom-16 left-4 right-4 z-[90] flex justify-center hidden">
+        <button id="my-custom-install-button"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-xl transition duration-300 transform hover:scale-105 flex items-center space-x-2 text-lg">
+            <i class="fas fa-download mr-2"></i>
+            <span>Instalar Zenithtrack App</span>
+        </button>
+    </div>
 
     <footer class="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-600 dark:text-gray-400">
         <p class="mb-1">Made By Wiggles Vz</p>
         <p>© <span id="current-year"></span> Wiggles Vz. Todos los derechos reservados.</p>
     </footer>
 
-    <!-- Modals -->
+    <!-- Modals (el contenido de los modals no cambia) -->
     <div id="task-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50"
          role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
-        <!-- ... Contenido del modal de Tarea sin cambios ... -->
         <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 transform scale-95 text-gray-800 dark:text-gray-200">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
                 <h3 id="task-modal-title" class="text-xl font-semibold text-gray-800 dark:text-gray-200">Agregar Tarea</h3>
@@ -451,7 +470,6 @@
 
     <div id="cost-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50"
          role="dialog" aria-modal="true" aria-labelledby="cost-modal-title">
-        <!-- ... Contenido del modal de Costo sin cambios ... -->
         <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 transform scale-95 text-gray-800 dark:text-gray-200">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
                 <h3 id="cost-modal-title" class="text-xl font-semibold text-gray-800 dark:text-gray-200">Editar Costos</h3>
@@ -496,7 +514,6 @@
 
     <div id="confirmation-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50"
          role="dialog" aria-modal="true" aria-labelledby="confirmation-modal-title" aria-describedby="confirmation-modal-body">
-        <!-- ... Contenido del modal de Confirmación sin cambios ... -->
         <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 transform scale-95 text-gray-800 dark:text-gray-200">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
                 <h3 id="confirmation-modal-title" class="text-xl font-semibold text-gray-800 dark:text-gray-200">Confirmar Acción</h3>
@@ -512,6 +529,7 @@
         </div>
     </div>
 
+    <!-- Tu script principal de origen (desde /src/) -->
     <script type="module" src="/src/js/main.js"></script>
 </body>
 </html>

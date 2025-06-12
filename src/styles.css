@@ -91,9 +91,7 @@ body.modal-active {
  .dark .modal-content label {
       color: #d1d5db;
  }
- .dark .modal-content input[type="text"],
- .dark .modal-content input[type="number"],
- .dark .modal-content input[type="date"],
+ .dark .modal-content input,
  .dark .modal-content select,
  .dark .modal-content textarea {
      background-color: #374151;
@@ -115,77 +113,65 @@ body.modal-active {
 
 
 /* --- ESTILOS DE TABLA GENERALES --- */
-/* Los thead ya no existen en el HTML, por lo tanto, no hay sticky headers CSS directo para ellos */
-/* Las propiedades sticky se aplican a los nuevos div de encabezado si se desean. */
-
-
-/* Table and row layout */
 #fixed-expenses-table,
 #project-details-table,
-#project-cost-table {
+#project-cost-table,
+#spot-trades-table,
+#futures-trades-table {
     width: 100%;
     border-collapse: collapse;
-    table-layout: auto; /* ¡CRUCIAL! Layout automático para ambas vistas por defecto */
+    table-layout: auto;
 }
 
-/* Celdas de datos generales (desktop y móvil para valores) */
-/* th ya no existe, estas reglas se aplican a td */
 table td {
-    padding: 12px 15px; 
-    border-bottom: 1px solid #e5e7eb; 
-    font-size: 0.875rem; 
-    color: #6b7280; 
-    white-space: normal; /* Permitir que el texto de las celdas se envuelva por defecto */
+    padding: 12px 15px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.875rem;
+    color: #374151; /* Default text color for cell content */
+    white-space: normal;
     overflow: visible;
     text-overflow: clip;
 }
 .dark table td {
-    border-bottom-color: #4b5563; 
-    color: #9ca3af; 
+    border-bottom-color: #4b5563;
+    color: #d1d5db;
 }
 
-/* Dark mode table borders */
-.dark table tbody.divide-y > tr { 
+.dark table tbody.divide-y > tr {
     --tw-divide-y-reverse: 0;
     border-top-width: calc(1px * calc(1 - var(--tw-divide-y-reverse)));
     border-bottom-width: calc(1px * var(--tw-divide-y-reverse));
-    border-top-color: #4b5563; 
-    border-bottom-color: #4b5563; 
+    border-top-color: #4b5563;
+    border-bottom-color: #4b5563;
 }
 table tbody tr:hover {
-    background-color: #f3f4f6; /* gray-50 */
+    background-color: #f3f4f6;
 }
 .dark table tbody tr:hover {
-    background-color: #374151; /* gray-700 */
+    background-color: #374151;
 }
 
-/* Resto de estilos generales */
- /* Style for project summaries */
- #project-summary-container {
-     max-height: 20rem; overflow-y: auto; border: 1px solid #e5e7eb; 
-     border-radius: 0.5rem; padding: 0.5rem; background-color: #f9fafb; 
+/* --- ESTILOS VARIOS --- */
+#project-summary-container {
+     max-height: 20rem; overflow-y: auto; border: 1px solid #e5e7eb;
+     border-radius: 0.5rem; padding: 0.5rem; background-color: #f9fafb;
  }
  .dark #project-summary-container {
-     border-color: #4b5563; 
-     background-color: #1f2937; 
+     border-color: #4b5563;
+     background-color: #1f2937;
  }
- .dark #project-summary-container > p.text-sm { color: #9ca3af; } 
+ .dark #project-summary-container > p.text-sm { color: #9ca3af; }
  .dark #project-summary-container div.bg-white {
-     background-color: #374151; 
-     border-color: #4b5563; 
+     background-color: #374151;
+     border-color: #4b5563;
  }
  .dark #project-summary-container div.bg-white:hover {
      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
  }
- .dark #project-summary-container h4 { color: #a5b4fc; } 
-
-
-  /* Style for setup lists */
+ .dark #project-summary-container h4 { color: #a5b4fc; }
  .setup-list { max-height: 12rem; overflow-y: auto; padding-right: 0.5rem; }
- .dark .setup-list li { color: #d1d5db; } 
- .dark .setup-list li:hover { background-color: #374151; } 
-
- /* Toast Animation */
+ .dark .setup-list li { color: #d1d5db; }
+ .dark .setup-list li:hover { background-color: #374151; }
  @keyframes fadeInOut {
      0% { opacity: 0; transform: translateY(10px); }
      10% { opacity: 1; transform: translateY(0); }
@@ -193,105 +179,86 @@ table tbody tr:hover {
      100% { opacity: 0; transform: translateY(10px); }
  }
  .animate-fade { animation: fadeInOut 3s ease forwards; }
-
- /* Form validation error text */
- .error-message { color: #ef4444; font-size: 0.75rem; margin-top: 0.25rem; display: block; } 
- .dark .error-message { color: #fca5a5; } 
-
- /* Style for sortable header BUTTONS (these are now actual buttons) */
- .sortable-header { 
-    cursor: pointer; 
-    user-select: none; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; /* Centrar texto e icono en los botones de ordenación */
-    gap: 0.25rem; /* Espacio entre texto e icono */
-    flex-shrink: 0; 
-    padding: 0; 
-    background: none; 
-    border: none; 
-    font-size: 0.75rem; 
+ .error-message { color: #ef4444; font-size: 0.75rem; margin-top: 0.25rem; display: block; }
+ .dark .error-message { color: #fca5a5; }
+ .sortable-header {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    font-size: 0.75rem;
     font-weight: 600;
-    color: inherit; 
-    text-transform: uppercase; 
-    white-space: nowrap; /* Evitar que el texto del botón se envuelva */
-    overflow: hidden;    
+    color: inherit;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
     text-overflow: ellipsis;
     transition: color 0.2s ease, background-color 0.2s ease;
 }
 .sortable-header:hover {
-    color: #4f46e5; 
-    background-color: rgba(79, 70, 229, 0.1); 
-    border-radius: 0.25rem; 
+    color: #4f46e5;
+    background-color: rgba(79, 70, 229, 0.1);
+    border-radius: 0.25rem;
 }
 .dark .sortable-header:hover {
-    color: #818cf8; 
-    background-color: rgba(129, 140, 248, 0.1); 
+    color: #818cf8;
+    background-color: rgba(129, 140, 248, 0.1);
 }
-
-.sortable-header i { 
-    font-size: 0.75rem; 
-    color: #9ca3af; 
-    flex-shrink: 0; 
-    display: inline-block; 
+.sortable-header i {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    flex-shrink: 0;
+    display: inline-block;
 }
 .sortable-header.sorted {
-    color: #4f46e5; 
-    background-color: rgba(79, 70, 229, 0.05); 
+    color: #4f46e5;
+    background-color: rgba(79, 70, 229, 0.05);
 }
 .dark .sortable-header.sorted {
     color: #818cf8;
     background-color: rgba(129, 140, 248, 0.05);
 }
-.sortable-header.sorted i { 
-    color: #4f46e5; 
+.sortable-header.sorted i {
+    color: #4f46e5;
 }
-.dark .sortable-header.sorted i { 
-    color: #818cf8; 
+.dark .sortable-header.sorted i {
+    color: #818cf8;
 }
-
-
-/* Button loading state */
 button:disabled { opacity: 0.75; cursor: not-allowed; }
-
 
 /* ================================================ */
 /* === RESPONSIVE ADJUSTMENTS & TABLE STYLING === */
 /* ================================================ */
 
 /* Media query para pantallas GRANDES (Desktop) */
-@media (min-width: 769px) { /* A partir de este tamaño, aplicar layout de tabla de escritorio */
-    /* table-layout: auto ya está por defecto para la tabla */
+@media (min-width: 769px) {
+    #project-details-table { min-width: 900px; }
+    #project-cost-table { min-width: 700px; }
+    #fixed-expenses-table { min-width: 500px; }
 
-    /* Los min-width para las tablas en desktop */
-    #project-details-table { min-width: 900px; } 
-    #project-cost-table { min-width: 700px; } 
-    #fixed-expenses-table { min-width: 500px; } 
+    #project-details-table td:nth-child(1) { width: 10%; text-align: left; }
+    #project-details-table td:nth-child(2) { width: 15%; text-align: left; }
+    #project-details-table td:nth-child(3) { width: 25%; text-align: left; }
+    #project-details-table td:nth-child(4) { width: 10%; text-align: center; }
+    #project-details-table td:nth-child(5) { width: 10%; text-align: center; }
+    #project-details-table td:nth-child(6) { width: 15%; text-align: center; }
+    #project-details-table td:nth-child(7) { width: 15%; text-align: center; }
 
-    /* Estilos para las CELDAS DE DATOS (td) en desktop */
-    /* Estas reglas son vitales para definir los anchos de columna ahora que no hay thead */
-    /* #project-details-table (Tareas del Proyecto) - Desktop */
-    #project-details-table td:nth-child(1) { width: 10%; text-align: left; } /* Proyecto */
-    #project-details-table td:nth-child(2) { width: 15%; text-align: left; } /* Tarea */
-    #project-details-table td:nth-child(3) { width: 25%; text-align: left; } /* Descripción */
-    #project-details-table td:nth-child(4) { width: 10%; text-align: center; } /* Inicio */
-    #project-details-table td:nth-child(5) { width: 10%; text-align: center; } /* Fin */
-    #project-details-table td:nth-child(6) { width: 15%; text-align: center; } /* Estado */
-    #project-details-table td:nth-child(7) { width: 15%; text-align: center; } /* Acciones */
+    #project-cost-table td:nth-child(1) { width: 25%; text-align: left; }
+    #project-cost-table td:nth-child(2) { width: 20%; text-align: right; }
+    #project-cost-table td:nth-child(3) { width: 20%; text-align: right; }
+    #project-cost-table td:nth-child(4) { width: 20%; text-align: right; }
+    #project-cost-table td:nth-child(5) { width: 15%; text-align: center; }
 
-
-    /* #project-cost-table (Costos por Proyecto) - Desktop */
-    #project-cost-table td:nth-child(1) { width: 25%; text-align: left; } /* Proyecto */
-    #project-cost-table td:nth-child(2) { width: 20%; text-align: right; } /* Presupuesto */
-    #project-cost-table td:nth-child(3) { width: 20%; text-align: right; } /* Costo Actual */
-    #project-cost-table td:nth-child(4) { width: 20%; text-align: right; } /* Diferencia */
-    #project-cost-table td:nth-child(5) { width: 15%; text-align: center; } /* Acciones */
-
-
-    /* #fixed-expenses-table (Gastos Fijos Mensuales) - Desktop */
-    #fixed-expenses-table td:nth-child(1) { width: 50%; text-align: left; } /* Nombre */
-    #fixed-expenses-table td:nth-child(2) { width: 30%; text-align: right; } /* Monto */
-    #fixed-expenses-table td:nth-child(3) { width: 20%; text-align: center; } /* Acción */
+    #fixed-expenses-table td:nth-child(1) { width: 50%; text-align: left; }
+    #fixed-expenses-table td:nth-child(2) { width: 30%; text-align: right; }
+    #fixed-expenses-table td:nth-child(3) { width: 20%; text-align: center; }
 }
 
 /* Media query para pantallas PEQUEÑAS (móviles) */
@@ -299,121 +266,157 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
     .tab-button { padding-left: 0.25rem; padding-right: 0.25rem; font-size: 0.8rem; }
     #toast-container { bottom: 1rem; right: 1rem; left: auto; width: calc(100% - 2rem); max-width: 320px; }
 
-    /* Ocultar los nuevos contenedores de títulos y botones en móvil */
+    /* Ocultar todos los headers de tablas en móvil */
     #project-details-sort-headers,
     #project-cost-sort-headers,
-    #fixed-expenses-sort-headers {
+    #fixed-expenses-sort-headers,
+    #spot-trades-table thead,
+    #futures-trades-table thead,
+    #crypto-watchlist-container thead {
         display: none !important;
     }
 
-    /* Transformar las tablas y filas en un diseño de "tarjeta" o "lista" */
-    #project-cost-table, 
-    #fixed-expenses-table, 
-    #project-details-table {
-        border: none; 
-        width: 100%; 
-        max-width: none; 
-        table-layout: auto; 
-    }
-
-    /* Estilizar cada fila (<tr>) como una tarjeta individual */
-    #project-cost-table tbody, #project-details-table tbody, #fixed-expenses-table tbody {
-        display: block; 
+    /* Estructura base para todas las tablas en móvil */
+    #project-cost-table,
+    #fixed-expenses-table,
+    #project-details-table,
+    #spot-trades-table,
+    #futures-trades-table,
+    #crypto-watchlist-container table {
+        border: none;
         width: 100%;
-        border-bottom: none; 
+        max-width: none;
+        table-layout: auto;
     }
 
-    #project-cost-table tr, #project-details-table tr, #fixed-expenses-table tr {
-        display: block; 
-        margin-bottom: 1rem; 
-        padding: 1rem; 
-        border: 1px solid #e5e7eb; 
-        border-radius: 0.5rem; 
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
-        background-color: white; 
-    }
-    /* Estilos de hover para las "tarjetas" */
-    #project-cost-table tr:hover, #project-details-table tr:hover, #fixed-expenses-table tr:hover {
-        background-color: #f9fafb; 
-        box-shadow: 0 2px 5px rgba(0,0,0,0.15); 
+    /* Cada tbody se convierte en un contenedor de bloques */
+    #project-cost-table tbody, #project-details-table tbody, #fixed-expenses-table tbody, #spot-trades-table tbody, #futures-trades-table tbody, #crypto-watchlist-container tbody {
+        display: block;
+        width: 100%;
+        border-bottom: none;
     }
 
-    /* Estilos de modo oscuro para las "tarjetas" */
-    .dark #project-cost-table tr, .dark #project-details-table tr, .dark #fixed-expenses-table tr {
-        background-color: #1f2937; 
-        border-color: #4b5563; 
+    /* Cada fila se convierte en una tarjeta */
+    #project-cost-table tr, #project-details-table tr, #fixed-expenses-table tr, #spot-trades-table tr, #futures-trades-table tr, #crypto-watchlist-container tr {
+        display: block;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        background-color: white;
     }
-    .dark #project-cost-table tr:hover, .dark #project-details-table tr:hover, .dark #fixed-expenses-table tr:hover {
-        background-color: #374151; 
+    #project-cost-table tr:hover, #project-details-table tr:hover, #fixed-expenses-table tr:hover, #spot-trades-table tr:hover, #futures-trades-table tr:hover, #crypto-watchlist-container tr:hover {
+        background-color: #f9fafb;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    }
+
+    .dark #project-cost-table tr, .dark #project-details-table tr, .dark #fixed-expenses-table tr, .dark #spot-trades-table tr, .dark #futures-trades-table tr, .dark #crypto-watchlist-container tr {
+        background-color: #1f2937;
+        border-color: #4b5563;
+    }
+    .dark #project-cost-table tr:hover, .dark #project-details-table tr:hover, .dark #fixed-expenses-table tr:hover, .dark #spot-trades-table tr:hover, .dark #futures-trades-table tr:hover, .dark #crypto-watchlist-container tr:hover {
+        background-color: #374151;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-    /* Anular el divide-y para el tbody en móvil */
     .dark table tbody.divide-y > tr {
         border-top-width: 0 !important;
         border-bottom-width: 0 !important;
     }
 
-
-    /* Estilizar cada celda (<td>) dentro de la tarjeta */
-    #project-cost-table td, #project-details-table td, #fixed-expenses-table td {
-        border: none; 
-        display: block; 
-        text-align: right; 
-        padding: 0.25rem 0; 
-        font-size: 0.8rem; 
-        position: relative; 
-        /* Anular white-space y overflow del desktop */
-        white-space: normal !important; 
-        overflow: visible !important;
-        text-overflow: clip !important;
+    /* Cada celda se convierte en una fila de etiqueta-valor */
+    #project-cost-table td, #project-details-table td, #fixed-expenses-table td, #spot-trades-table td, #futures-trades-table td, #crypto-watchlist-container td {
+        border: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center; /* Centrar verticalmente para mejor estética */
+        padding: 0.35rem 0;
+        font-size: 0.875rem;
+        text-align: left;
+        gap: 1rem;
     }
 
-    /* Mostrar el data-label como una etiqueta antes del valor */
-    #project-cost-table td::before, #project-details-table td::before, #fixed-expenses-table td::before {
-        content: attr(data-label); 
-        float: left; 
-        font-weight: 600; 
-        margin-right: 0.5rem; 
-        text-align: left; 
-        color: #6b7280; 
-        font-size: 0.8rem; 
-        white-space: nowrap; 
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 50%; 
+    /* El pseudo-elemento ::before actúa como la etiqueta */
+    #project-cost-table td::before, #project-details-table td::before, #fixed-expenses-table td::before, #spot-trades-table td::before, #futures-trades-table td::before, #crypto-watchlist-container td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #6b7280;
+        flex-shrink: 0;
+        width: 35%;
+        text-align: left;
     }
-    .dark #project-cost-table td::before, .dark #project-details-table td::before, .dark #fixed-expenses-table td::before {
-        color: #9ca3af; 
+    .dark #project-cost-table td::before, .dark #project-details-table td::before, .dark #fixed-expenses-table td::before, .dark #spot-trades-table td::before, .dark #futures-trades-table td::before, .dark #crypto-watchlist-container td::before {
+        color: #9ca3af;
     }
 
-    /* Ajustes específicos para la columna de Acciones si necesitan estar centradas */
-    #project-details-table td:nth-child(7), 
-    #project-cost-table td:nth-child(5),   
-    #fixed-expenses-table td:nth-child(3) { 
-        text-align: center; 
-        padding-top: 1rem; 
-        display: flex; 
+    /* El span con la clase .value-wrapper contiene el valor */
+    td .value-wrapper {
+        text-align: right;
+        flex-grow: 1;
+        word-break: break-word;
+        color: #374151;
+    }
+    .dark td .value-wrapper {
+        color: #d1d5db;
+    }
+
+    /* Reglas específicas para las celdas de acciones, Y AHORA PARA EL GRÁFICO */
+    #project-details-table td:nth-child(7),
+    #project-cost-table td:nth-child(5),
+    #fixed-expenses-table td:nth-child(3),
+    #spot-trades-table td:nth-child(7),
+    #futures-trades-table td:nth-child(6),
+    #crypto-watchlist-container td:nth-child(4), /* <- GRÁFICO */
+    #crypto-watchlist-container td:nth-child(5) { /* <- ACCIÓN */
         justify-content: center;
-        align-items: center;
-        border-top: 1px solid #e5e7eb; 
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
         margin-top: 0.5rem;
     }
-    .dark #project-details-table td:nth-child(7), 
-    .dark #project-cost-table td:nth-child(5),   
-    .dark #fixed-expenses-table td:nth-child(3) { 
-        border-top-color: #4b5563; 
+    .dark #project-details-table td:nth-child(7),
+    .dark #project-cost-table td:nth-child(5),
+    .dark #fixed-expenses-table td:nth-child(3),
+    .dark #spot-trades-table td:nth-child(7),
+    .dark #futures-trades-table td:nth-child(6),
+    .dark #crypto-watchlist-container td:nth-child(4), /* <- GRÁFICO */
+    .dark #crypto-watchlist-container td:nth-child(5) { /* <- ACCIÓN */
+        border-top-color: #4b5563;
     }
 
-    /* Anular anchos fijos de columnas y min-width de tablas para el modo "card" */
+    /* Ocultar la etiqueta "Acciones" y "Gráfico" */
+    #project-details-table td:nth-child(7)::before,
+    #project-cost-table td:nth-child(5)::before,
+    #fixed-expenses-table td:nth-child(3)::before,
+    #spot-trades-table td:nth-child(7)::before,
+    #futures-trades-table td:nth-child(6)::before,
+    #crypto-watchlist-container td:nth-child(4)::before, /* <- OCULTAR ETIQUETA GRÁFICO */
+    #crypto-watchlist-container td:nth-child(5)::before { /* <- OCULTAR ETIQUETA ACCIÓN */
+        content: "";
+        display: none;
+    }
+
+    /* Hacer que los botones de acción y el gráfico ocupen todo el ancho */
+    #project-details-table td:nth-child(7) .value-wrapper,
+    #project-cost-table td:nth-child(5) .value-wrapper,
+    #fixed-expenses-table td:nth-child(3) .value-wrapper,
+    #spot-trades-table td:nth-child(7) .value-wrapper,
+    #futures-trades-table td:nth-child(6) .value-wrapper,
+    #crypto-watchlist-container td:nth-child(4) .value-wrapper, /* <- CENTRAR VALOR GRÁFICO */
+    #crypto-watchlist-container td:nth-child(5) .value-wrapper { /* <- CENTRAR VALOR ACCIÓN */
+        width: 100%;
+        text-align: center;
+    }
+
     #fixed-expenses-table th, #fixed-expenses-table td,
     #project-cost-table th, #project-cost-table td,
-    #project-details-table th, #project-details-table td {
-        width: auto !important; 
-        min-width: auto !important; 
+    #project-details-table th, #project-details-table td,
+    #spot-trades-table th, #spot-trades-table td,
+    #futures-trades-table th, #futures-trades-table td {
+        width: auto !important;
+        min-width: auto !important;
     }
-    /* Resetear estilos de sortable-header en móvil (ya no se usan en el thead oculto) */
+
     .sortable-header {
-        display: none; 
-        white-space: normal; 
+        display: none;
     }
 }

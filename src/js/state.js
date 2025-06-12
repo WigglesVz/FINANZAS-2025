@@ -11,80 +11,72 @@ import {
 } from './config.js';
 import { generateId, sortArray } from './utils.js'; 
 
-// Estado inicial en memoria. Se llenará desde IndexedDB por loadData.
-// Los valores aquí son más bien placeholders o fallbacks si la carga inicial falla.
-// Asegurarse que DEFAULT_STATUS_LIST incluya la propiedad 'color'.
+// Estado inicial en memoria.
 let currentState = {
+    activeUserMode: 'projects',
     mainTitle: 'Rastreador de Proyectos y Finanzas',
-    statusList: DEFAULT_STATUS_LIST.map(item => ({ 
-        id: item.id || generateId(), 
-        name: item.name, 
-        color: item.color || '#CCCCCC' // Fallback color si no está definido
-    })),
+    statusList: DEFAULT_STATUS_LIST.map(item => ({ ...item, id: item.id || generateId(), color: item.color || '#CCCCCC' })),
     projectNameList: DEFAULT_PROJECT_NAME_LIST.map(item => ({ ...item, id: item.id || generateId() })),
     projectDetails: DEFAULT_PROJECT_DETAILS.map(item => ({ ...item, id: item.id || generateId() })),
-    projectCosts: DEFAULT_PROJECT_COSTS.map(item => ({
-        ...item,
-        id: item.id || generateId(),
-        budget: Number(item.budget) || 0,
-        actualCost: Number(item.actualCost) || 0
-    })),
+    projectCosts: DEFAULT_PROJECT_COSTS.map(item => ({ ...item, id: item.id || generateId(), budget: Number(item.budget) || 0, actualCost: Number(item.actualCost) || 0 })),
     monthlyIncome: DEFAULT_MONTHLY_INCOME,
-    fixedExpenses: DEFAULT_FIXED_EXPENSES.map(item => ({
-        ...item,
-        id: item.id || generateId(),
-        amount: parseFloat(item.amount) || 0
-    })),
-    sortState: JSON.parse(JSON.stringify(SORT_STATE_DEFAULTS)),
-    currentConfirmationAction: null,
-    isAuthenticated: false,
-    currentUser: null,
+    fixedExpenses: DEFAULT_FIXED_EXPENSES.map(item => ({ ...item, id: item.id || generateId(), amount: parseFloat(item.amount) || 0 })),
+    spotTrades: [],
+    futuresTrades: [],
+    watchlist: [],
+
+    sortState: {
+        ...JSON.parse(JSON.stringify(SORT_STATE_DEFAULTS)),
+        spotTrades: { key: 'tradeDate', direction: 'desc' },
+        futuresTrades: { key: 'entryDate', direction: 'desc' }
+    },
+    
     searchTerms: {
         projectDetails: '',
         projectCosts: '',
-        fixedExpenses: ''
-    }
+        fixedExpenses: '',
+        spotTrades: { 
+            asset: '',
+            startDate: '',
+            endDate: ''
+        }
+    },
+    
+    currentConfirmationAction: null,
+    isAuthenticated: false,
+    currentUser: null
 };
 
 export const getAppState = () => {
-    return { 
-        ...currentState,
-        statusList: currentState.statusList.map(item => ({...item})),
-        projectNameList: currentState.projectNameList.map(item => ({...item})),
-        projectDetails: currentState.projectDetails.map(item => ({...item})),
-        projectCosts: currentState.projectCosts.map(item => ({...item})),
-        fixedExpenses: currentState.fixedExpenses.map(item => ({...item})),
-        sortState: JSON.parse(JSON.stringify(currentState.sortState)),
-        searchTerms: { ...currentState.searchTerms }
-    };
+    // Devuelve una copia profunda para evitar mutaciones no deseadas del estado.
+    return JSON.parse(JSON.stringify(currentState));
 };
 
 export const setAppState = (newState) => {
-    const defaultSortState = JSON.parse(JSON.stringify(SORT_STATE_DEFAULTS));
     const defaultSearchTerms = {
-        projectDetails: '',
-        projectCosts: '',
-        fixedExpenses: ''
+        projectDetails: '', 
+        projectCosts: '', 
+        fixedExpenses: '',
+        spotTrades: { asset: '', startDate: '', endDate: '' }
     };
-    const defaultStatusColor = '#CCCCCC';
 
+    // Fusión más segura que preserva la estructura interna de los objetos anidados
     currentState = {
-        mainTitle: typeof newState.mainTitle === 'string' ? newState.mainTitle : 'Rastreador de Proyectos y Finanzas',
-        statusList: Array.isArray(newState.statusList) ? newState.statusList.map(s => ({...s, color: s.color || defaultStatusColor })) : [],
-        projectNameList: Array.isArray(newState.projectNameList) ? newState.projectNameList : [],
-        projectDetails: Array.isArray(newState.projectDetails) ? newState.projectDetails : [],
-        projectCosts: Array.isArray(newState.projectCosts) ? newState.projectCosts : [],
-        monthlyIncome: typeof newState.monthlyIncome === 'number' ? newState.monthlyIncome : 0,
-        fixedExpenses: Array.isArray(newState.fixedExpenses) ? newState.fixedExpenses : [],
-        sortState: newState.sortState ? JSON.parse(JSON.stringify(newState.sortState)) : defaultSortState,
-        currentConfirmationAction: newState.currentConfirmationAction || null,
-        isAuthenticated: typeof newState.isAuthenticated === 'boolean' ? newState.isAuthenticated : false,
-        currentUser: newState.currentUser || null,
-        searchTerms: newState.searchTerms ? { ...defaultSearchTerms, ...newState.searchTerms } : defaultSearchTerms
+        ...currentState,
+        ...newState,
+        searchTerms: {
+            ...defaultSearchTerms,
+            ...(newState.searchTerms || {})
+        },
+        sortState: {
+            ...currentState.sortState,
+            ...(newState.sortState || {})
+        }
     };
 };
 
 export const updateAppState = (updates) => {
+    // Fusión profunda para searchTerms y sortState para evitar sobrescribir el objeto completo
     if (updates.searchTerms) {
         currentState.searchTerms = {
             ...currentState.searchTerms,
@@ -99,72 +91,66 @@ export const updateAppState = (updates) => {
         };
         delete updates.sortState;
     }
-    // Si se actualiza statusList, asegurarse de que cada estado tenga una propiedad color
-    if (Array.isArray(updates.statusList)) {
-        updates.statusList = updates.statusList.map(s => ({...s, color: s.color || '#CCCCCC'}));
-    }
     
     currentState = { ...currentState, ...updates };
 };
 
-export const getStatePart = (key) => {
-    const part = currentState[key];
-    if (Array.isArray(part)) {
-        return [...part.map(item => typeof item === 'object' && item !== null ? {...item} : item)];
-    }
-    if (typeof part === 'object' && part !== null) {
-        return {...part};
-    }
-    return part;
-};
-
-export const setStatePart = (key, value) => {
-    currentState[key] = value;
-};
-
-/**
- * Obtiene datos filtrados y ordenados de una sección específica del estado.
- * @param {string} dataTypeKey - La clave del array de datos en el estado (ej. 'projectDetails', 'projectCosts', 'fixedExpenses').
- * @param {string} searchTerm - El término de búsqueda actual.
- * @param {object} sortConfig - El objeto de configuración de ordenación { key, direction }.
- * @returns {Array} Los datos filtrados y ordenados.
- */
-export const getFilteredAndSortedData = (dataTypeKey, searchTerm, sortConfig) => {
-    const data = Array.isArray(currentState[dataTypeKey]) ? currentState[dataTypeKey] : [];
+export const getFilteredAndSortedData = (dataTypeKey, filters, sortConfig) => {
+    const data = currentState[dataTypeKey] ? [...currentState[dataTypeKey]] : [];
     
-    let filteredData = [...data];
+    if (!filters) {
+        return sortArray(data, sortConfig.key, sortConfig.direction);
+    }
 
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    let filteredData = data;
 
-    if (lowerCaseSearchTerm) {
-        filteredData = filteredData.filter(item => {
-            // Lógica de filtrado específica para cada tipo de dato
+    // Lógica de filtrado avanzado para Spot Trades
+    if (dataTypeKey === 'spotTrades') {
+        if (filters.asset) {
+            const assetUpper = filters.asset.toUpperCase();
+            filteredData = filteredData.filter(trade => 
+                trade.baseAsset.toUpperCase().includes(assetUpper) || 
+                trade.quoteAsset.toUpperCase().includes(assetUpper)
+            );
+        }
+        if (filters.startDate) {
+            filteredData = filteredData.filter(trade => {
+                const tradeDate = new Date(trade.tradeDate);
+                const startDate = new Date(filters.startDate);
+                startDate.setHours(0, 0, 0, 0); // Asegurar que comparamos desde el inicio del día
+                return tradeDate >= startDate;
+            });
+        }
+        if (filters.endDate) {
+            filteredData = filteredData.filter(trade => {
+                const tradeDate = new Date(trade.tradeDate);
+                const endDate = new Date(filters.endDate);
+                endDate.setHours(23, 59, 59, 999); // Asegurar que comparamos hasta el final del día
+                return tradeDate <= endDate;
+            });
+        }
+    } 
+    // Lógica de búsqueda simple para otras tablas
+    else if (typeof filters === 'string' && filters) {
+        const lowerCaseSearchTerm = filters.toLowerCase();
+        filteredData = data.filter(item => {
             if (dataTypeKey === 'projectDetails') {
-                return (item.task && item.task.toLowerCase().includes(lowerCaseSearchTerm)) || 
-                       (item.description && item.description.toLowerCase().includes(lowerCaseSearchTerm)) ||
-                       (item.projectName && item.projectName.toLowerCase().includes(lowerCaseSearchTerm));
+                return (item.task?.toLowerCase().includes(lowerCaseSearchTerm)) || 
+                       (item.description?.toLowerCase().includes(lowerCaseSearchTerm)) ||
+                       (item.projectName?.toLowerCase().includes(lowerCaseSearchTerm));
             } else if (dataTypeKey === 'projectCosts') {
-                return (item.projectName && item.projectName.toLowerCase().includes(lowerCaseSearchTerm));
+                return item.projectName?.toLowerCase().includes(lowerCaseSearchTerm);
             } else if (dataTypeKey === 'fixedExpenses') {
-                return (item.name && item.name.toLowerCase().includes(lowerCaseSearchTerm));
+                return item.name?.toLowerCase().includes(lowerCaseSearchTerm);
             }
-            // Fallback: si no hay un filtro específico, no lo filtra por término de búsqueda
             return true;
         });
     }
 
-    const { key, direction } = sortConfig;
-    const sortedData = sortArray(filteredData, key, direction);
-
-    return sortedData;
+    return sortArray(filteredData, sortConfig.key, sortConfig.direction);
 };
 
-/**
- * Calcula un resumen detallado para un proyecto específico.
- * @param {string} projectName - El nombre del proyecto.
- * @returns {object} Un objeto con el costo actual y el número total de tareas del proyecto.
- */
-export const calculateProjectSummary = (projectName) => { // ¡'export' añadido aquí!
+export const calculateProjectSummary = (projectName) => {
     const projectCosts = Array.isArray(currentState.projectCosts) ? currentState.projectCosts : [];
     const projectDetails = Array.isArray(currentState.projectDetails) ? currentState.projectDetails : [];
 
@@ -175,5 +161,47 @@ export const calculateProjectSummary = (projectName) => { // ¡'export' añadido
     return {
         actualCost: actualCost,
         taskCount: taskCount
+    };
+};
+
+export const getFuturesTradesStats = () => {
+    const trades = currentState.futuresTrades || [];
+    
+    const closedTrades = trades.filter(trade => trade.status === 'closed');
+    const totalTrades = closedTrades.length;
+    
+    if (totalTrades === 0) {
+        return {
+            totalPnl: 0,
+            winRate: 0,
+            totalTrades: 0,
+            winningTrades: 0,
+            losingTrades: 0,
+            pnlHistory: []
+        };
+    }
+    
+    const totalPnl = closedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+    const winningTrades = closedTrades.filter(trade => (trade.pnl || 0) > 0).length;
+    const losingTrades = totalTrades - winningTrades;
+    const winRate = (winningTrades / totalTrades) * 100;
+    
+    const sortedTrades = [...closedTrades].sort((a, b) => new Date(a.exitDate) - new Date(b.exitDate));
+    let cumulativePnl = 0;
+    const pnlHistory = sortedTrades.map(trade => {
+        cumulativePnl += trade.pnl || 0;
+        return {
+            date: trade.exitDate,
+            pnl: cumulativePnl
+        };
+    });
+
+    return {
+        totalPnl: totalPnl,
+        winRate: winRate,
+        totalTrades: totalTrades,
+        winningTrades: winningTrades,
+        losingTrades: losingTrades,
+        pnlHistory: pnlHistory
     };
 };

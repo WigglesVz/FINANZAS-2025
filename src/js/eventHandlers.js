@@ -17,30 +17,56 @@ import {
     projectDetailsSortHeaders, projectCostSortHeaders, fixedExpensesSortHeaders,
     projectDetailsTable, projectCostTable, fixedExpensesTable, htmlElement, mainTitleEl,
     chartTypeSelect,
-    searchProjectTasksInput, searchProjectCostsInput, searchFixedExpensesInput
+    searchProjectTasksInput, searchProjectCostsInput, searchFixedExpensesInput,
+    spotTradeForm, saveSpotTradeButton, spotTradeModal,
+    spotTradeIdInput, tradeDateInput, tradeTypeSelect, baseAssetInput,
+    quoteAssetInput, priceInput, quantityBaseInput, notesInput, spotTradeFeesInput,
+    appModeSelector, modeProjectsRadio, modeCryptoRadio,
+    setupStatusListContainer, setupProjectNameListContainer,
+    futuresTradeForm, saveFuturesTradeButton, closeFuturesTradeButton, futuresTradeModal,
+    futuresTradeIdInput, futuresSymbolInput, futuresDirectionSelect, futuresLeverageInput,
+    futuresEntryDateInput, futuresQuantityInput, futuresEntryPriceInput, futuresExitPriceInput,
+    futuresNotesInput, futuresEntryFeesInput, futuresExitFeesInput,
+    addCoinModal, closeAddCoinModalButton, cancelAddCoinModalButton, searchCoinInput,
+    coinSearchResultsContainer, cryptoWatchlistContainer, cryptoPanelContent,
+    filterSpotAssetInput, filterSpotStartDateInput, filterSpotEndDateInput, applySpotFiltersBtn, clearSpotFiltersBtn
 } from './domElements.js';
 import { getAppState, updateAppState } from './state.js';
 import {
+    renderAll,
     renderProjectDetailsTable, renderProjectCostTable,
     renderFixedExpensesList, renderSetupLists, renderOverview, renderProjectSummaries,
-    renderFinanceSummary, renderFinanceTab
+    renderFinanceSummary, renderFinanceTab,
+    renderSpotTradesTable,
+    renderFuturesTradesTable,
+    renderCryptoPanel
 } from './uiRender.js';
 import {
     openAddTaskModal, openEditTaskModal, openEditCostModal, closeModal,
-    openConfirmationModal, closeConfirmationModal, handleChangeAppTitle, updateTaskModalDropdowns
+    openConfirmationModal, closeConfirmationModal, handleChangeAppTitle, updateTaskModalDropdowns,
+    openEditSpotTradeModal,
+    openEditFuturesTradeModal,
+    openAddCoinToWatchlistModal,
+    handleCoinSearch
 } from './modalHandlers.js';
 import db from './db.js';
-import { resetToDefaultData, importData } from './storage.js';
+import { 
+    resetToDefaultData, importData, 
+    addSpotTrade, updateSpotTrade, deleteSpotTrade,
+    addFuturesTrade, updateFuturesTrade, deleteFuturesTrade,
+    addToWatchlist,
+    removeFromWatchlist
+} from './storage.js';
 import {
     sanitizeHTML, generateId, showToast,
     clearAllValidationErrors,
-    getCurrentDate, setButtonLoadingState,
+    getCurrentDate, 
+    setButtonLoadingState,
     debounce, validateForm
 } from './utils.js';
 import { renderSelectedChart, refreshCurrentChart } from './charts.js';
 
 // --- Handlers de Búsqueda (Ahora con debounce) ---
-// ... (código de búsqueda sin cambios) ...
 const _handleSearchProjectTasks = (event) => {
     const searchTerm = event.target.value;
     const currentState = getAppState();
@@ -83,7 +109,6 @@ export const handleSearchFixedExpenses = debounce(_handleSearchFixedExpenses, 30
 // --- FIN Handlers de Búsqueda ---
 
 export const handleTabClick = (event) => {
-    // ... (código sin cambios) ...
     const clickedButton = event.currentTarget;
     const tabId = clickedButton.dataset.tab;
 
@@ -114,11 +139,25 @@ export const handleTabClick = (event) => {
     if (tabId === 'details') renderProjectDetailsTable();
     if (tabId === 'cost') renderProjectCostTable();
     if (tabId === 'finance') renderFinanceTab();
+    if (tabId === 'spot-trading') {
+        requestAnimationFrame(() => {
+            renderSpotTradesTable();
+        });
+    }
+    if (tabId === 'futures-trading') {
+        requestAnimationFrame(() => {
+            renderFuturesTradesTable();
+        });
+    }
+    if (tabId === 'crypto-panel') {
+        requestAnimationFrame(() => {
+            renderCryptoPanel();
+        });
+    }
 };
 
 // --- Handler para el cambio de color de estado ---
 export const handleStatusColorChange = async (event) => {
-    // ... (código sin cambios) ...
     const colorInput = event.target;
     if (!colorInput || colorInput.type !== 'color' || !colorInput.classList.contains('status-color-picker')) return;
 
@@ -154,13 +193,11 @@ export const handleStatusColorChange = async (event) => {
 
 
 const handleAddListItem = async (inputEl, errorEl, listKeyInState, listNameSingular, successMsg, maxLength, renderFn, otherRenderFns = []) => {
-    // ... (código sin cambios, con los logs de depuración y la corrección para formOrParentContainer) ...
     if (!inputEl || !errorEl) {
         console.error(`handleAddListItem (${listNameSingular}): inputEl o errorEl no encontrados.`);
         return false;
     }
     const formOrParentContainer = inputEl.closest('.list-item-adder-container');
-    console.log(`--- [VALIDATION_SETUP] handleAddListItem (${listNameSingular}): Contenedor para validación:`, formOrParentContainer);
     
     if (!formOrParentContainer) { 
         console.error(`handleAddListItem (${listNameSingular}): No se pudo encontrar '.list-item-adder-container' para el inputEl:`, inputEl);
@@ -187,14 +224,10 @@ const handleAddListItem = async (inputEl, errorEl, listKeyInState, listNameSingu
             ]
         }
     ];
-    console.log(`--- [VALIDATION_SETUP] handleAddListItem (${listNameSingular}): Reglas para validación:`, JSON.stringify(rules, null, 2));
-
 
     if (!validateForm(formOrParentContainer, rules)) {
-        console.log(`--- [VALIDATION_SETUP] handleAddListItem (${listNameSingular}): validateForm devolvió false. No se agregará el ítem.`);
         return false;
     }
-    console.log(`--- [VALIDATION_SETUP] handleAddListItem (${listNameSingular}): validateForm devolvió true. Procediendo a agregar ítem: '${newItemName}'`);
 
     const newItem = { id: generateId(), name: newItemName };
     if (listKeyInState === 'statusList') {
@@ -207,10 +240,8 @@ const handleAddListItem = async (inputEl, errorEl, listKeyInState, listNameSingu
             const newProjectCostEntry = { id: generateId(), projectName: newItemName, budget: 0, actualCost: 0 };
             await db.transaction('rw', db[listKeyInState], db.projectCosts, async () => {
                 await db[listKeyInState].add(newItem);
-                console.log(`Added project name in IndexedDB: ${newItemName}`);
                 if (!currentProjectCosts.some(cost => cost.projectName === newItemName)) {
                     await db.projectCosts.add(newProjectCostEntry);
-                     console.log(`Added new project cost in IndexedDB for: ${newItemName}`);
                 }
             });
             const updatedList = [...list, newItem];
@@ -221,7 +252,6 @@ const handleAddListItem = async (inputEl, errorEl, listKeyInState, listNameSingu
             updateAppState(updatesForState);
         } else {
             await db[listKeyInState].add(newItem);
-            console.log(`Added list item to IndexedDB (${listKeyInState}):`, newItem);
             const updatedList = [...list, newItem];
             updateAppState({ [listKeyInState]: updatedList });
         }
@@ -239,7 +269,6 @@ const handleAddListItem = async (inputEl, errorEl, listKeyInState, listNameSingu
 };
 
 export const handleAddStatus = async () => {
-    // ... (código sin cambios) ...
     const addButton = addStatusButton;
     if (!addButton) return;
     setButtonLoadingState(addButton, true, 'Agregando...');
@@ -252,7 +281,6 @@ export const handleAddStatus = async () => {
 };
 
 export const handleAddProjectName = async () => {
-    // ... (código sin cambios) ...
     const addButton = addProjectNameButton;
     if (!addButton) return;
     setButtonLoadingState(addButton, true, 'Agregando...');
@@ -266,7 +294,6 @@ export const handleAddProjectName = async () => {
 
 
 const handleDeleteListItem = (itemId, listKeyInState, listNameSingular, dependentCheckFn, successMsg, renderFn, otherRenderFns = []) => {
-    // ... (código sin cambios) ...
     const currentState = getAppState();
     const list = Array.isArray(currentState[listKeyInState]) ? currentState[listKeyInState] : [];
     const itemToDelete = list.find(item => item.id === itemId);
@@ -289,15 +316,12 @@ const handleDeleteListItem = (itemId, listKeyInState, listNameSingular, dependen
                     const costsToDelete = currentData.projectCosts.filter(cost => cost.projectName === itemToDelete.name).map(c => c.id);
                     await db.transaction('rw', db[listKeyInState], db.projectCosts, async () => {
                         await db[listKeyInState].delete(itemId);
-                         console.log(`Deleted project name from IndexedDB: Item ID = ${itemId}`);
                         if (costsToDelete.length > 0) {
                             await db.projectCosts.bulkDelete(costsToDelete);
-                             console.log(`Deleted project costs from IndexedDB: Cost IDs = ${costsToDelete.join(', ')}`);
                         }
                     });
                 } else {
                     await db[listKeyInState].delete(itemId);
-                    console.log(`Deleted list item from IndexedDB (${listKeyInState}): Item ID = ${itemId}`);
                 }
 
                 let updatesForState = {};
@@ -320,7 +344,6 @@ const handleDeleteListItem = (itemId, listKeyInState, listNameSingular, dependen
 };
 
 export const handleDeleteStatus = (statusId) => {
-    // ... (código sin cambios) ...
     handleDeleteListItem(
         statusId, 'statusList', 'estado',
         (statusName, currentState) => {
@@ -338,7 +361,6 @@ export const handleDeleteStatus = (statusId) => {
 };
 
 export const handleDeleteProjectName = (projectId) => {
-    // ... (código sin cambios) ...
      handleDeleteListItem(
         projectId, 'projectNameList', 'proyecto',
         (projectName, currentState) => {
@@ -356,7 +378,6 @@ export const handleDeleteProjectName = (projectId) => {
 };
 
 export const handleResetData = async () => {
-    // ... (código sin cambios) ...
     openConfirmationModal(
         "¡ADVERTENCIA! Restablecer Datos",
         `¿Está <strong>MUY seguro</strong>? Esto eliminará <strong>TODOS</strong> sus datos actuales y cargará los datos de ejemplo.<br><br>Esta acción es <strong>irreversible</strong>.`,
@@ -365,6 +386,8 @@ export const handleResetData = async () => {
             if (!resetDataButton) return;
             setButtonLoadingState(resetDataButton, true, 'Restableciendo...');
             await resetToDefaultData();
+            renderAll();
+            refreshCurrentChart();
             setButtonLoadingState(resetDataButton, false);
         }
    );
@@ -374,65 +397,30 @@ export const handleTaskFormSubmit = async (event) => {
     event.preventDefault();
     if (!taskForm) return;
 
-    // <--- INICIO CAMBIO: Lógica de validación condicional para fecha de inicio ---
-    const appState = getAppState(); // Necesario para obtener el nombre real del estado "No Iniciado"
+    const appState = getAppState();
     const currentSelectedStatusValue = taskStatusSelect ? taskStatusSelect.value : '';
     const notStartedStatus = appState.statusList.find(s => s.name.toLowerCase().includes('no iniciado'));
-    const notStartedStatusName = notStartedStatus ? notStartedStatus.name : "No Iniciado"; // Fallback
+    const notStartedStatusName = notStartedStatus ? notStartedStatus.name : "No Iniciado";
     const isNotStarted = currentSelectedStatusValue === notStartedStatusName;
 
     const validationRules = [
-        {
-            field: 'task-project-name',
-            errorElementId: 'task-project-name-error',
-            checks: [{ type: 'selectRequired', message: "Seleccione un proyecto." }]
-        },
-        {
-            field: 'task-status',
-            errorElementId: 'task-status-error',
-            checks: [{ type: 'selectRequired', message: "Seleccione un estado." }]
-        },
-        {
-            field: 'task-name',
-            errorElementId: 'task-name-error',
-            checks: [
-                { type: 'required', message: "Ingrese el nombre de la tarea." },
-                { type: 'maxlength', value: 100, message: "Máx 100 caracteres." }
-            ]
-        },
-        {
-            field: 'task-start-date',
-            errorElementId: 'task-start-date-error',
-            checks: [] // Se llenará condicionalmente
-        },
-        {
-            field: 'task-end-date',
-            errorElementId: 'task-end-date-error',
-            checks: [ // La fecha de fin siempre es requerida (o podría hacerse condicional también)
-                { type: 'required', message: "Ingrese fecha de fin." }
-            ]
-        }
+        { field: 'task-project-name', errorElementId: 'task-project-name-error', checks: [{ type: 'selectRequired', message: "Seleccione un proyecto." }] },
+        { field: 'task-status', errorElementId: 'task-status-error', checks: [{ type: 'selectRequired', message: "Seleccione un estado." }] },
+        { field: 'task-name', errorElementId: 'task-name-error', checks: [ { type: 'required', message: "Ingrese el nombre de la tarea." }, { type: 'maxlength', value: 100, message: "Máx 100 caracteres." } ] },
+        { field: 'task-start-date', errorElementId: 'task-start-date-error', checks: [] },
+        { field: 'task-end-date', errorElementId: 'task-end-date-error', checks: [ { type: 'required', message: "Ingrese fecha de fin." } ] }
     ];
 
-    // Añadir regla 'required' para fecha de inicio solo si el estado NO es "No Iniciado"
     const startDateRule = validationRules.find(rule => rule.field === 'task-start-date');
     if (startDateRule && !isNotStarted) {
         startDateRule.checks.push({ type: 'required', message: "Ingrese fecha de inicio." });
     }
 
-    // Añadir regla de comparación para fecha de fin solo si hay una fecha de inicio
     const endDateRule = validationRules.find(rule => rule.field === 'task-end-date');
     const startDateValue = taskStartDateInput ? taskStartDateInput.value : '';
-    if (endDateRule && startDateValue) { // Solo añadir si hay fecha de inicio para comparar
-        endDateRule.checks.push({
-            type: 'dateComparison',
-            compareTo: 'task-start-date',
-            operator: 'greaterThanOrEqualTo',
-            message: "La fecha de fin no puede ser anterior a la de inicio."
-        });
+    if (endDateRule && startDateValue) {
+        endDateRule.checks.push({ type: 'dateComparison', compareTo: 'task-start-date', operator: 'greaterThanOrEqualTo', message: "La fecha de fin no puede ser anterior a la de inicio." });
     }
-    // <--- FIN CAMBIO: Lógica de validación condicional para fecha de inicio ---
-
 
     if (!validateForm(taskForm, validationRules)) {
         showToast('Complete los campos requeridos (*).', 'error');
@@ -445,7 +433,6 @@ export const handleTaskFormSubmit = async (event) => {
         projectName: taskProjectNameSelect.value,
         task: taskNameInput.value.trim(),
         description: taskDescriptionInput.value.trim(),
-        // Guardar cadena vacía si la fecha de inicio no es aplicable (No Iniciado) y está vacía
         startDate: (isNotStarted && !taskStartDateInput.value) ? '' : taskStartDateInput.value,
         endDate: taskEndDateInput.value,
         status: taskStatusSelect.value
@@ -456,8 +443,6 @@ export const handleTaskFormSubmit = async (event) => {
 
     try {
         await db.projectDetails.put(taskData);
-        console.log("Tarea guardada/actualizada en IndexedDB: ", taskData);
-
         const currentState = getAppState();
         let updatedProjectDetails;
         if (existingTaskId) {
@@ -485,9 +470,6 @@ export const handleTaskFormSubmit = async (event) => {
     }
 };
 
-// ... (El resto del archivo, desde handleDeleteTask hasta el final, se mantiene igual) ...
-// Aquí pego el resto para que tengas el archivo completo:
-
 export const handleDeleteTask = (taskId) => {
     const currentState = getAppState();
     const taskToDelete = currentState.projectDetails.find(task => task.id === taskId);
@@ -503,7 +485,6 @@ export const handleDeleteTask = (taskId) => {
         async () => {
             try {
                 await db.projectDetails.delete(taskId);
-                 console.log(`Tarea eliminada de IndexedDB: Task ID = ${taskId}`);
                 const currentData = getAppState();
                 const updatedProjectDetails = currentData.projectDetails.filter(task => task.id !== taskId);
                 updateAppState({ projectDetails: updatedProjectDetails });
@@ -522,22 +503,8 @@ export const handleCostFormSubmit = async (event) => {
     if (!costForm) return;
 
     const validationRules = [
-        {
-            field: 'cost-budget',
-            errorElementId: 'cost-budget-error',
-            checks: [
-                { type: 'required', message: "Presupuesto es requerido." },
-                { type: 'min', value: 0, message: "Presupuesto inválido (>= 0)." }
-            ]
-        },
-        {
-            field: 'cost-actual',
-            errorElementId: 'cost-actual-error',
-            checks: [
-                { type: 'required', message: "Costo actual es requerido." },
-                { type: 'min', value: 0, message: "Costo actual inválido (>= 0)." }
-            ]
-        }
+        { field: 'cost-budget', errorElementId: 'cost-budget-error', checks: [ { type: 'required', message: "Presupuesto es requerido." }, { type: 'min', value: 0, message: "Presupuesto inválido (>= 0)." } ] },
+        { field: 'cost-actual', errorElementId: 'cost-actual-error', checks: [ { type: 'required', message: "Costo actual es requerido." }, { type: 'min', value: 0, message: "Costo actual inválido (>= 0)." } ] }
     ];
 
     if (!validateForm(costForm, validationRules)) {
@@ -559,16 +526,12 @@ export const handleCostFormSubmit = async (event) => {
 
     try {
         await db.projectCosts.update(costId, { budget, actualCost });
-         console.log(`Costo del proyecto actualizado en IndexedDB: Cost ID = ${costId}, Presupuesto = ${budget}, Costo Actual = ${actualCost}`);
-
         const currentState = getAppState();
         const index = currentState.projectCosts.findIndex(cost => cost.id === costId);
         if (index !== -1) {
             const updatedProjectCosts = [...currentState.projectCosts];
             updatedProjectCosts[index] = { ...updatedProjectCosts[index], budget, actualCost };
             updateAppState({ projectCosts: updatedProjectCosts });
-        } else {
-            console.warn("Costo actualizado en DB pero no encontrado en estado para actualizar UI inmediatamente.");
         }
         showToast("Costos actualizados.", 'success');
         renderProjectCostTable(); renderOverview(); renderProjectSummaries(); refreshCurrentChart();
@@ -592,7 +555,6 @@ export const handleIncomeChange = async (event) => {
         if (currentState.monthlyIncome !== finalIncome) {
             try {
                 await db.appConfig.put({ key: 'monthlyIncome', value: finalIncome });
-                console.log(`Ingreso mensual actualizado en IndexedDB: ${finalIncome}`);
                 updateAppState({ monthlyIncome: finalIncome });
                 showToast("Ingreso mensual actualizado.", 'success');
                 renderFinanceSummary();
@@ -614,27 +576,8 @@ export const handleAddFixedExpense = async (event) => {
 
     const currentState = getAppState();
     const rules = [
-        {
-            field: 'expense-name',
-            errorElementId: 'expense-name-error',
-            checks: [
-                { type: 'required', message: "Ingrese nombre del gasto." },
-                { type: 'maxlength', value: 100, message: "Máx 100 caracteres." },
-                {
-                    type: 'custom',
-                    message: `El gasto "${sanitizeHTML(expenseNameInput.value.trim())}" ya existe.`,
-                    validate: (value) => !currentState.fixedExpenses.some(exp => exp.name.toLowerCase() === value.toLowerCase())
-                }
-            ]
-        },
-        {
-            field: 'expense-amount',
-            errorElementId: 'expense-amount-error',
-            checks: [
-                { type: 'required', message: "Ingrese un monto." },
-                { type: 'min', value: 0.01, message: "Monto debe ser positivo." }
-            ]
-        }
+        { field: 'expense-name', errorElementId: 'expense-name-error', checks: [ { type: 'required', message: "Ingrese nombre del gasto." }, { type: 'maxlength', value: 100, message: "Máx 100 caracteres." }, { type: 'custom', message: `El gasto "${sanitizeHTML(expenseNameInput.value.trim())}" ya existe.`, validate: (value) => !currentState.fixedExpenses.some(exp => exp.name.toLowerCase() === value.toLowerCase()) } ] },
+        { field: 'expense-amount', errorElementId: 'expense-amount-error', checks: [ { type: 'required', message: "Ingrese un monto." }, { type: 'min', value: 0.01, message: "Monto debe ser positivo." } ] }
     ];
 
     if (!validateForm(addExpenseForm, rules)) {
@@ -652,7 +595,6 @@ export const handleAddFixedExpense = async (event) => {
     };
     try {
         await db.fixedExpenses.add(newExpense);
-         console.log("Gasto fijo agregado a IndexedDB:", newExpense);
         const updatedFixedExpenses = [...currentState.fixedExpenses, newExpense];
         updateAppState({ fixedExpenses: updatedFixedExpenses });
         showToast("Gasto fijo agregado.", 'success');
@@ -681,94 +623,55 @@ export const handleExportData = async () => {
     if(!exportDataButton) return;
     setButtonLoadingState(exportDataButton, true, 'Exportando...');
     try {
-        console.log("--- [EXPORTACIÓN] INICIO: Iniciando exportación de datos ---");
-
         const [
             statusList, projectNameList, projectDetails, projectCosts,
-            fixedExpenses, mainTitleConfig, monthlyIncomeConfig
-        ] = await db.transaction('r', db.appConfig, db.statusList, db.projectNameList, db.projectDetails, db.projectCosts, db.fixedExpenses, async () => {
-            console.log("--- [EXPORTACIÓN] DB_READ: Dentro de la transacción de lectura de Dexie ---");
+            fixedExpenses, mainTitleConfig, monthlyIncomeConfig, spotTrades,
+            activeUserModeConfig, futuresTrades, watchlist
+        ] = await db.transaction('r', db.appConfig, db.statusList, db.projectNameList, db.projectDetails, db.projectCosts, db.fixedExpenses, db.spotTrades, db.futuresTrades, db.watchlist, async () => {
             const sList = await db.statusList.toArray();
             const pNameList = await db.projectNameList.toArray();
             const pDetails = await db.projectDetails.toArray();
             const pCosts = await db.projectCosts.toArray();
             const fExpenses = await db.fixedExpenses.toArray();
+            const sTrades = await db.spotTrades.toArray();
+            const fTrades = await db.futuresTrades.toArray();
             const mTitleConfig = await db.appConfig.get('mainTitle');
             const mIncomeConfig = await db.appConfig.get('monthlyIncome');
-
-            console.log("--- [EXPORTACIÓN] DB_READ_STATUS: statusList recuperado:", JSON.stringify(sList.map(s => ({id: s.id, name: s.name, color: s.color})), null, 2));
-            console.log("--- [EXPORTACIÓN] DB_READ_PROJECTS: projectNameList recuperado:", JSON.stringify(pNameList.map(p => ({id: p.id, name: p.name})), null, 2));
-            console.log("--- [EXPORTACIÓN] DB_READ_FIXED_EXPENSES: fixedExpenses recuperado:", JSON.stringify(fExpenses.map(f => ({id: f.id, name: f.name, amount: f.amount})), null, 2));
-            console.log("--- [EXPORTACIÓN] DB_READ_MAINTITLE: mainTitleConfig recuperado:", JSON.stringify(mTitleConfig, null, 2));
-            console.log("--- [EXPORTACIÓN] DB_READ_MONTHLYINCOME: monthlyIncomeConfig recuperado:", JSON.stringify(mIncomeConfig, null, 2));
-
-            return [sList, pNameList, pDetails, pCosts, fExpenses, mTitleConfig, mIncomeConfig];
+            const modeConfig = await db.appConfig.get('activeUserMode');
+            const wList = await db.watchlist.toArray();
+            return [sList, pNameList, pDetails, pCosts, fExpenses, mTitleConfig, mIncomeConfig, sTrades, modeConfig, fTrades, wList];
         });
-
-        console.log("--- [EXPORTACIÓN] POST_DB_READ: Datos recuperados de la transacción de Dexie. Construyendo objeto de exportación... ---");
-
-        console.log("--- [EXPORTACIÓN] DETALLE_statusList (Para exportar):");
-        statusList.forEach(status => {
-            console.log(`  ID: ${status.id}, Name: ${status.name}, Color: ${status.color}`);
-        });
-        console.log("--- [EXPORTACIÓN] DETALLE_projectNameList (Para exportar):");
-        projectNameList.forEach(project => {
-            console.log(`  ID: ${project.id}, Name: ${project.name}`);
-        });
-        console.log("--- [EXPORTACIÓN] DETALLE_fixedExpenses (Para exportar):");
-        fixedExpenses.forEach(expense => {
-            console.log(`  ID: ${expense.id}, Name: ${expense.name}, Amount: ${expense.amount}`);
-        });
-        console.log("--- [EXPORTACIÓN] DETALLE_mainTitleConfig (Para exportar):", JSON.stringify(mainTitleConfig, null, 2));
-        console.log("--- [EXPORTACIÓN] DETALLE_monthlyIncomeConfig (Para exportar):", JSON.stringify(monthlyIncomeConfig, null, 2));
-
-        console.log("--- [EXPORTACIÓN] OBJETO_GENERAL: Objeto general recuperado de IndexedDB para exportación:", {
-            statusListCount: statusList.length,
-            projectNameListCount: projectNameList.length,
-            projectDetailsCount: projectDetails.length,
-            projectCostsCount: projectCosts.length,
-            fixedExpensesCount: fixedExpenses.length,
-            mainTitleConfigExists: !!mainTitleConfig,
-            monthlyIncomeConfigExists: !!monthlyIncomeConfig
-        });
-
+        
         const dataToExport = {
             mainTitle: mainTitleConfig ? mainTitleConfig.value : 'Rastreador de Proyectos y Finanzas',
+            activeUserMode: activeUserModeConfig ? activeUserModeConfig.value : 'projects',
             statusList: statusList,
             projectNameList: projectNameList,
             projectDetails: projectDetails,
             projectCosts: projectCosts,
             monthlyIncome: (monthlyIncomeConfig && typeof monthlyIncomeConfig.value === 'number') ? monthlyIncomeConfig.value : 0,
             fixedExpenses: fixedExpenses,
+            spotTrades: spotTrades,
+            futuresTrades: futuresTrades,
+            watchlist: watchlist,
             exportDate: new Date().toISOString(),
             appVersion: 'vFin_Optimized_Dexie_1.0'
         };
-
-        console.log("--- [EXPORTACIÓN] JSON_PREVIEW: Vista previa del objeto JSON que se va a exportar (primer nivel):", Object.keys(dataToExport).reduce((acc, key) => {
-            if (Array.isArray(dataToExport[key])) {
-                acc[key] = `Array[${dataToExport[key].length}]`;
-            } else {
-                acc[key] = dataToExport[key];
-            }
-            return acc;
-        }, {}));
 
         const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `datos_proyectos_finanzas_${getCurrentDate()}.json`;
+        a.download = `zenithtrack_datos_${getCurrentDate()}.json`;
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         URL.revokeObjectURL(url);
         showToast('Datos exportados correctamente.', 'success');
-        console.log("--- [EXPORTACIÓN] ÉXITO: Datos exportados y archivo descargado. ---");
 
     } catch (error) {
-        console.error("--- [EXPORTACIÓN] ERROR: Error durante la exportación de datos ---", error);
+        console.error("Error durante la exportación de datos:", error);
         showToast('Error al exportar los datos.', 'error');
     } finally {
         setButtonLoadingState(exportDataButton, false);
-        console.log("--- [EXPORTACIÓN] FIN: Proceso de exportación finalizado (con o sin error). ---");
     }
 };
 
@@ -797,6 +700,10 @@ export const handleImportFile = (event) => {
                     if (!importDataButton) return;
                     setButtonLoadingState(importDataButton, true, 'Importando...');
                     const success = await importData(importedJson, file.name);
+                    if(success) {
+                        renderAll();
+                        refreshCurrentChart();
+                    }
                     setButtonLoadingState(importDataButton, false);
                     if (!success && importFileInput) importFileInput.value = '';
                 }
@@ -869,4 +776,270 @@ export const handleChartTypeChange = () => {
     if (chartTypeSelect) {
         renderSelectedChart(chartTypeSelect.value);
     }
+};
+export const handleApplySpotFilters = () => {
+    const filters = {
+        asset: filterSpotAssetInput.value.trim(),
+        startDate: filterSpotStartDateInput.value,
+        endDate: filterSpotEndDateInput.value,
+    };
+
+    updateAppState({
+        searchTerms: {
+            ...getAppState().searchTerms,
+            spotTrades: filters
+        }
+    });
+
+    renderSpotTradesTable();
+};
+
+export const handleClearSpotFilters = () => {
+    const defaultSpotFilters = {
+        asset: '',
+        startDate: '',
+        endDate: ''
+    };
+
+    // Limpiar los inputs del DOM
+    filterSpotAssetInput.value = '';
+    filterSpotStartDateInput.value = '';
+    filterSpotEndDateInput.value = '';
+
+    // Limpiar el sestado de los filtros
+    updateAppState({
+        searchTerms: {
+            ...getAppState().searchTerms,
+            spotTrades: defaultSpotFilters
+        }
+    });
+
+    renderSpotTradesTable();
+};
+
+// --- Spot Trading Handlers ---
+export const handleSpotTradeFormSubmit = async (event) => {
+    event.preventDefault();
+    if (!spotTradeForm) return;
+
+    const id = spotTradeIdInput.value ? parseInt(spotTradeIdInput.value, 10) : null;
+    const tradeData = {
+        tradeDate: tradeDateInput.value,
+        type: tradeTypeSelect.value,
+        baseAsset: baseAssetInput.value.trim().toUpperCase(),
+        quoteAsset: quoteAssetInput.value.trim().toUpperCase(),
+        price: parseFloat(priceInput.value),
+        quantityBase: parseFloat(quantityBaseInput.value),
+        fees: parseFloat(spotTradeFeesInput.value) || 0,
+        notes: notesInput.value.trim()
+    };
+    
+    if (!tradeData.tradeDate || !tradeData.baseAsset || !tradeData.quoteAsset || isNaN(tradeData.price) || tradeData.price <= 0 || isNaN(tradeData.quantityBase) || tradeData.quantityBase <= 0) {
+        return showToast("Por favor, complete todos los campos requeridos.", "error");
+    }
+    
+    tradeData.totalQuote = tradeData.price * tradeData.quantityBase;
+    
+    setButtonLoadingState(saveSpotTradeButton, true, 'Guardando...');
+    try {
+        if (id) {
+            await updateSpotTrade(id, tradeData);
+            const updatedTrades = getAppState().spotTrades.map(t => t.id === id ? { ...t, ...tradeData } : t);
+            updateAppState({ spotTrades: updatedTrades });
+        } else {
+            const newTradeWithId = await addSpotTrade(tradeData);
+            updateAppState({ spotTrades: [newTradeWithId, ...getAppState().spotTrades] });
+        }
+        renderSpotTradesTable();
+        closeModal(spotTradeModal);
+    } catch (error) {
+        console.error("Fallo al enviar formulario spot:", error);
+    } finally {
+        setButtonLoadingState(saveSpotTradeButton, false);
+    }
+};
+
+export const handleDeleteSpotTrade = (tradeId) => {
+    const currentState = getAppState();
+    const numericTradeId = parseInt(tradeId, 10);
+    const tradeToDelete = currentState.spotTrades.find(t => t.id === numericTradeId);
+
+    if (!tradeToDelete) {
+        showToast("Error: Operación no encontrada para eliminar.", "error");
+        console.error(`handleDeleteSpotTrade: No se encontró la operación con id ${numericTradeId}`);
+        return;
+    }
+    
+    openConfirmationModal(
+        "Confirmar Eliminación",
+        `¿Está seguro de eliminar la operación <strong>${tradeToDelete.type.toUpperCase()} ${tradeToDelete.quantityBase} ${tradeToDelete.baseAsset}</strong>?`,
+        "Eliminar", "red",
+        async () => {
+            try {
+                await deleteSpotTrade(numericTradeId);
+                const updatedTrades = getAppState().spotTrades.filter(t => t.id !== numericTradeId);
+                updateAppState({ spotTrades: updatedTrades });
+                renderSpotTradesTable();
+            } catch (error) {
+                console.error("Error en el callback de confirmación para eliminar operación:", error);
+            }
+        }
+    );
+};
+// --- FIN NUEVOS HANDLERS PARA SPOT TRADING ---
+
+// --- Funciones para el Selector de Modo ---
+export const updateUIMode = (mode) => {
+    if (!mainTitleEl) return;
+
+    const isProjectsMode = mode === 'projects';
+
+    mainTitleEl.textContent = isProjectsMode ? 'Rastreador de Proyectos y Finanzas' : 'Rastreador de Criptomonedas';
+
+    document.getElementById('tab-details')?.classList.toggle('hidden', !isProjectsMode);
+    document.getElementById('tab-cost')?.classList.toggle('hidden', !isProjectsMode);
+    document.getElementById('tab-finance')?.classList.toggle('hidden', !isProjectsMode);
+    document.getElementById('tab-crypto-panel')?.classList.toggle('hidden', isProjectsMode);
+    document.getElementById('tab-spot-trading')?.classList.toggle('hidden', isProjectsMode);
+    document.getElementById('tab-futures-trading')?.classList.toggle('hidden', isProjectsMode);
+
+    if (setupStatusListContainer) setupStatusListContainer.hidden = !isProjectsMode;
+    if (setupProjectNameListContainer) setupProjectNameListContainer.hidden = !isProjectsMode;
+
+    if (isProjectsMode && modeProjectsRadio) modeProjectsRadio.checked = true;
+    if (!isProjectsMode && modeCryptoRadio) modeCryptoRadio.checked = true;
+
+    renderOverview();
+    
+    const activeTabButton = document.querySelector('.tab-button.active');
+    if (activeTabButton && activeTabButton.classList.contains('hidden')) {
+        document.getElementById('tab-overview')?.click();
+    }
+
+    console.log(`UI actualizada al modo: ${mode}`);
+};
+
+export const handleAppModeChange = async (event) => {
+    const newMode = event.target.value;
+    const currentMode = getAppState().activeUserMode;
+
+    if (newMode === currentMode) {
+        return;
+    }
+
+    console.log(`Cambiando modo de la aplicación a: ${newMode}`);
+
+    try {
+        await db.appConfig.put({ key: 'activeUserMode', value: newMode });
+        updateAppState({ activeUserMode: newMode });
+        updateUIMode(newMode);
+        showToast(`Modo cambiado a ${newMode === 'projects' ? 'Proyectos' : 'Criptomonedas'}.`, 'info');
+    } catch (error) {
+        console.error("Error al cambiar el modo de la aplicación:", error);
+        showToast("Error al guardar la preferencia de modo.", "error");
+    }
+};
+
+// --- INICIO NUEVOS HANDLERS PARA FUTURES TRADING ---
+
+export const handleFuturesTradeFormSubmit = async (event) => {
+    event.preventDefault();
+    if (!futuresTradeForm) return;
+
+    const id = futuresTradeIdInput.value ? parseInt(futuresTradeIdInput.value, 10) : null;
+    const tradeData = {
+        symbol: futuresSymbolInput.value.trim().toUpperCase(),
+        direction: futuresDirectionSelect.value,
+        leverage: parseInt(futuresLeverageInput.value, 10),
+        entryDate: futuresEntryDateInput.value,
+        quantity: parseFloat(futuresQuantityInput.value),
+        entryPrice: parseFloat(futuresEntryPriceInput.value),
+        entryFees: parseFloat(futuresEntryFeesInput.value) || 0,
+        notes: futuresNotesInput.value.trim()
+    };
+
+    if (!tradeData.symbol || !tradeData.entryDate || isNaN(tradeData.leverage) || isNaN(tradeData.quantity) || isNaN(tradeData.entryPrice)) {
+        return showToast("Por favor, complete todos los campos requeridos.", "error");
+    }
+    
+    setButtonLoadingState(saveFuturesTradeButton, true, 'Guardando...');
+    try {
+        if (id) {
+            await updateFuturesTrade(id, tradeData);
+            const updatedTrades = getAppState().futuresTrades.map(t => t.id === id ? { ...t, ...tradeData } : t);
+            updateAppState({ futuresTrades: updatedTrades });
+        } else {
+            const newTradeData = { ...tradeData, status: 'open', pnl: 0, exitPrice: null, exitDate: null, exitFees: 0 };
+            const newTradeWithId = await addFuturesTrade(newTradeData);
+            updateAppState({ futuresTrades: [newTradeWithId, ...getAppState().futuresTrades] });
+        }
+        renderFuturesTradesTable();
+        renderOverview();
+        closeModal(futuresTradeModal);
+    } catch (error) {
+        console.error("Fallo al enviar formulario de futuros:", error);
+    } finally {
+        setButtonLoadingState(saveFuturesTradeButton, false);
+    }
+};
+
+export const handleCloseFuturesTrade = async () => {
+    const id = futuresTradeIdInput.value ? parseInt(futuresTradeIdInput.value, 10) : null;
+    if (!id) return;
+    
+    const exitPrice = parseFloat(futuresExitPriceInput.value);
+    if (isNaN(exitPrice) || exitPrice <= 0) {
+        return showToast("Ingrese un precio de salida válido.", "error");
+    }
+    
+    const tradeToClose = getAppState().futuresTrades.find(t => t.id === id);
+    if (!tradeToClose) return showToast("Error: No se encontró la posición.", "error");
+
+    const entryFees = parseFloat(tradeToClose.entryFees) || 0;
+    const exitFees = parseFloat(futuresExitFeesInput.value) || 0;
+    const totalFees = entryFees + exitFees;
+    const priceDiff = exitPrice - tradeToClose.entryPrice;
+    const grossPnl = tradeToClose.direction === 'long' ? priceDiff * tradeToClose.quantity : -priceDiff * tradeToClose.quantity;
+    const netPnl = grossPnl - totalFees;
+    
+    const updates = { exitPrice, exitDate: new Date().toISOString(), status: 'closed', exitFees, pnl: netPnl };
+    
+    setButtonLoadingState(closeFuturesTradeButton, true, 'Cerrando...');
+    try {
+        await updateFuturesTrade(id, updates);
+        updateAppState({ futuresTrades: getAppState().futuresTrades.map(t => t.id === id ? { ...t, ...updates } : t) });
+        renderFuturesTradesTable();
+        renderOverview();
+        closeModal(futuresTradeModal);
+        showToast("Posición cerrada y PnL calculado.", "success");
+    } catch (error) {
+        console.error("Error al cerrar la posición:", error);
+    } finally {
+        setButtonLoadingState(closeFuturesTradeButton, false);
+    }
+};
+
+export const handleDeleteFuturesTrade = (tradeId) => {
+    const tradeToDelete = getAppState().futuresTrades.find(t => t.id === tradeId);
+    if (!tradeToDelete) {
+        showToast("Error: Posición no encontrada para eliminar.", "error");
+        return;
+    }
+    
+    openConfirmationModal(
+        "Confirmar Eliminación",
+        `¿Está seguro de eliminar la posición <strong>${tradeToDelete.direction.toUpperCase()} en ${tradeToDelete.symbol}</strong>? Esta acción es irreversible.`,
+        "Eliminar", "red",
+        async () => {
+            try {
+                await deleteFuturesTrade(tradeId);
+                const updatedTrades = getAppState().futuresTrades.filter(t => t.id !== tradeId);
+                updateAppState({ futuresTrades: updatedTrades });
+                renderFuturesTradesTable();
+                renderOverview();
+            } catch (error) {
+                console.error("Error en el callback de confirmación para eliminar posición de futuros:", error);
+            }
+        }
+    );
 };

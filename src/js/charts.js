@@ -1,23 +1,36 @@
 // src/js/charts.js
 import Chart from 'chart.js/auto';
-import { overviewChartCanvas, chartNoDataEl, chartTitleEl, chartTypeSelect } from './domElements.js';
-import { getAppState } from './state.js';
+// --- INICIO MODIFICACIÓN ---
+import { 
+    overviewChartCanvas, chartNoDataEl, chartTitleEl, chartTypeSelect,
+    cryptoOverviewChartCanvas, cryptoChartNoData
+} from './domElements.js';
+import { getAppState, getFuturesTradesStats } from './state.js';
+// --- FIN MODIFICACIÓN ---
 import { getCurrentChartColors } from './utils.js';
 
-let currentChartInstance = null;
+let projectChartInstance = null;
+// --- INICIO MODIFICACIÓN ---
+let cryptoChartInstance = null;
 
 const CHART_TITLES = {
     statusDistribution: "Distribución de Estados de Tarea",
     tasksPerProject: "Número de Tareas por Proyecto",
-    projectCostsComparison: "Comparativa de Costos (Presupuesto vs Actual)"
+    projectCostsComparison: "Comparativa de Costos (Presupuesto vs Actual)",
+    cryptoPerformance: "Rendimiento Acumulado (PnL)" // Título para el nuevo gráfico
 };
 
 const destroyCurrentChart = () => {
-    if (currentChartInstance) {
-        currentChartInstance.destroy();
-        currentChartInstance = null;
+    if (projectChartInstance) {
+        projectChartInstance.destroy();
+        projectChartInstance = null;
+    }
+    if (cryptoChartInstance) {
+        cryptoChartInstance.destroy();
+        cryptoChartInstance = null;
     }
 };
+// --- FIN MODIFICACIÓN ---
 
 const showNoDataMessage = (show = true) => {
     if (chartNoDataEl) {
@@ -60,30 +73,17 @@ const renderStatusDistributionChart = () => {
         }
     });
 
-    // MODIFICADO: Pasar appData.statusList a getCurrentChartColors
     const currentColors = getCurrentChartColors(statusListFromState); 
     
-    // console.log("Task Status Options for Chart:", taskStatusOptions);
-    // console.log("Current Colors Object for Chart:", currentColors);
-    // console.log("Status colors from currentColors:", currentColors.status);
-
-
     const backgroundColors = taskStatusOptions.map((statusName) => {
         const normalizedStatusForLookup = statusName.toLowerCase().replace(/\s+/g, '');
-        // Intentar encontrar el color usando la clave normalizada en el objeto status de currentColors
         let color = currentColors.status[normalizedStatusForLookup];
-        
-        // Si no se encuentra, intentar un fallback a un color default dentro del objeto status
         if (!color) {
-            // console.warn(`Color not found for status: ${statusName} (normalized: ${normalizedStatusForLookup}). Using default.`);
-            color = currentColors.status.default || '#CCCCCC'; // Fallback si 'default' tampoco está
+            color = currentColors.status.default || '#CCCCCC';
         }
         return color;
     });
     
-    // console.log("Generated Background Colors for Chart:", backgroundColors);
-
-
     const chartData = {
         labels: taskStatusOptions,
         datasets: [{
@@ -99,7 +99,7 @@ const renderStatusDistributionChart = () => {
         console.error("Canvas element 'overviewChartCanvas' not found for StatusDistributionChart.");
         return;
     }
-    currentChartInstance = new Chart(overviewChartCanvas, {
+    projectChartInstance = new Chart(overviewChartCanvas, {
         type: 'doughnut',
         data: chartData,
         options: {
@@ -149,7 +149,6 @@ const renderTasksPerProjectChart = () => {
         }
     });
     
-    // No es necesario pasar statusList aquí si este gráfico no usa colores de estado dinámicos
     const currentColors = getCurrentChartColors(); 
     const chartData = {
         labels: projectNames,
@@ -166,7 +165,7 @@ const renderTasksPerProjectChart = () => {
         console.error("Canvas element 'overviewChartCanvas' not found for TasksPerProjectChart.");
         return;
     }
-    currentChartInstance = new Chart(overviewChartCanvas, {
+    projectChartInstance = new Chart(overviewChartCanvas, {
         type: 'bar',
         data: chartData,
         options: {
@@ -211,7 +210,6 @@ const renderProjectCostsComparisonChart = () => {
     const labels = projectCosts.map(pc => pc.projectName);
     const budgetData = projectCosts.map(pc => pc.budget);
     const actualCostData = projectCosts.map(pc => pc.actualCost);
-    // No es necesario pasar statusList aquí
     const currentColors = getCurrentChartColors(); 
 
     const chartData = {
@@ -238,7 +236,7 @@ const renderProjectCostsComparisonChart = () => {
         console.error("Canvas element 'overviewChartCanvas' not found for ProjectCostsComparisonChart.");
         return;
     }
-    currentChartInstance = new Chart(overviewChartCanvas, {
+    projectChartInstance = new Chart(overviewChartCanvas, {
         type: 'bar',
         data: chartData,
         options: {
@@ -271,19 +269,94 @@ const renderProjectCostsComparisonChart = () => {
     });
 };
 
+// --- INICIO MODIFICACIÓN ---
+const renderCryptoPerformanceChart = () => {
+    destroyCurrentChart();
+    
+    if (!cryptoOverviewChartCanvas) return;
+
+    const stats = getFuturesTradesStats();
+    if (stats.pnlHistory.length < 2) {
+        if (cryptoChartNoData) cryptoChartNoData.classList.remove('hidden');
+        cryptoOverviewChartCanvas.classList.add('hidden');
+        return;
+    }
+    
+    if (cryptoChartNoData) cryptoChartNoData.classList.add('hidden');
+    cryptoOverviewChartCanvas.classList.remove('hidden');
+
+    const labels = stats.pnlHistory.map(p => new Date(p.date).toLocaleDateString('es-ES'));
+    const data = stats.pnlHistory.map(p => p.pnl);
+
+    const currentColors = getCurrentChartColors();
+    const finalPnl = data[data.length - 1];
+    const chartLineColor = finalPnl >= 0 ? currentColors.profit : currentColors.loss;
+    
+    const ctx = cryptoOverviewChartCanvas.getContext('2d');
+    if (!ctx) return;
+    const gradient = ctx.createLinearGradient(0, 0, 0, cryptoOverviewChartCanvas.height);
+    gradient.addColorStop(0, `${chartLineColor}80`); // Opacidad ~0.5
+    gradient.addColorStop(1, `${chartLineColor}00`); // Opacidad 0
+
+    const chartData = {
+        labels: labels,
+        datasets: [{
+            label: 'PnL Acumulado',
+            data: data,
+            borderColor: chartLineColor,
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.1,
+            pointBackgroundColor: chartLineColor,
+            pointRadius: 3,
+        }]
+    };
+
+    cryptoChartInstance = new Chart(cryptoOverviewChartCanvas, {
+        type: 'line',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    ticks: { color: currentColors.text },
+                    grid: { color: currentColors.grid }
+                },
+                x: {
+                    ticks: { color: currentColors.text },
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                },
+            }
+        }
+    });
+}
+
 export const renderSelectedChart = (chartType = 'statusDistribution') => {
+    destroyCurrentChart();
+    const appData = getAppState(); 
+
+    if (appData.activeUserMode === 'crypto') {
+        renderCryptoPerformanceChart();
+        return;
+    }
+    
     if (!overviewChartCanvas) {
         console.warn("Canvas para 'overview-chart' no encontrado.");
         showNoDataMessage(true);
         return;
     }
-    // Se obtiene el estado aquí para pasarlo a las funciones de renderizado si lo necesitan
-    // y para asegurar que getCurrentChartColors (llamado dentro de cada renderXChart) tenga acceso a statusList
-    const appData = getAppState(); 
 
     switch (chartType) {
         case 'statusDistribution':
-            renderStatusDistributionChart(); // Ya llama a getAppState internamente, y ahora pasará statusList a getCurrentChartColors
+            renderStatusDistributionChart();
             break;
         case 'tasksPerProject':
             renderTasksPerProjectChart();
@@ -298,9 +371,15 @@ export const renderSelectedChart = (chartType = 'statusDistribution') => {
 };
 
 export const refreshCurrentChart = () => {
-    if (chartTypeSelect && chartTypeSelect.value) {
-        renderSelectedChart(chartTypeSelect.value);
+    const appData = getAppState();
+    if (appData.activeUserMode === 'crypto') {
+        renderSelectedChart();
     } else {
-        renderSelectedChart(); 
+        if (chartTypeSelect && chartTypeSelect.value) {
+            renderSelectedChart(chartTypeSelect.value);
+        } else {
+            renderSelectedChart(); 
+        }
     }
 };
+// --- FIN MODIFICACIÓN ---

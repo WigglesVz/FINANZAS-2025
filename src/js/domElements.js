@@ -20,6 +20,28 @@ export const chartNoDataEl = document.getElementById('chart-no-data');
 export const chartTitleEl = document.getElementById('chart-title');
 export const chartTypeSelect = document.getElementById('chart-type-select');
 
+// Crypto Dashboard Elements (in Overview)
+export const projectsOverviewDashboard = document.getElementById('projects-overview-dashboard');
+export const cryptoOverviewDashboard = document.getElementById('crypto-overview-dashboard');
+export const cryptoTotalPnl = document.getElementById('crypto-total-pnl');
+export const cryptoWinRate = document.getElementById('crypto-win-rate');
+export const cryptoTotalTrades = document.getElementById('crypto-total-trades');
+export const cryptoWinLossRatio = document.getElementById('crypto-win-loss-ratio');
+export const cryptoOverviewChartCanvas = document.getElementById('crypto-overview-chart');
+export const cryptoChartNoData = document.getElementById('crypto-chart-no-data');
+
+// Crypto Panel Elements
+export const cryptoPanelTab = document.getElementById('tab-crypto-panel');
+export const cryptoPanelContent = document.getElementById('crypto-panel-content');
+export const cryptoWatchlistContainer = document.getElementById('crypto-watchlist-container');
+
+// Add Coin to Watchlist Modal Elements
+export const addCoinModal = document.getElementById('add-coin-modal');
+export const closeAddCoinModalButton = document.getElementById('close-add-coin-modal');
+export const cancelAddCoinModalButton = document.getElementById('cancel-add-coin-modal');
+export const searchCoinInput = document.getElementById('search-coin-input');
+export const coinSearchResultsContainer = document.getElementById('coin-search-results-container');
+
 // Project Details Elements
 export const projectDetailsTable = document.getElementById('project-details-table');
 export const projectDetailsTableBody = document.getElementById('project-details-table-body');
@@ -65,6 +87,13 @@ export const exportDataButton = document.getElementById('export-data-button');
 export const importDataButton = document.getElementById('import-data-button');
 export const importFileInput = document.getElementById('import-file-input');
 
+// App Mode Selector Elements
+export const appModeSelector = document.getElementById('app-mode-selector');
+export const modeProjectsRadio = document.getElementById('mode-projects');
+export const modeCryptoRadio = document.getElementById('mode-crypto');
+export const setupStatusListContainer = document.getElementById('setup-status-list-container');
+export const setupProjectNameListContainer = document.getElementById('setup-project-name-list-container');
+
 // Task Modal Elements
 export const taskModal = document.getElementById('task-modal');
 export const taskModalTitle = document.getElementById('task-modal-title');
@@ -106,6 +135,61 @@ export const confirmationModalBody = document.getElementById('confirmation-modal
 export const closeConfirmationModalButton = document.getElementById('close-confirmation-modal');
 export const cancelConfirmationModalButton = document.getElementById('cancel-confirmation-modal');
 export const confirmConfirmationButton = document.getElementById('confirm-confirmation-button');
+
+// Spot Trading Elements
+export const spotTradingTab = document.getElementById('tab-spot-trading');
+export const addSpotTradeButton = document.getElementById('add-spot-trade-button');
+export const spotTradesTableBody = document.getElementById('spot-trades-table-body');
+// Modal de Spot Trade
+export const spotTradeModal = document.getElementById('spot-trade-modal');
+export const spotTradeModalTitle = document.getElementById('spot-trade-modal-title');
+export const closeSpotTradeModalButton = document.getElementById('close-spot-trade-modal');
+export const cancelSpotTradeModalButton = document.getElementById('cancel-spot-trade-modal');
+export const saveSpotTradeButton = document.getElementById('save-spot-trade-button');
+export const spotTradeForm = document.getElementById('spot-trade-form');
+// Campos del Formulario de Spot Trade
+export const spotTradeIdInput = document.getElementById('spot-trade-id');
+export const tradeDateInput = document.getElementById('trade-date');
+export const tradeTypeSelect = document.getElementById('trade-type');
+export const baseAssetInput = document.getElementById('base-asset');
+export const quoteAssetInput = document.getElementById('quote-asset');
+export const priceInput = document.getElementById('price');
+export const quantityBaseInput = document.getElementById('quantity-base');
+export const totalQuoteInput = document.getElementById('total-quote');
+export const notesInput = document.getElementById('notes');
+export const spotTradeFeesInput = document.getElementById('spot-trade-fees'); // Nuevo
+export const filterSpotAssetInput = document.getElementById('filter-spot-asset');
+export const filterSpotStartDateInput = document.getElementById('filter-spot-start-date');
+export const filterSpotEndDateInput = document.getElementById('filter-spot-end-date');
+export const applySpotFiltersBtn = document.getElementById('apply-spot-filters-btn');
+export const clearSpotFiltersBtn = document.getElementById('clear-spot-filters-btn');
+// Futures Trading Elements
+export const futuresTradingTab = document.getElementById('tab-futures-trading');
+export const addFuturesTradeButton = document.getElementById('add-futures-trade-button');
+export const futuresTradesTableBody = document.getElementById('futures-trades-table-body');
+// Modal de Futures Trade
+export const futuresTradeModal = document.getElementById('futures-trade-modal');
+export const futuresTradeModalTitle = document.getElementById('futures-trade-modal-title');
+export const closeFuturesTradeModalButton = document.getElementById('close-futures-trade-modal');
+export const cancelFuturesTradeModalButton = document.getElementById('cancel-futures-trade-modal');
+export const saveFuturesTradeButton = document.getElementById('save-futures-trade-button');
+export const closeFuturesTradeButton = document.getElementById('close-futures-trade-button');
+export const futuresTradeForm = document.getElementById('futures-trade-form');
+// Campos del Formulario de Futures Trade
+export const futuresTradeIdInput = document.getElementById('futures-trade-id');
+export const futuresSymbolInput = document.getElementById('futures-symbol');
+export const futuresDirectionSelect = document.getElementById('futures-direction');
+export const futuresLeverageInput = document.getElementById('futures-leverage');
+export const futuresEntryDateInput = document.getElementById('futures-entry-date');
+export const futuresQuantityInput = document.getElementById('futures-quantity');
+export const futuresEntryPriceInput = document.getElementById('futures-entry-price');
+export const futuresExitPriceContainer = document.getElementById('futures-exit-price-container');
+export const futuresExitPriceInput = document.getElementById('futures-exit-price');
+export const futuresNotesInput = document.getElementById('futures-notes');
+export const futuresEntryFeesInput = document.getElementById('futures-entry-fees'); // Nuevo
+export const futuresExitFeesContainer = document.getElementById('futures-exit-fees-container'); // Nuevo
+export const futuresExitFeesInput = document.getElementById('futures-exit-fees'); // Nuevo
+
 
 // --- Elementos de Autenticación ---
 export const authScreen = document.getElementById('auth-screen');

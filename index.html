@@ -3,30 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zenithtrack App</title> <!-- Título actualizado para reflejar el nombre de tu PWA -->
-
-    <!-- PWA: Configuración del Manifiesto y Metadatos para App en Pantalla de Inicio -->
-    <!-- Estos archivos (manifest.webmanifest, pwa-192x192.png) deben estar en tu carpeta /public/ -->
+    <title>Zenithtrack App</title>
     <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="theme-color" content="#007bff"> <!-- Color de la barra de título/tema, debe coincidir con el manifest -->
-    <link rel="apple-touch-icon" href="/pwa-192x192.png"> <!-- Icono para dispositivos iOS (iPhone/iPad) -->
-    <!-- Fin PWA -->
-
-    <!-- Dependencias Externas -->
+    <meta name="theme-color" content="#007bff">
+    <link rel="apple-touch-icon" href="/pwa-192x192.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Tu hoja de estilos principal de origen (desde /src/) -->
     <link rel="stylesheet" href="/src/styles.css">
-
-    <!-- Script de registro de Service Worker de vite-plugin-pwa -->
-    <!-- Esta línea es importante si vite-plugin-pwa está configurado para registrar el SW de esta forma. -->
-    <!-- El archivo registerSW.js es usualmente generado o manejado por el plugin. -->
     <script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script>
-
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen text-gray-800 dark:text-gray-200">
 
@@ -130,6 +117,18 @@
                         data-tab="finance" role="tab" aria-selected="false" aria-controls="finance-content" id="tab-finance">
                     <i class="fas fa-wallet mr-1" aria-hidden="true"></i> Finanzas Mensuales
                 </button>
+                <button class="tab-button py-2 px-1 text-sm sm:text-base text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 w-full sm:w-auto hidden"
+                        data-tab="crypto-panel" role="tab" aria-selected="false" aria-controls="crypto-panel-content" id="tab-crypto-panel">
+                    <i class="fas fa-satellite-dish mr-1" aria-hidden="true"></i> Panel Cripto
+                </button>
+                <button class="tab-button py-2 px-1 text-sm sm:text-base text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 w-full sm:w-auto hidden"
+                        data-tab="spot-trading" role="tab" aria-selected="false" aria-controls="spot-trading-content" id="tab-spot-trading">
+                    <i class="fas fa-chart-line mr-1" aria-hidden="true"></i> Spot Trading
+                </button>
+                <button class="tab-button py-2 px-1 text-sm sm:text-base text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 w-full sm:w-auto hidden"
+                        data-tab="futures-trading" role="tab" aria-selected="false" aria-controls="futures-trading-content" id="tab-futures-trading">
+                    <i class="fas fa-file-signature mr-1" aria-hidden="true"></i> Futuros
+                </button>
                  <button class="tab-button py-2 px-1 text-sm sm:text-base text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 w-full sm:w-auto"
                         data-tab="setup" role="tab" aria-selected="false" aria-controls="setup-content" id="tab-setup">
                     <i class="fas fa-cog mr-1" aria-hidden="true"></i> Configuración
@@ -138,49 +137,81 @@
 
             <main>
                 <section id="overview-content" class="tab-content active" role="tabpanel" aria-labelledby="tab-overview">
-                    <!-- ... Contenido de Vista General ... -->
-                    <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Resumen General de Proyectos</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                        <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg shadow border border-blue-100 dark:border-blue-800">
-                            <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">Total Proyectos</h3>
-                            <p id="total-projects" class="text-2xl font-bold text-blue-900 dark:text-blue-100">0</p>
+                    <!-- Contenedor para el Dashboard de Proyectos -->
+                    <div id="projects-overview-dashboard">
+                        <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Resumen General de Proyectos</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                            <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg shadow border border-blue-100 dark:border-blue-800">
+                                <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">Total Proyectos</h3>
+                                <p id="total-projects" class="text-2xl font-bold text-blue-900 dark:text-blue-100">0</p>
+                            </div>
+                            <div class="bg-green-50 dark:bg-green-900 p-4 rounded-lg shadow border border-green-100 dark:border-green-800">
+                                <h3 class="text-sm font-medium text-green-800 dark:text-green-200">Costo Actual Total (Proyectos)</h3>
+                                <p id="total-actual-cost" class="text-2xl font-bold text-green-900 dark:text-green-100">$0.00</p>
+                            </div>
+                            <div class="bg-purple-50 dark:bg-purple-900 p-4 rounded-lg shadow border border-purple-100 dark:border-purple-800">
+                                <h3 class="text-sm font-medium text-purple-800 dark:text-purple-200">Tareas Totales (Proyectos)</h3>
+                                <p id="cumulative-tasks" class="text-2xl font-bold text-purple-900 dark:text-purple-100">0</p>
+                            </div>
                         </div>
-                        <div class="bg-green-50 dark:bg-green-900 p-4 rounded-lg shadow border border-green-100 dark:border-green-800">
-                            <h3 class="text-sm font-medium text-green-800 dark:text-green-200">Costo Actual Total (Proyectos)</h3>
-                            <p id="total-actual-cost" class="text-2xl font-bold text-green-900 dark:text-green-100">$0.00</p>
+                        <div class="mb-8">
+                            <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Resumen por Proyecto</h3>
+                            <div id="project-summary-container" class="max-h-80 md:max-h-96">
+                               <p class="text-sm text-gray-500 dark:text-gray-400 italic text-center mt-4">Cargando resúmenes...</p>
+                            </div>
                         </div>
-                        <div class="bg-purple-50 dark:bg-purple-900 p-4 rounded-lg shadow border border-purple-100 dark:border-purple-800">
-                            <h3 class="text-sm font-medium text-purple-800 dark:text-purple-200">Tareas Totales (Proyectos)</h3>
-                            <p id="cumulative-tasks" class="text-2xl font-bold text-purple-900 dark:text-purple-100">0</p>
+                        <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4 mt-8">Análisis Gráfico de Proyectos</h2>
+                        <div class="mb-4">
+                            <label for="chart-type-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Seleccionar Tipo de Gráfico:</label>
+                            <select id="chart-type-select" name="chart-type-select"
+                                    class="block w-full max-w-xs mt-1 py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-800 dark:text-gray-200">
+                                <option value="statusDistribution">Distribución de Estados de Tarea</option>
+                                <option value="tasksPerProject">Tareas por Proyecto</option>
+                                <option value="projectCostsComparison">Comparativa de Costos por Proyecto</option>
+                            </select>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow h-72 md:h-96 flex flex-col justify-center items-center border border-gray-200 dark:border-gray-700 relative">
+                            <h3 id="chart-title" class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">Distribución de Estados</h3>
+                            <div class="w-full h-full flex justify-center items-center">
+                                <canvas id="overview-chart"></canvas>
+                            </div>
+                            <p id="chart-no-data" class="absolute text-sm text-gray-500 dark:text-gray-400 italic hidden">No hay datos para mostrar en el gráfico.</p>
                         </div>
                     </div>
-                    <div class="mb-8">
-                        <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Resumen por Proyecto</h3>
-                        <div id="project-summary-container" class="max-h-80 md:max-h-96">
-                           <p class="text-sm text-gray-500 dark:text-gray-400 italic text-center mt-4">Cargando resúmenes...</p>
+
+                    <!-- Contenedor para el Dashboard de Cripto (inicialmente oculto) -->
+                    <div id="crypto-overview-dashboard" class="hidden">
+                        <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Resumen General de Trading</h2>
+                        <div id="crypto-kpi-cards-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                            <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">PnL Total (Futuros)</h3>
+                                <p id="crypto-total-pnl" class="text-2xl font-bold text-gray-900 dark:text-gray-100">$0.00</p>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Win Rate (Futuros)</h3>
+                                <p id="crypto-win-rate" class="text-2xl font-bold text-gray-900 dark:text-gray-100">0%</p>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Trades (Futuros)</h3>
+                                <p id="crypto-total-trades" class="text-2xl font-bold text-gray-900 dark:text-gray-100">0</p>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Ganadoras / Perdedoras</h3>
+                                <p id="crypto-win-loss-ratio" class="text-2xl font-bold text-gray-900 dark:text-gray-100">0 / 0</p>
+                            </div>
                         </div>
-                    </div>
-                    <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4 mt-8">Análisis Gráfico de Proyectos</h2>
-                    <div class="mb-4">
-                        <label for="chart-type-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Seleccionar Tipo de Gráfico:</label>
-                        <select id="chart-type-select" name="chart-type-select"
-                                class="block w-full max-w-xs mt-1 py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-800 dark:text-gray-200">
-                            <option value="statusDistribution">Distribución de Estados de Tarea</option>
-                            <option value="tasksPerProject">Tareas por Proyecto</option>
-                            <option value="projectCostsComparison">Comparativa de Costos por Proyecto</option>
-                        </select>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow h-72 md:h-96 flex flex-col justify-center items-center border border-gray-200 dark:border-gray-700 relative">
-                        <h3 id="chart-title" class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">Distribución de Estados</h3>
-                        <div class="w-full h-full flex justify-center items-center">
-                            <canvas id="overview-chart"></canvas>
+                        
+                        <div id="crypto-performance-chart-container">
+                             <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4 mt-8">Rendimiento Acumulado (PnL)</h2>
+                             <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow h-72 md:h-96 flex flex-col justify-center items-center border border-gray-200 dark:border-gray-700 relative">
+                                <canvas id="crypto-overview-chart"></canvas>
+                                <p id="crypto-chart-no-data" class="absolute text-sm text-gray-500 dark:text-gray-400 italic hidden">No hay datos suficientes para mostrar el gráfico de rendimiento.</p>
+                            </div>
                         </div>
-                        <p id="chart-no-data" class="absolute text-sm text-gray-500 dark:text-gray-400 italic hidden">No hay datos para mostrar en el gráfico.</p>
                     </div>
                 </section>
 
                 <section id="details-content" class="tab-content" role="tabpanel" aria-labelledby="tab-details" hidden>
-                    <!-- ... Contenido de Detalles Proyecto ... -->
                      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
                         <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Tareas del Proyecto</h2>
                         <button id="add-task-button" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-300 flex items-center justify-center space-x-2 text-sm">
@@ -219,7 +250,6 @@
                 </section>
 
                 <section id="cost-content" class="tab-content" role="tabpanel" aria-labelledby="tab-cost" hidden>
-                    <!-- ... Contenido de Costos Proyecto ... -->
                      <div class="flex justify-between items-center mb-4">
                         <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Costos por Proyecto</h2>
                      </div>
@@ -251,7 +281,6 @@
                 </section>
 
                 <section id="finance-content" class="tab-content" role="tabpanel" aria-labelledby="tab-finance" hidden>
-                    <!-- ... Contenido de Finanzas Mensuales ... -->
                     <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6">Finanzas Mensuales</h2>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <div class="bg-green-50 dark:bg-green-900 p-4 rounded-lg shadow border border-green-200 dark:border-green-800">
@@ -329,12 +358,126 @@
                         </div>
                     </div>
                 </section>
+                
+                <section id="crypto-panel-content" class="tab-content" role="tabpanel" aria-labelledby="tab-crypto-panel" hidden>
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-4">
+                        <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Panel de Mercado</h2>
+                    </div>
+                    <div id="crypto-watchlist-container">
+                        <p class="text-center py-10 text-gray-500 dark:text-gray-400">Cargando datos del mercado...</p>
+                    </div>
+                </section>
+                
+                <section id="spot-trading-content" class="tab-content" role="tabpanel" aria-labelledby="tab-spot-trading" hidden>
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                        <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Operaciones Spot</h2>
+                        <button id="add-spot-trade-button" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-300 flex items-center justify-center space-x-2 text-sm">
+                            <i class="fas fa-plus" aria-hidden="true"></i>
+                            <span>Agregar Operación</span>
+                        </button>
+                    </div>
+                     <div id="spot-filters-container" class="mb-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
+            <!-- Filtro por Activo -->
+            <div>
+                <label for="filter-spot-asset" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activo</label>
+                <input type="text" id="filter-spot-asset" placeholder="Ej: BTC, ETH" class="uppercase w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700">
+            </div>
+            <!-- Filtro por Fecha Desde -->
+            <div>
+                <label for="filter-spot-start-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Desde</label>
+                <input type="date" id="filter-spot-start-date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700">
+            </div>
+            <!-- Filtro por Fecha Hasta -->
+            <div>
+                <label for="filter-spot-end-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hasta</label>
+                <input type="date" id="filter-spot-end-date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700">
+            </div>
+            <!-- Botones de Acción -->
+            <div class="flex space-x-2">
+                <button id="apply-spot-filters-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-300 text-sm">Filtrar</button>
+                <button id="clear-spot-filters-btn" class="w-full bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition duration-300 text-sm">Limpiar</button>
+            </div>
+        </div>
+    </div>
+                    <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg shadow">
+                        <table id="spot-trades-table" class="min-w-full bg-white dark:bg-gray-800">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Par</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tipo</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fecha</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Precio</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Cantidad</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="spot-trades-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                                <tr><td colspan="7" class="text-center py-10 text-gray-500 dark:text-gray-400">Cargando operaciones...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                
+                <section id="futures-trading-content" class="tab-content" role="tabpanel" aria-labelledby="tab-futures-trading" hidden>
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                        <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Operaciones de Futuros</h2>
+                        <button id="add-futures-trade-button" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-300 flex items-center justify-center space-x-2 text-sm">
+                            <i class="fas fa-plus" aria-hidden="true"></i>
+                            <span>Abrir Posición</span>
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg shadow">
+                        <table id="futures-trades-table" class="min-w-full bg-white dark:bg-gray-800">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Símbolo</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Dirección</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">PnL</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Apalanc.</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="futures-trades-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                                <tr><td colspan="6" class="text-center py-10 text-gray-500 dark:text-gray-400">Cargando posiciones...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
 
                 <section id="setup-content" class="tab-content" role="tabpanel" aria-labelledby="tab-setup" hidden>
-                    <!-- ... Contenido de Configuración ... -->
+                    <div class="mb-8 pb-6 border-b border-gray-200 dark:border-gray-700">
+                        <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Modo de la Aplicación</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Selecciona el módulo principal que deseas utilizar. Esto cambiará las pestañas y funcionalidades disponibles.</p>
+                        <fieldset>
+                            <legend class="sr-only">Selecciona el modo de la aplicación</legend>
+                            <div id="app-mode-selector" class="flex items-stretch gap-4">
+                                <div>
+                                    <input type="radio" id="mode-projects" name="app-mode" value="projects" class="sr-only peer">
+                                    <label for="mode-projects" class="inline-flex items-center justify-between w-full p-4 text-gray-500 bg-white border-2 border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 peer-checked:border-indigo-600 peer-checked:text-indigo-600 hover:text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 dark:peer-checked:text-indigo-400 dark:peer-checked:border-indigo-400 transition-all duration-200">                           
+                                        <div class="block">
+                                            <div class="w-full text-lg font-semibold flex items-center gap-2"><i class="fas fa-briefcase fa-fw"></i> Proyectos</div>
+                                            <div class="w-full text-sm mt-1">Gestión de tareas y costos.</div>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div>
+                                    <input type="radio" id="mode-crypto" name="app-mode" value="crypto" class="sr-only peer">
+                                    <label for="mode-crypto" class="inline-flex items-center justify-between w-full p-4 text-gray-500 bg-white border-2 border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 peer-checked:border-teal-600 peer-checked:text-teal-600 hover:text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 dark:peer-checked:text-teal-400 dark:peer-checked:border-teal-500 transition-all duration-200">
+                                        <div class="block">
+                                            <div class="w-full text-lg font-semibold flex items-center gap-2"><i class="fas fa-coins fa-fw"></i> Criptomonedas</div>
+                                            <div class="w-full text-sm mt-1">Seguimiento de operaciones.</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
                     <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Configuración de Listas</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
+                        <div id="setup-status-list-container">
                             <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2" id="status-list-heading">Estados de Tarea</h3>
                             <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600 list-item-adder-container">
                                  <ul id="status-list" class="space-y-1 mb-3 setup-list text-gray-700 dark:text-gray-300" aria-labelledby="status-list-heading">
@@ -349,7 +492,7 @@
                                  <span id="new-status-error" class="error-message hidden mt-1"></span>
                             </div>
                         </div>
-                        <div>
+                        <div id="setup-project-name-list-container">
                              <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2" id="project-list-heading">Nombres de Proyecto</h3>
                              <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600 list-item-adder-container">
                                  <ul id="project-name-list" class="space-y-1 mb-3 setup-list text-gray-700 dark:text-gray-300" aria-labelledby="project-list-heading">
@@ -386,14 +529,14 @@
                          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Importar datos reemplazará completamente los datos actuales con los del archivo.</p>
                     </div>
                 </section>
+                
             </main>
 
             <div id="toast-container" class="fixed bottom-4 right-4 space-y-2 z-[100]" role="status" aria-live="polite" aria-atomic="true">
             </div>
-        </div> <!-- Cierre del div max-w-7xl -->
-    </div> <!-- Cierre del div app-content -->
+        </div>
+    </div>
 
-    <!-- CONTENEDOR DEL BOTÓN DE INSTALACIÓN PWA -->
     <div id="pwa-install-container" class="fixed bottom-16 left-4 right-4 z-[90] flex justify-center hidden">
         <button id="my-custom-install-button"
                 class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-xl transition duration-300 transform hover:scale-105 flex items-center space-x-2 text-lg">
@@ -407,7 +550,7 @@
         <p>© <span id="current-year"></span> Wiggles Vz. Todos los derechos reservados.</p>
     </footer>
 
-    <!-- Modals (el contenido de los modals no cambia) -->
+    <!-- Modals -->
     <div id="task-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50"
          role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
         <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 transform scale-95 text-gray-800 dark:text-gray-200">
@@ -529,7 +672,161 @@
         </div>
     </div>
 
-    <!-- Tu script principal de origen (desde /src/) -->
+    <div id="spot-trade-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50"
+         role="dialog" aria-modal="true" aria-labelledby="spot-trade-modal-title">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl p-6 transform scale-95 text-gray-800 dark:text-gray-200">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 id="spot-trade-modal-title" class="text-xl font-semibold text-gray-800 dark:text-gray-200">Agregar Operación Spot</h3>
+                <button id="close-spot-trade-modal" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400 text-2xl leading-none" aria-label="Cerrar modal de operación">×</button>
+            </div>
+            <form id="spot-trade-form" novalidate>
+                <input type="hidden" id="spot-trade-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <div>
+                        <label for="trade-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha <span class="text-red-500">*</span></label>
+                        <input type="datetime-local" id="trade-date" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    </div>
+                    <div>
+                        <label for="trade-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo <span class="text-red-500">*</span></label>
+                        <select id="trade-type" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                            <option value="buy">Compra</option>
+                            <option value="sell">Venta</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="base-asset" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activo Base <span class="text-red-500">*</span></label>
+                        <input type="text" id="base-asset" placeholder="BTC" required maxlength="10" class="uppercase w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    </div>
+                    <div>
+                        <label for="quote-asset" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activo Cotización <span class="text-red-500">*</span></label>
+                        <input type="text" id="quote-asset" placeholder="USDT" required maxlength="10" class="uppercase w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label for="price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Precio <span class="text-red-500">*</span></label>
+                        <input type="number" id="price" placeholder="65000.50" required min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    </div>
+                    <div>
+                        <label for="quantity-base" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cantidad (Base) <span class="text-red-500">*</span></label>
+                        <input type="number" id="quantity-base" placeholder="0.5" required min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    </div>
+                    <div>
+                        <label for="total-quote" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total (Cotización)</label>
+                        <input type="number" id="total-quote" readonly class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-sm text-gray-500 dark:text-gray-400">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div></div>
+                    <div></div>
+                    <div>
+                        <label for="spot-trade-fees" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Comisiones (USD)</label>
+                        <input type="number" id="spot-trade-fees" placeholder="1.50" min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas (Opcional)</label>
+                    <textarea id="notes" rows="2" placeholder="Notas adicionales sobre la operación, exchange, etc..." maxlength="500" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" id="cancel-spot-trade-modal" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition duration-300 text-sm">Cancelar</button>
+                    <button type="submit" id="save-spot-trade-button" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-300 text-sm">Guardar Operación</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="futures-trade-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl p-6 transform scale-95 text-gray-800 dark:text-gray-200">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 id="futures-trade-modal-title" class="text-xl font-semibold">Abrir Posición de Futuros</h3>
+                <button id="close-futures-trade-modal" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400 text-2xl" aria-label="Cerrar modal de futuros">×</button>
+            </div>
+            <form id="futures-trade-form" novalidate>
+                <input type="hidden" id="futures-trade-id">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label for="futures-symbol" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Símbolo <span class="text-red-500">*</span></label>
+                        <input type="text" id="futures-symbol" placeholder="BTCUSDT" required class="uppercase w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    </div>
+                    <div>
+                        <label for="futures-direction" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección <span class="text-red-500">*</span></label>
+                        <select id="futures-direction" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                            <option value="long">Long (Compra)</option>
+                            <option value="short">Short (Venta)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="futures-leverage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Apalancamiento <span class="text-red-500">*</span></label>
+                        <input type="number" id="futures-leverage" placeholder="10" required min="1" step="1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <div>
+                        <label for="futures-entry-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Entrada <span class="text-red-500">*</span></label>
+                        <input type="datetime-local" id="futures-entry-date" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    </div>
+                     <div>
+                        <label for="futures-quantity" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cantidad <span class="text-red-500">*</span></label>
+                        <input type="number" id="futures-quantity" placeholder="0.1" required min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    </div>
+                    <div>
+                        <label for="futures-entry-price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Precio Entrada <span class="text-red-500">*</span></label>
+                        <input type="number" id="futures-entry-price" placeholder="65000" required min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    </div>
+                    <div id="futures-exit-price-container" class="hidden">
+                        <label for="futures-exit-price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Precio Salida</label>
+                        <input type="number" id="futures-exit-price" placeholder="68000" min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div>
+                        <label for="futures-entry-fees" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Comisión Entrada (USD)</label>
+                        <input type="number" id="futures-entry-fees" placeholder="2.50" min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    </div>
+                    <div id="futures-exit-fees-container" class="hidden">
+                        <label for="futures-exit-fees" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Comisión Salida (USD)</label>
+                        <input type="number" id="futures-exit-fees" placeholder="2.80" min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label for="futures-notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
+                    <textarea id="futures-notes" rows="2" placeholder="Estrategia, confirmaciones, etc..." maxlength="500" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" id="cancel-futures-trade-modal" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg">Cancelar</button>
+                    <button type="submit" id="save-futures-trade-button" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg">Guardar Posición</button>
+                    <button type="button" id="close-futures-trade-button" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg hidden">Cerrar Posición</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="add-coin-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 transform scale-95 text-gray-800 dark:text-gray-200 flex flex-col">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 id="add-coin-modal-title" class="text-xl font-semibold">Añadir Moneda a la Lista</h3>
+                <button id="close-add-coin-modal" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400 text-2xl" aria-label="Cerrar modal">×</button>
+            </div>
+            <div class="mb-4">
+                <label for="search-coin-input" class="sr-only">Buscar moneda</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400" aria-hidden="true"></i>
+                    </div>
+                    <input type="search" id="search-coin-input" placeholder="Buscar por nombre o símbolo (ej. Bitcoin, BTC)"
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700">
+                </div>
+            </div>
+            <div id="coin-search-results-container" class="flex-grow overflow-y-auto -mx-6 px-6">
+                <p class="text-center py-4 text-gray-500 dark:text-gray-400">Comience a escribir para buscar monedas.</p>
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-right">
+                 <button type="button" id="cancel-add-coin-modal" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition duration-300 text-sm">Cerrar</button>
+            </div>
+        </div>
+    </div>
+    
     <script type="module" src="/src/js/main.js"></script>
 </body>
 </html>

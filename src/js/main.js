@@ -1,49 +1,80 @@
 // src/js/main.js
 
 import {
-    // Elementos generales y de pestañas
+    // Main Structure
     tabButtons, changeTitleButton, themeToggleButton,
-    // Elementos de Configuración (Setup)
+    // Setup
     addStatusButton, newStatusInput, statusListEl,
     addProjectNameButton, newProjectNameInput, projectNameListEl,
     resetDataButton, exportDataButton, importDataButton, importFileInput,
-    // Elementos de Tareas (Details)
+    // Task Modal
     addTaskButton, taskForm, taskModal,
     closeTaskModalButton, cancelTaskModalButton,
-    projectDetailsTableBody, projectDetailsTable, searchProjectTasksInput,
-    // ¡NUEVO! Importar los nuevos contenedores de títulos/ordenación
+    // Project Details
+    projectDetailsTableBody, searchProjectTasksInput,
     projectDetailsSortHeaders,
-    // Elementos de Costos (Cost)
+    // Cost Modal
     costForm, costModal,
     closeCostModalButton, cancelCostModalButton,
-    projectCostTableBody, projectCostTable, searchProjectCostsInput,
-    // ¡NUEVO! Importar los nuevos contenedores de títulos/ordenación
+    // Project Costs
+    projectCostTableBody, searchProjectCostsInput,
     projectCostSortHeaders,
-    // Elementos de Finanzas (Finance)
-    monthlyIncomeInput, addExpenseForm, fixedExpensesTableBody, fixedExpensesTable, searchFixedExpensesInput,
-    // ¡NUEVO! Importar los nuevos contenedores de títulos/ordenación
+    // Finance
+    monthlyIncomeInput, addExpenseForm, fixedExpensesTableBody, searchFixedExpensesInput,
     fixedExpensesSortHeaders,
-    // Elementos de Modales
+    // Confirmation Modal
     confirmationModal, closeConfirmationModalButton, cancelConfirmationModalButton, confirmConfirmationButton,
-    // Elementos de Gráficos (Overview)
+    // Overview
     chartTypeSelect,
-    // Elementos de Autenticación
+    // Auth
     loginForm, registerForm,
     showRegisterFormButton, logoutButton,
-    // Añadir el segundo botón de showLoginFormButton si existe y es diferente
-    // Si ambos botones #show-login-form-button son idénticos en funcionalidad, querySelectorAll está bien.
+    // Spot Trading
+    addSpotTradeButton,
+    spotTradeModal,
+    spotTradeForm,
+    closeSpotTradeModalButton,
+    cancelSpotTradeModalButton,
+    spotTradesTableBody,
+    priceInput,
+    quantityBaseInput,
+    totalQuoteInput,
+    // App Mode
+    appModeSelector,
+    // Futures Trading
+    addFuturesTradeButton,
+    futuresTradeModal,
+    futuresTradeForm,
+    closeFuturesTradeModalButton,
+    cancelFuturesTradeModalButton,
+    closeFuturesTradeButton,
+    futuresTradesTableBody,
+    // Crypto Panel & Watchlist
+    addCoinModal,
+    closeAddCoinModalButton,
+    cancelAddCoinModalButton,
+    searchCoinInput,
+    coinSearchResultsContainer,
+    cryptoWatchlistContainer,
+    cryptoPanelContent,
+    // Spot Filters
+    applySpotFiltersBtn,
+    clearSpotFiltersBtn
 } from './domElements.js';
 
-import { loadData } from './storage.js';
-import { getAppState } from './state.js'; // Solo se necesita getAppState si no modificamos estado directamente aquí.
-
+import { loadData, addToWatchlist, removeFromWatchlist } from './storage.js';
+import { getAppState, updateAppState } from './state.js';
 import { loadThemePreference, toggleDarkMode } from './theme.js';
-// renderAll es llamado desde auth.js después de un login/registro exitoso o en checkAuthStatus.
-// import { renderAll } from './uiRender.js';
 import {
     openAddTaskModal, closeModal,
     handleChangeAppTitle, closeConfirmationModal,
-    openEditTaskModal, openEditCostModal
+    openEditTaskModal, openEditCostModal,
+    openAddSpotTradeModal,
+    openEditSpotTradeModal,
+    openAddFuturesTradeModal,
+    openEditFuturesTradeModal,
+    openAddCoinToWatchlistModal,
+    handleCoinSearch
 } from './modalHandlers.js';
 import {
     handleTabClick, handleAddStatus, handleAddProjectName,
@@ -56,19 +87,25 @@ import {
     handleSearchProjectTasks,
     handleSearchProjectCosts,
     handleSearchFixedExpenses,
-    handleStatusColorChange // Importar el handler para el cambio de color
+    handleStatusColorChange,
+    handleSpotTradeFormSubmit,
+    handleDeleteSpotTrade,
+    updateUIMode,
+    handleAppModeChange,
+    handleFuturesTradeFormSubmit,
+    handleCloseFuturesTrade,
+    handleDeleteFuturesTrade,
+    handleApplySpotFilters,
+    handleClearSpotFilters
 } from './eventHandlers.js';
 import {
     handleLogin, handleRegister, handleLogout,
     showLoginForm, showRegisterForm,
     checkAuthStatus, checkForRegisteredUser
-    // La función hideAuthScreenAndShowApp debería estar en auth.js y ser llamada por checkAuthStatus o login/register exitoso.
-    // No necesitamos importarla aquí directamente a menos que la estemos llamando explícitamente desde main.js
 } from './auth.js';
-import { showToast } from './utils.js';
-// renderSelectedChart se llama desde auth.js (en hideAuthScreenAndShowApp) y eventHandlers.js (handleTabClick)
+import { showToast, setButtonLoadingState } from './utils.js';
+import { renderCryptoPanel } from './uiRender.js';
 
-// Variable para almacenar el evento beforeinstallprompt
 let deferredPrompt;
 
 const attachStaticListeners = () => {
@@ -118,37 +155,67 @@ const attachStaticListeners = () => {
     if(searchProjectCostsInput) searchProjectCostsInput.addEventListener('input', handleSearchProjectCosts);
     if(searchFixedExpensesInput) searchFixedExpensesInput.addEventListener('input', handleSearchFixedExpenses);
 
-    // Auth Listeners
+    if(applySpotFiltersBtn) applySpotFiltersBtn.addEventListener('click', handleApplySpotFilters);
+    if(clearSpotFiltersBtn) clearSpotFiltersBtn.addEventListener('click', handleClearSpotFilters);
+    
     if(loginForm) loginForm.addEventListener('submit', handleLogin);
     if(registerForm) registerForm.addEventListener('submit', handleRegister);
     if(showRegisterFormButton) showRegisterFormButton.addEventListener('click', showRegisterForm);
-    // Si tienes múltiples botones con el mismo ID (lo cual no es ideal, pero si es el caso)
     document.querySelectorAll('#show-login-form-button').forEach(btn => {
         if (btn) btn.addEventListener('click', showLoginForm);
     });
     if(logoutButton) logoutButton.addEventListener('click', handleLogout);
+
+    if(addSpotTradeButton) addSpotTradeButton.addEventListener('click', openAddSpotTradeModal);
+    if(spotTradeForm) spotTradeForm.addEventListener('submit', handleSpotTradeFormSubmit);
+    if(closeSpotTradeModalButton) closeSpotTradeModalButton.addEventListener('click', () => closeModal(spotTradeModal));
+    if(cancelSpotTradeModalButton) cancelSpotTradeModalButton.addEventListener('click', () => closeModal(spotTradeModal));
+    if(spotTradeModal) spotTradeModal.addEventListener('click', (e) => { if (e.target === spotTradeModal) closeModal(spotTradeModal); });
+
+    const updateTotalQuote = () => {
+        if (!priceInput || !quantityBaseInput || !totalQuoteInput) return;
+        const price = parseFloat(priceInput.value);
+        const quantity = parseFloat(quantityBaseInput.value);
+        if (!isNaN(price) && !isNaN(quantity)) {
+            totalQuoteInput.value = (price * quantity).toFixed(2);
+        } else {
+            totalQuoteInput.value = '';
+        }
+    };
+    if (priceInput) priceInput.addEventListener('input', updateTotalQuote);
+    if (quantityBaseInput) quantityBaseInput.addEventListener('input', updateTotalQuote);
+    
+    if(appModeSelector) {
+        appModeSelector.addEventListener('change', handleAppModeChange);
+    }
+
+    if(addFuturesTradeButton) addFuturesTradeButton.addEventListener('click', openAddFuturesTradeModal);
+    if(futuresTradeForm) futuresTradeForm.addEventListener('submit', handleFuturesTradeFormSubmit);
+    if(closeFuturesTradeModalButton) closeFuturesTradeModalButton.addEventListener('click', () => closeModal(futuresTradeModal));
+    if(cancelFuturesTradeModalButton) cancelFuturesTradeModalButton.addEventListener('click', () => closeModal(futuresTradeModal));
+    if(futuresTradeModal) futuresTradeModal.addEventListener('click', (e) => { if (e.target === futuresTradeModal) closeModal(futuresTradeModal); });
+    if(closeFuturesTradeButton) closeFuturesTradeButton.addEventListener('click', handleCloseFuturesTrade);
+    
+    if(closeAddCoinModalButton) closeAddCoinModalButton.addEventListener('click', () => closeModal(addCoinModal));
+    if(cancelAddCoinModalButton) cancelAddCoinModalButton.addEventListener('click', () => closeModal(addCoinModal));
+    if(addCoinModal) addCoinModal.addEventListener('click', (e) => { if (e.target === addCoinModal) closeModal(addCoinModal); });
+    if(searchCoinInput) searchCoinInput.addEventListener('input', (e) => handleCoinSearch(e.target.value));
 };
 
 const attachDelegatedListeners = () => {
-    const setupDelegatedListener = (parentElement, selector, handlerFn, idAttribute = 'data-id') => {
+    const setupListDelegation = (parentElement, selector, handlerFn) => {
         if(parentElement) {
             parentElement.addEventListener('click', (event) => {
                 const targetButton = event.target.closest(selector);
-                // Para los nuevos botones de ordenación, el ID lo sacamos del data-table-id
-                // y la clave de ordenación del data-sort-key.
-                // Asegurarse de que el elemento sea un botón y tenga los atributos correctos.
-                if (targetButton && targetButton.matches('button.sortable-header') && targetButton.dataset.sortKey && targetButton.dataset.tableId) {
-                    handlerFn(event); // Pasamos el evento completo para que handleTableSort pueda leer el target
-                } else if (targetButton && targetButton.hasAttribute(idAttribute)) { // Para botones con data-id tradicional
-                    handlerFn(targetButton.getAttribute(idAttribute));
+                if (targetButton && targetButton.dataset.id) {
+                    handlerFn(targetButton.dataset.id);
                 }
             });
         }
     };
-
-    setupDelegatedListener(statusListEl, '.delete-status-button', handleDeleteStatus);
-    setupDelegatedListener(projectNameListEl, '.delete-project-name-button', handleDeleteProjectName);
-    setupDelegatedListener(fixedExpensesTableBody, '.delete-expense-button', handleDeleteFixedExpense);
+    setupListDelegation(statusListEl, '.delete-status-button', handleDeleteStatus);
+    setupListDelegation(projectNameListEl, '.delete-project-name-button', handleDeleteProjectName);
+    setupListDelegation(fixedExpensesTableBody, '.delete-expense-button', handleDeleteFixedExpense);
 
     if(projectDetailsTableBody) {
         projectDetailsTableBody.addEventListener('click', (event) => {
@@ -165,8 +232,44 @@ const attachDelegatedListeners = () => {
             if (editBtn && editBtn.dataset.id) openEditCostModal(editBtn.dataset.id);
         });
     }
+    
+    if(spotTradesTableBody) {
+        spotTradesTableBody.addEventListener('click', (event) => {
+            const editBtn = event.target.closest('.edit-spot-trade-button');
+            const deleteBtn = event.target.closest('.delete-spot-trade-button');
+            const id = editBtn?.dataset.id || deleteBtn?.dataset.id;
+            
+            if (!id) return;
 
-    // Listener delegado para los inputs de color de estado en la lista de configuración
+            const numericId = parseInt(id, 10);
+            if (isNaN(numericId)) return;
+
+            if (editBtn) {
+                openEditSpotTradeModal(numericId);
+            } else if (deleteBtn) {
+                handleDeleteSpotTrade(numericId);
+            }
+        });
+    }
+
+    if(futuresTradesTableBody) {
+        futuresTradesTableBody.addEventListener('click', (event) => {
+            const editBtn = event.target.closest('.edit-futures-trade-button');
+            const deleteBtn = event.target.closest('.delete-futures-trade-button');
+            const id = editBtn?.dataset.id || deleteBtn?.dataset.id;
+
+            if (!id) return;
+            const numericId = parseInt(id, 10);
+            if (isNaN(numericId)) return;
+            
+            if (editBtn) {
+                openEditFuturesTradeModal(numericId);
+            } else if (deleteBtn) {
+                handleDeleteFuturesTrade(numericId);
+            }
+        });
+    }
+
     if(statusListEl) {
         statusListEl.addEventListener('input', (event) => {
             const colorInput = event.target.closest('.status-color-picker');
@@ -176,53 +279,73 @@ const attachDelegatedListeners = () => {
         });
     }
 
-    // ¡NUEVO! Listeners delegados para los nuevos contenedores de ordenación
-    if(projectDetailsSortHeaders) {
-        projectDetailsSortHeaders.addEventListener('click', (event) => {
-            const sortButton = event.target.closest('.sortable-header');
-            if (sortButton && sortButton.matches('button')) { // Asegurar que es un botón
-                handleTableSort(event); // Pasar el evento completo a handleTableSort
+    const setupSortDelegation = (container) => {
+        if(container) {
+            container.addEventListener('click', (event) => {
+                const sortButton = event.target.closest('.sortable-header');
+                if (sortButton && sortButton.matches('button')) {
+                    handleTableSort(event);
+                }
+            });
+        }
+    };
+    setupSortDelegation(projectDetailsSortHeaders);
+    setupSortDelegation(projectCostSortHeaders);
+    setupSortDelegation(fixedExpensesSortHeaders);
+    
+    if (cryptoPanelContent) {
+        cryptoPanelContent.addEventListener('click', async (event) => {
+            if (event.target.closest('#add-to-watchlist-button')) {
+                openAddCoinToWatchlistModal();
             }
-        });
-    }
-    if(projectCostSortHeaders) {
-        projectCostSortHeaders.addEventListener('click', (event) => {
-            const sortButton = event.target.closest('.sortable-header');
-            if (sortButton && sortButton.matches('button')) {
-                handleTableSort(event);
-            }
-        });
-    }
-    if(fixedExpensesSortHeaders) {
-        fixedExpensesSortHeaders.addEventListener('click', (event) => {
-            const sortButton = event.target.closest('.sortable-header');
-            if (sortButton && sortButton.matches('button')) {
-                handleTableSort(event);
+            const removeBtn = event.target.closest('.remove-from-watchlist-button');
+            if (removeBtn && removeBtn.dataset.coinId) {
+                const coinId = removeBtn.dataset.coinId;
+                await removeFromWatchlist(coinId);
+                const { watchlist } = getAppState();
+                const updatedWatchlist = watchlist.filter(item => item.coinId !== coinId);
+                updateAppState({ watchlist: updatedWatchlist });
+                renderCryptoPanel();
             }
         });
     }
 
+    if (coinSearchResultsContainer) {
+        coinSearchResultsContainer.addEventListener('click', async (event) => {
+            const addBtn = event.target.closest('.add-coin-to-watchlist-btn');
+            if (addBtn && addBtn.dataset.coinId && !addBtn.disabled) {
+                const coinId = addBtn.dataset.coinId;
+                const coinName = addBtn.dataset.coinName;
+
+                setButtonLoadingState(addBtn, true, '...');
+                const newItem = await addToWatchlist(coinId);
+                if (newItem) {
+                    const { watchlist } = getAppState();
+                    updateAppState({ watchlist: [...watchlist, newItem] });
+                }
+                setButtonLoadingState(addBtn, false, 'Añadir');
+                addBtn.textContent = 'Añadida';
+                addBtn.disabled = true;
+                addBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                addBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                renderCryptoPanel();
+            }
+        });
+    }
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("DOM Cargado. Inicializando Rastreador...");
 
-    // --- INICIO DE CÓDIGO AÑADIDO PARA PWA INSTALL PROMPT ---
     const installButton = document.getElementById('my-custom-install-button');
     const installContainer = document.getElementById('pwa-install-container');
 
     window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevenir que el banner nativo aparezca automáticamente (si el navegador lo permite)
         e.preventDefault();
-        // Almacenar el evento para poder dispararlo más tarde
         deferredPrompt = e;
-
-        // Mostrar tu botón o banner personalizado para la instalación
         if (installContainer) {
-            installContainer.classList.remove('hidden'); // Mostrar el contenedor (si Tailwind CSS)
-            // Opcional: si no usas Tailwind o quieres asegurar visibilidad:
-            // installContainer.style.display = 'flex';
-            showToast("¿Quieres instalar Zenithtrack App?", "info", 5000); // Opcional: una pequeña notificación
+            installContainer.classList.remove('hidden');
+            showToast("¿Quieres instalar Zenithtrack App?", "info", 5000);
         }
         console.log("Evento beforeinstallprompt disparado.");
     });
@@ -230,14 +353,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (installButton) {
         installButton.addEventListener('click', () => {
             if (installContainer) {
-                installContainer.classList.add('hidden'); // Ocultar el contenedor del botón (si Tailwind CSS)
-                // Opcional: si no usas Tailwind:
-                // installContainer.style.display = 'none';
+                installContainer.classList.add('hidden');
             }
             if (deferredPrompt) {
-                // Disparar la solicitud de instalación del navegador
                 deferredPrompt.prompt();
-                // Esperar la respuesta del usuario (aceptar o cancelar)
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
                         console.log('Usuario aceptó la instalación de la PWA');
@@ -245,52 +364,41 @@ document.addEventListener('DOMContentLoaded', async () => {
                     } else {
                         console.log('Usuario canceló la instalación de la PWA');
                         showToast("Instalación cancelada.", "error");
-                        // Opcional: si el usuario cancela, podrías mostrar el botón de nuevo
-                        // setTimeout(() => { if(installContainer) installContainer.classList.remove('hidden'); }, 3000);
                     }
-                    deferredPrompt = null; // Limpiar el evento
+                    deferredPrompt = null;
                 });
             }
         });
     }
 
-    // Escuchar el evento appinstalled para saber cuándo se ha instalado la PWA
     window.addEventListener('appinstalled', () => {
         console.log('Zenithtrack App instalada exitosamente!');
         if (installContainer) {
-            installContainer.classList.add('hidden'); // Ocultar cualquier UI relacionada con la instalación
+            installContainer.classList.add('hidden');
         }
-        deferredPrompt = null; // Limpiar el evento si se instala
+        deferredPrompt = null;
     });
-    // --- FIN DE CÓDIGO AÑADIDO PARA PWA INSTALL PROMPT ---
 
     try {
         loadThemePreference();
         const isAuthenticated = await checkAuthStatus();
 
         if (isAuthenticated) {
-            // La función hideAuthScreenAndShowApp (llamada desde checkAuthStatus)
-            // ya se encarga de loadData, renderAll y renderizar el gráfico inicial.
-            // El toast y el log también se manejan allí.
+            const { activeUserMode } = getAppState();
+            updateUIMode(activeUserMode);
         } else {
-            checkForRegisteredUser(); // Muestra el formulario de login o registro.
+            checkForRegisteredUser();
         }
 
         attachStaticListeners();
         attachDelegatedListeners();
-
-        // No es necesario un toast/log adicional aquí si ya se maneja en el flujo de autenticación.
 
     } catch (error) {
         console.error("Error durante la inicialización de la aplicación:", error);
         showToast("Error crítico al inicializar la aplicación. Revise la consola.", "error");
         const body = document.querySelector('body');
         if (body) {
-            body.innerHTML = `<div style="padding: 20px; text-align: center; font-family: sans-serif;">
-                                <h1>Error al cargar la aplicación</h1>
-                                <p>Ha ocurrido un error inesperado. Por favor, intente recargar la página o contacte al soporte si el problema persiste.</p>
-                                <p><em>Detalles del error (para desarrolladores): ${error.message}</em></p>
-                              </div>`;
+            body.innerHTML = `<div style="padding: 20px; text-align: center; font-family: sans-serif;"><h1>Error al cargar la aplicación</h1><p>Ha ocurrido un error inesperado. Por favor, intente recargar la página.</p><p><em>Detalles: ${error.message}</em></p></div>`;
         }
     }
 });

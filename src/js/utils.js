@@ -11,7 +11,33 @@ export const formatCurrency = (amount) => {
         maximumFractionDigits: 2
     }).format(amount);
 };
+// --- INICIO MODIFICACIÓN ---
+/**
+ * Formatea precios de criptomonedas, mostrando más decimales para valores bajos.
+ * @param {number} amount - El precio a formatear.
+ * @returns {string} El precio formateado como una cadena de texto.
+ */
+export const formatCryptoPrice = (amount) => {
+    if (typeof amount !== 'number' || isNaN(amount)) return '$0.00';
 
+    // Si el precio es 1 dólar o más, usar 2 decimales.
+    if (amount >= 1) {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    }
+    
+    // Si el precio es menor a 1 dólar, usar hasta 8 decimales.
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 8
+    }).format(amount);
+};
 export const generateId = () => `id-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`;
 
 /**

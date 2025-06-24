@@ -3,7 +3,7 @@ import { getDomElements } from './domElements.js';
 import { getAppState, getFilteredAndSortedData, calculateProjectSummary, getFuturesTradesStats } from './state.js';
 import {
     formatCurrency, getStatusStyle, getCurrentDate, sanitizeHTML,
-    updateSortIcons, formatCryptoPrice, getPriorityStyle, isHexColor
+    updateSortIcons, formatCryptoPrice, getPriorityStyle, isHexColor ,formatDuration 
 } from './utils.js';
 import { DEFAULT_PRIORITY_VALUE } from './config.js';
 import { getMarketDataForCoins } from '../api/cryptoAPI.js';
@@ -14,8 +14,8 @@ const TABLE_HEADERS = {
     projectCosts: ['Proyecto', 'Presupuesto', 'Costo Actual', 'Diferencia', 'Acciones'],
     fixedExpenses: ['Nombre Gasto', 'Monto', 'Acciones'],
     spotTrades: ['Par', 'Tipo', 'Fecha', 'Precio', 'Cantidad', 'Total', 'Acciones'],
-    futuresTrades: ['Símbolo', 'Dirección', 'Estado', 'PnL', 'Apalanc.', 'Acciones'],
-    cryptoWatchlist: ['Activo', 'Precio', 'Cambio 24h', 'Gráfico 7d', 'Acciones']
+    cryptoWatchlist: ['Activo', 'Precio', 'Cambio 24h', 'Gráfico 7d', 'Acciones'],
+    futuresTrades: ['Símbolo', 'Dirección', 'Estado', 'PnL', 'Apalanc.', 'Duración', 'Acciones'],
 };
 
 export const renderAll = () => {
@@ -184,12 +184,15 @@ export const renderFuturesTradesTable = (currentStatePassed) => {
     const dom = getDomElements();
     const currentState = currentStatePassed || getAppState();
     if (!dom.futuresTradesTableBody) return;
+
     const futuresTrades = currentState.futuresTrades || [];
+
     if (futuresTrades.length === 0) {
-        renderEmptyStateMessage(dom.futuresTradesTableBody, 'No hay posiciones de futuros registradas.', 6);
+        renderEmptyStateMessage(dom.futuresTradesTableBody, 'No hay posiciones de futuros registradas.', 7); 
         return;
     }
     const tradesToRender = [...futuresTrades].sort((a,b) => (a.status === 'open' ? -1 : 1) - (b.status === 'open' ? -1 : 1) || new Date(b.entryDate) - new Date(a.entryDate));
+
     const rowsHtml = tradesToRender.map(trade => {
         const isOpen = trade.status === 'open';
         const dirColor = trade.direction === 'long' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
@@ -197,19 +200,23 @@ export const renderFuturesTradesTable = (currentStatePassed) => {
         let pnlColor = 'text-gray-500 dark:text-gray-400';
         if (!isOpen && pnl > 0) pnlColor = 'text-green-600 dark:text-green-400';
         if (!isOpen && pnl < 0) pnlColor = 'text-red-600 dark:text-red-400';
+        
         const statusHtml = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${isOpen ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}">${isOpen ? 'Abierta' : 'Cerrada'}</span>`;
-        return `
+        const durationText = isOpen ? '-' : formatDuration(trade.entryDate, trade.exitDate);
+      return `
             <tr class="${isOpen ? 'bg-blue-50/50 dark:bg-blue-900/40' : ''}">
                 <td data-label="${TABLE_HEADERS.futuresTrades[0]}"><span class="value-wrapper">${sanitizeHTML(trade.symbol)}</span></td>
                 <td data-label="${TABLE_HEADERS.futuresTrades[1]}"><span class="value-wrapper ${dirColor}"><i class="fas fa-arrow-${trade.direction === 'long' ? 'up' : 'down'} mr-1"></i> ${trade.direction === 'long' ? 'Long' : 'Short'}</span></td>
                 <td data-label="${TABLE_HEADERS.futuresTrades[2]}"><span class="value-wrapper">${statusHtml}</span></td>
                 <td data-label="${TABLE_HEADERS.futuresTrades[3]}"><span class="value-wrapper ${pnlColor}">${isOpen ? '-' : formatCurrency(pnl)}</span></td>
                 <td data-label="${TABLE_HEADERS.futuresTrades[4]}"><span class="value-wrapper">${trade.leverage}x</span></td>
-                <td data-label="${TABLE_HEADERS.futuresTrades[5]}"><span class="value-wrapper flex justify-center items-center space-x-4"><button class="text-blue-500 hover:text-blue-700 edit-futures-trade-button" data-id="${trade.id}" title="Ver/Editar"><i class="fas fa-eye"></i></button><button class="text-red-500 hover:text-red-700 delete-futures-trade-button" data-id="${trade.id}" title="Eliminar"><i class="fas fa-trash"></i></button></span></td>
+                            <td data-label="${TABLE_HEADERS.futuresTrades[5]}"><span class="value-wrapper">${durationText}</span></td>
+                <td data-label="${TABLE_HEADERS.futuresTrades[6]}"><span class="value-wrapper flex justify-center items-center space-x-4"><button class="text-blue-500 hover:text-blue-700 edit-futures-trade-button" data-id="${trade.id}" title="Ver/Editar"><i class="fas fa-eye"></i></button><button class="text-red-500 hover:text-red-700 delete-futures-trade-button" data-id="${trade.id}" title="Eliminar"><i class="fas fa-trash"></i></button></span></td>
             </tr>`;
     }).join('');
     dom.futuresTradesTableBody.innerHTML = rowsHtml;
 };
+
 
 const renderSparklineChart = (canvasElement, priceData, priceChange) => {
     if (!canvasElement || !priceData || priceData.length === 0) return;

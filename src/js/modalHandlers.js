@@ -1,7 +1,8 @@
 // src/js/modalHandlers.js
 import { getDomElements } from './domElements.js';
 import { getAppState, updateAppState } from './state.js';
-import { sanitizeHTML, clearAllValidationErrors, showToast, debounce, formatCurrency } from './utils.js';
+import { sanitizeHTML, clearAllValidationErrors, showToast, debounce, formatCurrency, formatDuration,
+    } from './utils.js';
 import db from './db.js';
 import { getTop100Coins } from '../api/cryptoAPI.js';
 import { DEFAULT_TASK_PRIORITIES } from './config.js';
@@ -277,6 +278,16 @@ export const showDynamicModal = (options) => {
                 } else { 
                     dom.saveFuturesTradeButton.textContent = 'Abrir Posición';
                 }
+                if (dom.futuresDurationContainer) {
+                dom.futuresDurationContainer.classList.toggle('hidden', !isEditingClosedTrade);
+            }
+            if (dom.futuresDurationInput) {
+                if (isEditingClosedTrade && data.entryDate && data.exitDate) {
+                    dom.futuresDurationInput.value = formatDuration(data.entryDate, data.exitDate);
+                } else {
+                    dom.futuresDurationInput.value = '';
+                }
+            }
             }
             if (dom.closeFuturesTradeButton) {
                 dom.closeFuturesTradeButton.classList.toggle('hidden', !isEditingOpenTrade);

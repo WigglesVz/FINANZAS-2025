@@ -3,8 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tus estilos personalizados van DESPUÉS de las directivas de Tailwind */
-
 /* Use Inter font for the body */
 body {
     font-family: 'Inter', sans-serif;
@@ -292,19 +290,71 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
     #spot-trades-table th:nth-child(7), /* Acciones */
     #spot-trades-table td:nth-child(7) { width: 10%; text-align: center; }
 
-    /* --- ALINEACIÓN PARA OPERACIONES DE FUTUROS --- */
-    #futures-trades-table th:nth-child(1), /* Símbolo */
+    /* --- ALINEACIÓN PARA OPERACIONES DE FUTUROS (ESCRITORIO - ESTÁNDAR) --- */
+    #futures-trades-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed; /* Ayuda a que los anchos de columna se respeten */
+    }
+
+    #futures-trades-table th,
+    #futures-trades-table td {
+        padding: 12px 15px; /* Padding estándar */
+        font-size: 0.875rem; /* Tamaño de fuente estándar */
+        border-bottom: 1px solid #e5e7eb; /* Borde inferior estándar */
+        vertical-align: middle; /* Alinea el contenido verticalmente al centro */
+        /* white-space: nowrap; */ /* Descomenta si quieres evitar que el texto se rompa en varias líneas */
+        overflow: hidden; /* Evita que el contenido desborde la celda */
+        text-overflow: ellipsis; /* Muestra '...' si el contenido es muy largo y white-space: nowrap está activo */
+    }
+    .dark #futures-trades-table th,
+    .dark #futures-trades-table td {
+        border-bottom-color: #4b5563; /* Borde inferior en modo oscuro */
+        color: #d1d5db; /* Color de texto en modo oscuro */
+    }
+    .dark #futures-trades-table th { /* Color específico para encabezados en dark mode */
+        color: #e5e7eb; /* Un gris más claro para encabezados en dark */
+    }
+
+    /* Anchos y alineaciones para cada columna de #futures-trades-table */
+    /* Símbolo */
+    #futures-trades-table th:nth-child(1),
     #futures-trades-table td:nth-child(1) { width: 20%; text-align: left; }
-    #futures-trades-table th:nth-child(2), /* Dirección */
+    /* Dirección */
+    #futures-trades-table th:nth-child(2),
     #futures-trades-table td:nth-child(2) { width: 15%; text-align: left; }
-    #futures-trades-table th:nth-child(3), /* Estado */
-    #futures-trades-table td:nth-child(3) { width: 15%; text-align: center; } /* Centrado para badge */
-    #futures-trades-table th:nth-child(4), /* PNL */
+    /* Estado */
+    #futures-trades-table th:nth-child(3),
+    #futures-trades-table td:nth-child(3) { width: 15%; text-align: center; }
+    /* PNL */
+    #futures-trades-table th:nth-child(4),
     #futures-trades-table td:nth-child(4) { width: 15%; text-align: right; }
-    #futures-trades-table th:nth-child(5), /* Apalanc. */
+    /* Apalanc. */
+    #futures-trades-table th:nth-child(5),
     #futures-trades-table td:nth-child(5) { width: 15%; text-align: right; }
-    #futures-trades-table th:nth-child(6), /* Acciones */
-    #futures-trades-table td:nth-child(6) { width: 20%; text-align: center; }
+    /* Duración */
+    #futures-trades-table th:nth-child(6),
+    #futures-trades-table td:nth-child(6) { width: 10%; text-align: center; }
+    /* Acciones */
+    #futures-trades-table th:nth-child(7),
+    #futures-trades-table td:nth-child(7) { width: 10%; text-align: center; }
+
+    /* Asegurar que el contenido del span.value-wrapper se comporte bien */
+    #futures-trades-table td .value-wrapper {
+        display: inline-block;
+        width: 100%;
+    }
+
+    /* Ajustes específicos para el contenido de ciertas celdas */
+    #futures-trades-table td:nth-child(2) .value-wrapper i {
+        margin-right: 0.25rem;
+    }
+    #futures-trades-table td:nth-child(7) .value-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem; /* Espacio entre botones */
+    }
 }
 
 /* Media query para pantallas PEQUEÑAS (móviles) */
@@ -407,12 +457,11 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
     }
 
     /* Reglas específicas para las celdas de acciones y gráfico */
-    /* Adjust nth-child for project-details-table Actions column (now 8th) */
     #project-details-table td:nth-child(8),
     #project-cost-table td:nth-child(5),
     #fixed-expenses-table td:nth-child(3),
     #spot-trades-table td:nth-child(7),
-    #futures-trades-table td:nth-child(6),
+    #futures-trades-table td:nth-child(7),
     #crypto-watchlist-container td:nth-child(4), /* <- GRÁFICO */
     #crypto-watchlist-container td:nth-child(5) { /* <- ACCIÓN */
         justify-content: center;
@@ -425,7 +474,7 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
     .dark #project-cost-table td:nth-child(5),
     .dark #fixed-expenses-table td:nth-child(3),
     .dark #spot-trades-table td:nth-child(7),
-    .dark #futures-trades-table td:nth-child(6),
+    .dark #futures-trades-table td:nth-child(7),
     .dark #crypto-watchlist-container td:nth-child(4), /* <- GRÁFICO */
     .dark #crypto-watchlist-container td:nth-child(5) { /* <- ACCIÓN */
         border-top-color: #4b5563;
@@ -433,12 +482,11 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
 
 
     /* Ocultar la etiqueta "Acciones" y "Gráfico" */
-     /* Adjust nth-child for project-details-table Actions column (now 8th) */
     #project-details-table td:nth-child(8)::before,
     #project-cost-table td:nth-child(5)::before,
     #fixed-expenses-table td:nth-child(3)::before,
     #spot-trades-table td:nth-child(7)::before,
-    #futures-trades-table td:nth-child(6)::before,
+    #futures-trades-table td:nth-child(7)::before,
     #crypto-watchlist-container td:nth-child(4)::before, /* <- OCULTAR ETIQUETA GRÁFICO */
     #crypto-watchlist-container td:nth-child(5)::before { /* <- OCULTAR ETIQUETA ACCIÓN */
         content: "";
@@ -446,12 +494,11 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
     }
 
     /* Hacer que los botones de acción y el gráfico ocupen todo el ancho */
-    /* Adjust nth-child for project-details-table Actions column (now 8th) */
     #project-details-table td:nth-child(8) .value-wrapper,
     #project-cost-table td:nth-child(5) .value-wrapper,
     #fixed-expenses-table td:nth-child(3) .value-wrapper,
     #spot-trades-table td:nth-child(7) .value-wrapper,
-    #futures-trades-table td:nth-child(6) .value-wrapper,
+    #futures-trades-table td:nth-child(7) .value-wrapper,
     #crypto-watchlist-container td:nth-child(4) .value-wrapper, /* <- CENTRAR VALOR GRÁFICO */
     #crypto-watchlist-container td:nth-child(5) .value-wrapper { /* <- CENTRAR VALOR ACCIÓN */
         width: 100%;

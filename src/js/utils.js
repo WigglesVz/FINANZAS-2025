@@ -428,3 +428,40 @@ export const calculateSpotTargetMetrics = (options) => {
         error: null
     };
 };
+export const formatDuration = (startDateString, endDateString) => {
+    if (!startDateString || !endDateString) return '-';
+
+    const startDate = new Date(startDateString);
+    const endDate = new Date(endDateString);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || endDate < startDate) {
+        return '-';
+    }
+
+    let diffMs = endDate - startDate;
+
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    diffMs -= days * (1000 * 60 * 60 * 24);
+
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    diffMs -= hours * (1000 * 60 * 60);
+
+    const minutes = Math.floor(diffMs / (1000 * 60));
+
+    let result = '';
+    if (days > 0) {
+        result += `${days}d `;
+    }
+    if (hours > 0 || days > 0) { // Mostrar horas si hay días o si hay horas
+        result += `${hours}h `;
+    }
+    // Solo mostrar minutos si la duración total es menos de 1 día o si no hay días ni horas (para duraciones muy cortas)
+    if (days === 0 && (hours > 0 || minutes > 0)) {
+        result += `${minutes}m`;
+    } else if (days === 0 && hours === 0 && minutes === 0) {
+        return '< 1m'; // Para duraciones extremadamente cortas
+    }
+
+
+    return result.trim() || '-';
+};

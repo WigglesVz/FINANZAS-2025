@@ -178,6 +178,8 @@ export let futuresNotesInput;
 export let futuresEntryFeesInput;
 export let futuresExitFeesContainer;
 export let futuresExitFeesInput;
+export let futuresDurationContainer; 
+export let futuresDurationInput;  
 // --- Elementos de Autenticación ---
 export let authScreen;
 export let appContent;
@@ -369,6 +371,8 @@ export const initializeDomElements = () => {
     futuresEntryFeesInput = document.getElementById('futures-entry-fees');
     futuresExitFeesContainer = document.getElementById('futures-exit-fees-container');
     futuresExitFeesInput = document.getElementById('futures-exit-fees');
+    futuresDurationContainer = document.getElementById('futures-duration-container'); 
+futuresDurationInput = document.getElementById('futures-duration');      
     authScreen = document.getElementById('auth-screen');
     appContent = document.getElementById('app-content');
     loginFormContainer = document.getElementById('login-form-container');

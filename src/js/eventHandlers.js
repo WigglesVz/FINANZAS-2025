@@ -1,130 +1,76 @@
 // src/js/eventHandlers.js
+import { getDomElements } from './domElements.js';
+import { getAppState, updateAppState, getConfirmationAction } from './state.js';
 import {
-    tabButtons, tabContents, changeTitleButton, themeToggleButton,
-    addStatusButton, newStatusInput, newStatusError, statusListEl,
-    addProjectNameButton, newProjectNameInput, newProjectNameError, projectNameListEl,
-    resetDataButton, exportDataButton, importDataButton, importFileInput,
-    addTaskButton, taskForm, saveTaskButton, closeTaskModalButton, cancelTaskModalButton, taskModal,
-    taskProjectNameSelect, taskStatusSelect, taskNameInput, taskDescriptionInput,
-    taskStartDateInput, taskEndDateInput, taskIdInput,
-    taskProjectNameError, taskStatusError, taskNameError, taskStartDateError, taskEndDateError,
-    projectDetailsTableBody, projectCostTableBody, fixedExpensesTableBody,
-    costForm, saveCostButton, closeCostModalButton, cancelCostModalButton, costModal,
-    costBudgetInput, costActualInput, costBudgetError, costActualError,
-    monthlyIncomeInput, addExpenseForm, addExpenseButton, expenseNameInput, expenseAmountInput,
-    expenseNameError, expenseAmountError,
-    confirmationModal, closeConfirmationModalButton, cancelConfirmationModalButton, confirmConfirmationButton,
-    projectDetailsSortHeaders, projectCostSortHeaders, fixedExpensesSortHeaders,
-    projectDetailsTable, projectCostTable, fixedExpensesTable, htmlElement, mainTitleEl,
-    chartTypeSelect,
-    searchProjectTasksInput, searchProjectCostsInput, searchFixedExpensesInput,
-    spotTradeForm, saveSpotTradeButton, spotTradeModal,
-    spotTradeIdInput, tradeDateInput, tradeTypeSelect, baseAssetInput,
-    quoteAssetInput, priceInput, quantityBaseInput, notesInput, spotTradeFeesInput,
-    appModeSelector, modeProjectsRadio, modeCryptoRadio,
-    setupStatusListContainer, setupProjectNameListContainer,
-    futuresTradeForm, saveFuturesTradeButton, closeFuturesTradeButton, futuresTradeModal,
-    futuresTradeIdInput, futuresSymbolInput, futuresDirectionSelect, futuresLeverageInput,
-    futuresEntryDateInput, futuresQuantityInput, futuresEntryPriceInput, futuresExitPriceInput,
-    futuresNotesInput, futuresEntryFeesInput, futuresExitFeesInput,
-    addCoinModal, closeAddCoinModalButton, cancelAddCoinModalButton, searchCoinInput,
-    coinSearchResultsContainer, cryptoWatchlistContainer, cryptoPanelContent,
-    filterSpotAssetInput, filterSpotStartDateInput, filterSpotEndDateInput, applySpotFiltersBtn, clearSpotFiltersBtn
-} from './domElements.js';
-import { getAppState, updateAppState } from './state.js';
-import {
-    renderAll,
-    renderProjectDetailsTable, renderProjectCostTable,
-    renderFixedExpensesList, renderSetupLists, renderOverview, renderProjectSummaries,
-    renderFinanceSummary, renderFinanceTab,
-    renderSpotTradesTable,
-    renderFuturesTradesTable,
-    renderCryptoPanel
+    renderAll, renderProjectDetailsTable, renderProjectCostTable,
+    renderFixedExpensesList, renderSetupLists, renderOverview,
+    renderProjectSummaries, renderFinanceSummary, renderFinanceTab,
+    renderSpotTradesTable, renderFuturesTradesTable, renderCryptoPanel
 } from './uiRender.js';
 import {
-    openAddTaskModal, openEditTaskModal, openEditCostModal, closeModal,
-    openConfirmationModal, closeConfirmationModal, handleChangeAppTitle, updateTaskModalDropdowns,
-    openEditSpotTradeModal,
-    openEditFuturesTradeModal,
-    openAddCoinToWatchlistModal,
-    handleCoinSearch
+    closeModal, openConfirmationModal, openEditTaskModal, openEditCostModal,
+    openAddSpotTradeModal, openEditSpotTradeModal, openAddFuturesTradeModal,
+    openEditFuturesTradeModal, openAddCoinToWatchlistModal,
+    handleCoinSearch as modalHandleCoinSearch,
+    updateTaskModalDropdowns
 } from './modalHandlers.js';
 import db from './db.js';
-import { 
-    resetToDefaultData, importData, 
+import {
+    resetToDefaultData as storageResetToDefaultData,
+    importData as storageImportData,
     addSpotTrade, updateSpotTrade, deleteSpotTrade,
     addFuturesTrade, updateFuturesTrade, deleteFuturesTrade,
-    addToWatchlist,
-    removeFromWatchlist
+    addToWatchlist, removeFromWatchlist
 } from './storage.js';
-import {
-    sanitizeHTML, generateId, showToast,
-    clearAllValidationErrors,
-    getCurrentDate, 
-    setButtonLoadingState,
-    debounce, validateForm
+import { 
+    sanitizeHTML, generateId, showToast, clearAllValidationErrors,
+    getCurrentDate, setButtonLoadingState, debounce, validateForm,
+    updateSortIcons, formatCurrency, 
+    calculateSpotTargetMetrics
 } from './utils.js';
 import { renderSelectedChart, refreshCurrentChart } from './charts.js';
 
-// --- Handlers de Búsqueda (Ahora con debounce) ---
+// --- Handlers de Búsqueda (con debounce) ---
 const _handleSearchProjectTasks = (event) => {
     const searchTerm = event.target.value;
     const currentState = getAppState();
-    updateAppState({
-        searchTerms: {
-            ...currentState.searchTerms,
-            projectDetails: searchTerm
-        }
-    });
+    updateAppState({ searchTerms: { ...currentState.searchTerms, projectDetails: searchTerm } });
     renderProjectDetailsTable();
 };
+export const handleSearchProjectTasks = debounce(_handleSearchProjectTasks, 300);
 
 const _handleSearchProjectCosts = (event) => {
     const searchTerm = event.target.value;
     const currentState = getAppState();
-    updateAppState({
-        searchTerms: {
-            ...currentState.searchTerms,
-            projectCosts: searchTerm
-        }
-    });
+    updateAppState({ searchTerms: { ...currentState.searchTerms, projectCosts: searchTerm } });
     renderProjectCostTable();
 };
+export const handleSearchProjectCosts = debounce(_handleSearchProjectCosts, 300);
 
 const _handleSearchFixedExpenses = (event) => {
     const searchTerm = event.target.value;
     const currentState = getAppState();
-    updateAppState({
-        searchTerms: {
-            ...currentState.searchTerms,
-            fixedExpenses: searchTerm
-        }
-    });
+    updateAppState({ searchTerms: { ...currentState.searchTerms, fixedExpenses: searchTerm } });
     renderFixedExpensesList();
 };
-
-export const handleSearchProjectTasks = debounce(_handleSearchProjectTasks, 300);
-export const handleSearchProjectCosts = debounce(_handleSearchProjectCosts, 300);
 export const handleSearchFixedExpenses = debounce(_handleSearchFixedExpenses, 300);
-// --- FIN Handlers de Búsqueda ---
 
+// --- Manejador de Click en Pestañas ---
 export const handleTabClick = (event) => {
+    const dom = getDomElements();
     const clickedButton = event.currentTarget;
     const tabId = clickedButton.dataset.tab;
-
-    if (tabButtons) {
-        tabButtons.forEach(button => {
+    if (dom.tabButtons && dom.tabButtons.length) {
+        dom.tabButtons.forEach(button => {
             button.classList.remove('active');
             button.setAttribute('aria-selected', 'false');
         });
     }
-    if (tabContents) {
-        tabContents.forEach(content => {
-            content.classList.remove('active');
-            content.hidden = true;
-        });
-    }
-
+    const allTabContents = document.querySelectorAll('.tab-content');
+    allTabContents.forEach(content => {
+        content.classList.remove('active');
+        content.hidden = true;
+    });
     clickedButton.classList.add('active');
     clickedButton.setAttribute('aria-selected', 'true');
     const activeContent = document.getElementById(`${tabId}-content`);
@@ -132,425 +78,276 @@ export const handleTabClick = (event) => {
         activeContent.classList.add('active');
         activeContent.hidden = false;
     }
-
-    if (tabId === 'overview' && chartTypeSelect) {
-        renderSelectedChart(chartTypeSelect.value);
-    }
-    if (tabId === 'details') renderProjectDetailsTable();
-    if (tabId === 'cost') renderProjectCostTable();
-    if (tabId === 'finance') renderFinanceTab();
-    if (tabId === 'spot-trading') {
-        requestAnimationFrame(() => {
-            renderSpotTradesTable();
-        });
-    }
-    if (tabId === 'futures-trading') {
-        requestAnimationFrame(() => {
-            renderFuturesTradesTable();
-        });
-    }
-    if (tabId === 'crypto-panel') {
-        requestAnimationFrame(() => {
-            renderCryptoPanel();
-        });
-    }
+    requestAnimationFrame(() => {
+        if (tabId === 'overview') {
+            renderOverview();
+            const currentMode = getAppState().activeUserMode;
+            if (currentMode === 'projects' && dom.chartTypeSelect) {
+                renderSelectedChart(dom.chartTypeSelect.value);
+            } else if (currentMode === 'crypto') {
+                renderSelectedChart('cryptoPerformance');
+            }
+        } else if (tabId === 'details') { renderProjectDetailsTable(); }
+        else if (tabId === 'cost') { renderProjectCostTable(); }
+        else if (tabId === 'finance') { renderFinanceTab(); }
+        else if (tabId === 'spot-trading') { renderSpotTradesTable(); }
+        else if (tabId === 'futures-trading') { renderFuturesTradesTable(); }
+        else if (tabId === 'crypto-panel') { renderCryptoPanel(); }
+        else if (tabId === 'setup') { renderSetupLists(); renderFinanceTab(); }
+    });
+    const allModals = document.querySelectorAll('.modal:not(.hidden)');
+    allModals.forEach(modal => closeModal(modal));
 };
 
-// --- Handler para el cambio de color de estado ---
 export const handleStatusColorChange = async (event) => {
     const colorInput = event.target;
     if (!colorInput || colorInput.type !== 'color' || !colorInput.classList.contains('status-color-picker')) return;
-
     const statusId = colorInput.dataset.id;
     const newColor = colorInput.value;
     const currentState = getAppState();
-
     const statusIndex = currentState.statusList.findIndex(s => s.id === statusId);
-    if (statusIndex === -1) {
-        showToast("Error: Estado no encontrado para actualizar color.", "error");
-        return;
-    }
-
-    const updatedStatusList = currentState.statusList.map(s =>
-        s.id === statusId ? { ...s, color: newColor } : s
-    );
+    if (statusIndex === -1) { showToast("Error: Estado no encontrado.", "error"); return; }
+    const updatedStatusList = currentState.statusList.map(s => s.id === statusId ? { ...s, color: newColor } : s);
     updateAppState({ statusList: updatedStatusList });
-
-    renderSetupLists();
-
-    try {
-        await db.statusList.update(statusId, { color: newColor });
-        console.log(`Color de estado actualizado en IndexedDB: Status ID = ${statusId}, Color = ${newColor}`);
-        showToast("Color de estado actualizado.", "success");
-        refreshCurrentChart();
-        renderProjectDetailsTable();
-    } catch (error) {
-        console.error("Error updating status color in DB:", error);
-        showToast("Error al guardar el color del estado.", "error");
-    }
+    renderSetupLists(); refreshCurrentChart(); renderProjectDetailsTable();
+    try { await db.statusList.update(statusId, { color: newColor });
+    } catch (error) { console.error("Error updating status color in DB:", error); showToast("Error al guardar el color.", "error"); }
 };
-// --- FIN Handler para el cambio de color de estado ---
 
-
-const handleAddListItem = async (inputEl, errorEl, listKeyInState, listNameSingular, successMsg, maxLength, renderFn, otherRenderFns = []) => {
-    if (!inputEl || !errorEl) {
-        console.error(`handleAddListItem (${listNameSingular}): inputEl o errorEl no encontrados.`);
-        return false;
-    }
+const handleAddListItem = async (inputEl, errorEl, listKeyInState, itemNameSingularParam, successMsg, maxLength, mainRenderFn, otherRenderFns = []) => {
+    const localItemNameSingular = itemNameSingularParam;
+    if (!inputEl || !errorEl) { console.error(`handleAddListItem (${localItemNameSingular}): inputEl o errorEl no encontrados.`); return false; }
     const formOrParentContainer = inputEl.closest('.list-item-adder-container');
-    
-    if (!formOrParentContainer) { 
-        console.error(`handleAddListItem (${listNameSingular}): No se pudo encontrar '.list-item-adder-container' para el inputEl:`, inputEl);
-        return false;
-    }
-
-    clearAllValidationErrors(formOrParentContainer);
+    if (!formOrParentContainer) { console.error(`handleAddListItem (${localItemNameSingular}): No se pudo encontrar '.list-item-adder-container'.`); return false; }
     const newItemName = inputEl.value.trim();
     const currentState = getAppState();
     const list = Array.isArray(currentState[listKeyInState]) ? currentState[listKeyInState] : [];
-
-    const rules = [
-        {
-            field: inputEl.id,
-            errorElementId: errorEl.id, 
-            checks: [
-                { type: 'required', message: `Ingrese un nombre para el ${listNameSingular}.` },
-                { type: 'maxlength', value: maxLength, message: `El nombre no puede exceder ${maxLength} caracteres.` },
-                {
-                    type: 'custom',
-                    message: `El ${listNameSingular} "${sanitizeHTML(newItemName)}" ya existe.`,
-                    validate: (value) => !list.some(item => item.name.toLowerCase() === value.toLowerCase() && value !== '')
-                }
-            ]
-        }
-    ];
-
-    if (!validateForm(formOrParentContainer, rules)) {
-        return false;
-    }
-
+    const rules = [{
+        field: inputEl.id, errorElementId: errorEl.id,
+        checks: [
+            { type: 'required', message: `Ingrese un nombre para el ${localItemNameSingular}.` },
+            { type: 'maxlength', value: maxLength, message: `El nombre no puede exceder ${maxLength} caracteres.` },
+            { type: 'custom', message: `El ${localItemNameSingular} "${sanitizeHTML(newItemName)}" ya existe.`,
+              validate: (value) => !list.some(item => item.name.toLowerCase() === value.toLowerCase() && value.trim() !== '') }
+        ]
+    }];
+    if (!validateForm(formOrParentContainer, rules)) return false;
     const newItem = { id: generateId(), name: newItemName };
-    if (listKeyInState === 'statusList') {
-        newItem.color = '#CCCCCC';
-    }
-
+    if (listKeyInState === 'statusList') newItem.color = '#CCCCCC';
     try {
-        if (listNameSingular === 'proyecto') {
+        if (localItemNameSingular === 'proyecto') {
             const currentProjectCosts = Array.isArray(currentState.projectCosts) ? currentState.projectCosts : [];
-            const newProjectCostEntry = { id: generateId(), projectName: newItemName, budget: 0, actualCost: 0 };
+            const projectCostExists = currentProjectCosts.some(cost => cost.projectName === newItemName);
+            const newProjectCostEntry = projectCostExists ? null : { id: generateId(), projectName: newItemName, budget: 0, actualCost: 0 };
             await db.transaction('rw', db[listKeyInState], db.projectCosts, async () => {
                 await db[listKeyInState].add(newItem);
-                if (!currentProjectCosts.some(cost => cost.projectName === newItemName)) {
-                    await db.projectCosts.add(newProjectCostEntry);
-                }
+                if (newProjectCostEntry) await db.projectCosts.add(newProjectCostEntry);
             });
-            const updatedList = [...list, newItem];
-            let updatesForState = { [listKeyInState]: updatedList };
-            if (!currentProjectCosts.some(cost => cost.projectName === newItemName)) {
-                updatesForState.projectCosts = [...currentProjectCosts, newProjectCostEntry];
-            }
-            updateAppState(updatesForState);
+            updateAppState({ [listKeyInState]: [...list, newItem], ...(newProjectCostEntry && { projectCosts: [...currentProjectCosts, newProjectCostEntry] }) });
         } else {
             await db[listKeyInState].add(newItem);
-            const updatedList = [...list, newItem];
-            updateAppState({ [listKeyInState]: updatedList });
+            updateAppState({ [listKeyInState]: [...list, newItem] });
         }
-        showToast(successMsg, 'success');
-        renderFn();
-        otherRenderFns.forEach(fn => fn());
-        inputEl.value = '';
-        inputEl.focus();
-        return true;
-    } catch (error) {
-        console.error(`Error adding ${listNameSingular} to DB:`, error);
-        showToast(`Error al guardar ${listNameSingular} en la base de datos.`, 'error');
-        return false;
-    }
+        showToast(successMsg, 'success'); mainRenderFn(); otherRenderFns.forEach(fn => fn());
+        inputEl.value = ''; inputEl.focus(); return true;
+    } catch (error) { console.error(`Error adding ${localItemNameSingular} to DB:`, error); showToast(`Error al guardar ${localItemNameSingular}.`, 'error'); return false; }
 };
 
 export const handleAddStatus = async () => {
-    const addButton = addStatusButton;
-    if (!addButton) return;
-    setButtonLoadingState(addButton, true, 'Agregando...');
-    await handleAddListItem(
-        newStatusInput, newStatusError, 'statusList', 'estado', "Estado agregado.", 50,
-        renderSetupLists,
-        [updateTaskModalDropdowns, refreshCurrentChart]
-    );
-    setButtonLoadingState(addButton, false);
+    const dom = getDomElements();
+    if (!dom.addStatusButton || !dom.newStatusInput || !dom.newStatusError) { showToast("Error interno: Elementos de estado faltantes.", "error"); return; }
+    setButtonLoadingState(dom.addStatusButton, true, 'Agregando...');
+    await handleAddListItem(dom.newStatusInput, dom.newStatusError, 'statusList', 'estado', "Estado agregado.", 50, renderSetupLists, [updateTaskModalDropdowns, refreshCurrentChart]);
+    setButtonLoadingState(dom.addStatusButton, false);
 };
 
 export const handleAddProjectName = async () => {
-    const addButton = addProjectNameButton;
-    if (!addButton) return;
-    setButtonLoadingState(addButton, true, 'Agregando...');
-    await handleAddListItem(
-        newProjectNameInput, newProjectNameError, 'projectNameList', 'proyecto', "Proyecto agregado.", 100,
-        renderSetupLists,
-        [renderProjectCostTable, renderProjectSummaries, renderOverview, updateTaskModalDropdowns, refreshCurrentChart]
-    );
-    setButtonLoadingState(addButton, false);
+    const dom = getDomElements();
+    if (!dom.addProjectNameButton || !dom.newProjectNameInput || !dom.newProjectNameError) { showToast("Error interno: Elementos de proyecto faltantes.", "error"); return; }
+    setButtonLoadingState(dom.addProjectNameButton, true, 'Agregando...');
+    await handleAddListItem(dom.newProjectNameInput, dom.newProjectNameError, 'projectNameList', 'proyecto', "Proyecto agregado.", 100, renderSetupLists, [renderProjectCostTable, renderProjectSummaries, renderOverview, updateTaskModalDropdowns, refreshCurrentChart, renderFinanceSummary]);
+    setButtonLoadingState(dom.addProjectNameButton, false);
 };
 
-
-const handleDeleteListItem = (itemId, listKeyInState, listNameSingular, dependentCheckFn, successMsg, renderFn, otherRenderFns = []) => {
+const handleDeleteListItem = (itemId, listKeyInState, itemNameSingularParam, dependentCheckFn, successMsg, mainRenderFn, otherRenderFns = []) => {
+    const localItemNameSingular = itemNameSingularParam;
+    console.log(`EVENT_HANDLER (handleDeleteListItem): Iniciando borrado para item ID: ${itemId}, tipo: ${localItemNameSingular}`);
     const currentState = getAppState();
     const list = Array.isArray(currentState[listKeyInState]) ? currentState[listKeyInState] : [];
     const itemToDelete = list.find(item => item.id === itemId);
-
     if (!itemToDelete) {
-        showToast(`Error: ${listNameSingular} no encontrado.`, "error");
+        showToast(`Error: ${localItemNameSingular} no encontrado.`, "error");
+        console.error(`handleDeleteListItem: Item with ID ${itemId} not found in ${listKeyInState}.`);
         return;
     }
-
-    if (dependentCheckFn && dependentCheckFn(itemToDelete.name, currentState)) return;
-
-    openConfirmationModal(
-        "Confirmar Eliminación",
-        `¿Está seguro de eliminar el ${listNameSingular} "<strong>${sanitizeHTML(itemToDelete.name)}</strong>"? ${listNameSingular === 'proyecto' ? 'Sus costos asociados también serán eliminados.' : ''} Esta acción no se puede deshacer.`,
-        "Eliminar", "red",
-        async () => {
+    console.log(`EVENT_HANDLER (handleDeleteListItem): Item a borrar encontrado:`, itemToDelete);
+    if (dependentCheckFn && dependentCheckFn(itemToDelete.name, currentState)) {
+        console.log(`EVENT_HANDLER (handleDeleteListItem): Comprobación de dependencia falló para ${itemToDelete.name}.`);
+        return;
+    }
+    openConfirmationModal("Confirmar Eliminación", `¿Eliminar ${localItemNameSingular === 'proyecto' ? 'el proyecto' : 'la entrada'} "<strong>${sanitizeHTML(itemToDelete.name)}</strong>"? ${localItemNameSingular === 'proyecto' ? 'Sus costos asociados también serán eliminados.' : ''} Esta acción no se puede deshacer.`, "Eliminar", "red",
+        async () => { // Este es el actionCallback
+            console.log(`EVENT_HANDLER (handleDeleteListItem - Callback Confirmación): Confirmado borrado para ID: ${itemId}`);
             try {
-                const currentData = getAppState();
-                if (listNameSingular === 'proyecto') {
-                    const costsToDelete = currentData.projectCosts.filter(cost => cost.projectName === itemToDelete.name).map(c => c.id);
+                const currentDataForDelete = getAppState(); 
+                if (localItemNameSingular === 'proyecto') {
+                    const costsToDelete = currentDataForDelete.projectCosts.filter(cost => cost.projectName === itemToDelete.name).map(c => c.id);
+                    console.log(`EVENT_HANDLER (handleDeleteListItem - Callback): Proyecto. Costos a borrar:`, costsToDelete);
                     await db.transaction('rw', db[listKeyInState], db.projectCosts, async () => {
                         await db[listKeyInState].delete(itemId);
-                        if (costsToDelete.length > 0) {
-                            await db.projectCosts.bulkDelete(costsToDelete);
-                        }
+                        if (costsToDelete.length > 0) await db.projectCosts.bulkDelete(costsToDelete);
                     });
                 } else {
+                    console.log(`EVENT_HANDLER (handleDeleteListItem - Callback): Borrando de DB (${listKeyInState}) ID: ${itemId}`);
                     await db[listKeyInState].delete(itemId);
                 }
-
                 let updatesForState = {};
-                updatesForState[listKeyInState] = currentData[listKeyInState].filter(item => item.id !== itemId);
-                if (listNameSingular === 'proyecto') {
-                    updatesForState.projectCosts = currentData.projectCosts.filter(cost => cost.projectName !== itemToDelete.name);
+                updatesForState[listKeyInState] = currentDataForDelete[listKeyInState].filter(item => item.id !== itemId);
+                if (localItemNameSingular === 'proyecto') {
+                    updatesForState.projectCosts = currentDataForDelete.projectCosts.filter(cost => cost.projectName !== itemToDelete.name);
                 }
-                updateAppState(updatesForState);
-
+                updateAppState(updatesForState); 
+                console.log(`EVENT_HANDLER (handleDeleteListItem - Callback): Estado actualizado.`);
                 showToast(successMsg, 'success');
-                renderFn();
+                mainRenderFn();
                 otherRenderFns.forEach(fn => fn());
-
             } catch (error) {
-                console.error(`Error deleting ${listNameSingular} from DB:`, error);
-                showToast(`Error al eliminar ${listNameSingular} de la base de datos.`, 'error');
+                console.error(`EVENT_HANDLER (handleDeleteListItem - Callback): Error deleting ${localItemNameSingular} (ID: ${itemId}) from DB:`, error);
+                showToast(`Error al eliminar ${localItemNameSingular}.`, 'error');
             }
-        }
+        },
+        itemId 
     );
+    console.log(`EVENT_HANDLER (handleDeleteListItem): Modal de confirmación abierto para ID: ${itemId}`);
 };
 
 export const handleDeleteStatus = (statusId) => {
-    handleDeleteListItem(
-        statusId, 'statusList', 'estado',
-        (statusName, currentState) => {
-            const tasksUsingStatus = currentState.projectDetails.filter(task => task.status === statusName);
-            if (tasksUsingStatus.length > 0) {
-                showToast(`No se puede eliminar "${sanitizeHTML(statusName)}" porque está en uso por ${tasksUsingStatus.length} tarea(s).`, "error");
-                return true;
-            }
-            return false;
-        },
-        "Estado eliminado.",
-        renderSetupLists,
-        [updateTaskModalDropdowns, refreshCurrentChart]
-    );
+    console.log('EVENT_HANDLER (handleDeleteStatus): Llamado con statusId:', statusId);
+    handleDeleteListItem(statusId, 'statusList', 'estado', (statusName, currentState) => {
+        const tasksUsingStatus = currentState.projectDetails.filter(task => task.status === statusName);
+        if (tasksUsingStatus.length > 0) { showToast(`No se puede eliminar "${sanitizeHTML(statusName)}" porque está en uso por ${tasksUsingStatus.length} tarea(s).`, "error"); return true; } return false;
+    }, "Estado eliminado.", renderSetupLists, [updateTaskModalDropdowns, refreshCurrentChart]);
 };
 
 export const handleDeleteProjectName = (projectId) => {
-     handleDeleteListItem(
-        projectId, 'projectNameList', 'proyecto',
-        (projectName, currentState) => {
-            const tasksUsingProject = currentState.projectDetails.filter(task => task.projectName === projectName);
-            if (tasksUsingProject.length > 0) {
-                showToast(`No se puede eliminar "${sanitizeHTML(projectName)}" porque tiene ${tasksUsingProject.length} tarea(s) asociadas.`, "error");
-                return true;
-            }
-            return false;
-        },
-        "Proyecto eliminado.",
-        renderSetupLists,
-        [renderProjectCostTable, renderProjectSummaries, renderOverview, updateTaskModalDropdowns, refreshCurrentChart]
-    );
+    console.log('EVENT_HANDLER (handleDeleteProjectName): Llamado con projectId:', projectId);
+    handleDeleteListItem(projectId, 'projectNameList', 'proyecto', (projectName, currentState) => {
+        const tasksUsingProject = currentState.projectDetails.filter(task => task.projectName === projectName);
+        if (tasksUsingProject.length > 0) { showToast(`No se puede eliminar "${sanitizeHTML(projectName)}" porque tiene ${tasksUsingProject.length} tarea(s) asociadas.`, "error"); return true; } return false;
+    }, "Proyecto eliminado.", renderSetupLists, [renderProjectCostTable, renderProjectSummaries, renderOverview, updateTaskModalDropdowns, refreshCurrentChart, renderFinanceSummary]);
 };
 
 export const handleResetData = async () => {
-    openConfirmationModal(
-        "¡ADVERTENCIA! Restablecer Datos",
-        `¿Está <strong>MUY seguro</strong>? Esto eliminará <strong>TODOS</strong> sus datos actuales y cargará los datos de ejemplo.<br><br>Esta acción es <strong>irreversible</strong>.`,
-        "Sí, Restablecer Todo", "red",
+    const dom = getDomElements();
+    if (!dom.resetDataButton) return;
+    openConfirmationModal("¡ADVERTENCIA! Restablecer Datos", `¿Está <strong>MUY seguro</strong>? Esto eliminará <strong>TODOS</strong> sus datos actuales y cargará los datos de ejemplo.<br><br>Esta acción es <strong>irreversible</strong>.`, "Sí, Restablecer Todo", "red",
         async () => {
-            if (!resetDataButton) return;
-            setButtonLoadingState(resetDataButton, true, 'Restableciendo...');
-            await resetToDefaultData();
-            renderAll();
-            refreshCurrentChart();
-            setButtonLoadingState(resetDataButton, false);
+            setButtonLoadingState(dom.resetDataButton, true, 'Restableciendo...');
+            await storageResetToDefaultData(); renderAll();
+            setButtonLoadingState(dom.resetDataButton, false);
         }
-   );
+    );
 };
 
 export const handleTaskFormSubmit = async (event) => {
     event.preventDefault();
-    if (!taskForm) return;
-
+    const dom = getDomElements();
+    if (!dom.taskForm || !dom.taskProjectNameSelect || !dom.taskStatusSelect || !dom.taskNameInput || !dom.taskStartDateInput || !dom.taskEndDateInput || !dom.taskPrioritySelect || !dom.saveTaskButton) {
+        showToast("Error interno: Formulario de tarea incompleto.", "error"); return;
+    }
     const appState = getAppState();
-    const currentSelectedStatusValue = taskStatusSelect ? taskStatusSelect.value : '';
     const notStartedStatus = appState.statusList.find(s => s.name.toLowerCase().includes('no iniciado'));
     const notStartedStatusName = notStartedStatus ? notStartedStatus.name : "No Iniciado";
-    const isNotStarted = currentSelectedStatusValue === notStartedStatusName;
-
-    const validationRules = [
+    const isNotStarted = dom.taskStatusSelect.value === notStartedStatusName;
+    const rules = [
         { field: 'task-project-name', errorElementId: 'task-project-name-error', checks: [{ type: 'selectRequired', message: "Seleccione un proyecto." }] },
         { field: 'task-status', errorElementId: 'task-status-error', checks: [{ type: 'selectRequired', message: "Seleccione un estado." }] },
-        { field: 'task-name', errorElementId: 'task-name-error', checks: [ { type: 'required', message: "Ingrese el nombre de la tarea." }, { type: 'maxlength', value: 100, message: "Máx 100 caracteres." } ] },
-        { field: 'task-start-date', errorElementId: 'task-start-date-error', checks: [] },
-        { field: 'task-end-date', errorElementId: 'task-end-date-error', checks: [ { type: 'required', message: "Ingrese fecha de fin." } ] }
+        { field: 'task-priority', errorElementId: 'task-priority-error', checks: [{ type: 'selectRequired', message: "Seleccione una prioridad." }] },
+        { field: 'task-name', errorElementId: 'task-name-error', checks: [{ type: 'required', message: "Ingrese nombre de la tarea." }, { type: 'maxlength', value: 100, message: "Máx 100 chars." }] },
+        { field: 'task-description', errorElementId: null, checks: [{ type: 'maxlength', value: 500, message: "Máx 500 chars." }] },
+        { field: 'task-start-date', errorElementId: 'task-start-date-error', checks: isNotStarted ? [] : [{ type: 'required', message: "Ingrese fecha de inicio." }] },
+        { field: 'task-end-date', errorElementId: 'task-end-date-error', checks: [ { type: 'required', message: "Ingrese fecha de fin." }, ...(dom.taskStartDateInput.value ? [{ type: 'dateComparison', compareTo: 'task-start-date', operator: 'greaterThanOrEqualTo', message: "Fin no puede ser antes de inicio." }] : []) ]}
     ];
-
-    const startDateRule = validationRules.find(rule => rule.field === 'task-start-date');
-    if (startDateRule && !isNotStarted) {
-        startDateRule.checks.push({ type: 'required', message: "Ingrese fecha de inicio." });
-    }
-
-    const endDateRule = validationRules.find(rule => rule.field === 'task-end-date');
-    const startDateValue = taskStartDateInput ? taskStartDateInput.value : '';
-    if (endDateRule && startDateValue) {
-        endDateRule.checks.push({ type: 'dateComparison', compareTo: 'task-start-date', operator: 'greaterThanOrEqualTo', message: "La fecha de fin no puede ser anterior a la de inicio." });
-    }
-
-    if (!validateForm(taskForm, validationRules)) {
-        showToast('Complete los campos requeridos (*).', 'error');
-        return;
-    }
-
-    const existingTaskId = taskIdInput ? taskIdInput.value : null;
+    if (!validateForm(dom.taskForm, rules)) { showToast('Complete los campos requeridos o corrija errores.', 'error'); return; }
+    const existingTaskId = dom.taskIdInput.value || null;
     const taskData = {
-        id: existingTaskId || generateId(),
-        projectName: taskProjectNameSelect.value,
-        task: taskNameInput.value.trim(),
-        description: taskDescriptionInput.value.trim(),
-        startDate: (isNotStarted && !taskStartDateInput.value) ? '' : taskStartDateInput.value,
-        endDate: taskEndDateInput.value,
-        status: taskStatusSelect.value
+        id: existingTaskId || generateId(), projectName: dom.taskProjectNameSelect.value, task: dom.taskNameInput.value.trim(),
+        description: dom.taskDescriptionInput.value.trim(), startDate: (isNotStarted && !dom.taskStartDateInput.value.trim()) ? '' : dom.taskStartDateInput.value,
+        endDate: dom.taskEndDateInput.value, status: dom.taskStatusSelect.value, priority: dom.taskPrioritySelect.value
     };
-
-    if (!saveTaskButton) return;
-    setButtonLoadingState(saveTaskButton, true, 'Guardando...');
-
+    setButtonLoadingState(dom.saveTaskButton, true, 'Guardando...');
     try {
         await db.projectDetails.put(taskData);
         const currentState = getAppState();
-        let updatedProjectDetails;
-        if (existingTaskId) {
-            const index = currentState.projectDetails.findIndex(t => t.id === existingTaskId);
-            if (index !== -1) {
-                updatedProjectDetails = [...currentState.projectDetails];
-                updatedProjectDetails[index] = taskData;
-            } else {
-                updatedProjectDetails = [...currentState.projectDetails, taskData];
-            }
-        } else {
-            updatedProjectDetails = [...currentState.projectDetails, taskData];
-        }
-        updateAppState({ projectDetails: updatedProjectDetails });
-
+        const updatedDetails = existingTaskId ? currentState.projectDetails.map(t => t.id === existingTaskId ? taskData : t) : [...currentState.projectDetails, taskData];
+        updateAppState({ projectDetails: updatedDetails });
         showToast(existingTaskId ? "Tarea actualizada." : "Tarea agregada.", 'success');
         renderProjectDetailsTable(); renderOverview(); renderProjectSummaries(); refreshCurrentChart();
-        closeModal(taskModal);
-    }
-     catch (error) {
-        console.error("Error saving task to DB:", error);
-        showToast("Error al guardar la tarea en la base de datos.", "error");
-    } finally {
-        setButtonLoadingState(saveTaskButton, false);
-    }
+        closeModal(dom.taskModal);
+    } catch (error) { console.error("Error saving task:", error); showToast("Error al guardar la tarea.", "error");
+    } finally { setButtonLoadingState(dom.saveTaskButton, false); }
 };
 
 export const handleDeleteTask = (taskId) => {
+    console.log('EVENT_HANDLER (handleDeleteTask): Llamado con taskId:', taskId);
+    const idToDelete = taskId;
     const currentState = getAppState();
-    const taskToDelete = currentState.projectDetails.find(task => task.id === taskId);
-    if (!taskToDelete) {
-        showToast("Error: Tarea no encontrada.", "error");
-        return;
-    }
-
-    openConfirmationModal(
-        "Confirmar Eliminación",
-        `¿Eliminar la tarea "<strong>${sanitizeHTML(taskToDelete.task)}</strong>" del proyecto "<strong>${sanitizeHTML(taskToDelete.projectName)}</strong>"?`,
-        "Eliminar", "red",
+    const taskToDelete = currentState.projectDetails.find(task => task.id === idToDelete);
+    if (!taskToDelete) { showToast("Error: Tarea no encontrada.", "error"); console.error(`handleDeleteTask: Task with ID ${idToDelete} not found.`); return; }
+    console.log('EVENT_HANDLER (handleDeleteTask): Tarea a borrar encontrada:', taskToDelete);
+    openConfirmationModal("Confirmar Eliminación", `¿Eliminar la tarea "<strong>${sanitizeHTML(taskToDelete.task)}</strong>" del proyecto "<strong>${sanitizeHTML(taskToDelete.projectName)}</strong>"?`, "Eliminar", "red",
         async () => {
+            console.log('EVENT_HANDLER (handleDeleteTask - Callback Confirmación): Confirmado borrado para tarea ID:', idToDelete);
             try {
-                await db.projectDetails.delete(taskId);
-                const currentData = getAppState();
-                const updatedProjectDetails = currentData.projectDetails.filter(task => task.id !== taskId);
-                updateAppState({ projectDetails: updatedProjectDetails });
+                await db.projectDetails.delete(idToDelete);
+                updateAppState({ projectDetails: getAppState().projectDetails.filter(task => task.id !== idToDelete) });
+                console.log('EVENT_HANDLER (handleDeleteTask - Callback): Tarea borrada y estado actualizado.');
                 showToast("Tarea eliminada.", 'success');
                 renderProjectDetailsTable(); renderOverview(); renderProjectSummaries(); refreshCurrentChart();
-            } catch (error) {
-                console.error("Error deleting task from DB:", error);
-                showToast("Error al eliminar la tarea de la base de datos.", "error");
-            }
-        }
+            } catch (error) { console.error("Error deleting task from DB:", error); showToast("Error al eliminar la tarea.", "error"); }
+        },
+        taskId
     );
+    console.log('EVENT_HANDLER (handleDeleteTask): Modal de confirmación abierto para tarea ID:', taskId);
 };
 
 export const handleCostFormSubmit = async (event) => {
     event.preventDefault();
-    if (!costForm) return;
-
-    const validationRules = [
-        { field: 'cost-budget', errorElementId: 'cost-budget-error', checks: [ { type: 'required', message: "Presupuesto es requerido." }, { type: 'min', value: 0, message: "Presupuesto inválido (>= 0)." } ] },
-        { field: 'cost-actual', errorElementId: 'cost-actual-error', checks: [ { type: 'required', message: "Costo actual es requerido." }, { type: 'min', value: 0, message: "Costo actual inválido (>= 0)." } ] }
+    const dom = getDomElements();
+    if (!dom.costForm || !dom.costBudgetInput || !dom.costActualInput || !dom.saveCostButton) { showToast("Error: Formulario de costos incompleto.", "error"); return; }
+    const rules = [
+        { field: 'cost-budget', errorElementId: 'cost-budget-error', checks: [{ type: 'required', message: "Presupuesto requerido." }, { type: 'min', value: 0, message: "Presupuesto >= 0." }] },
+        { field: 'cost-actual', errorElementId: 'cost-actual-error', checks: [{ type: 'required', message: "Costo actual requerido." }, { type: 'min', value: 0, message: "Costo actual >= 0." }] }
     ];
-
-    if (!validateForm(costForm, validationRules)) {
-        showToast('Ingrese valores numéricos válidos.', 'error');
-        return;
-    }
-
-    const budget = parseFloat(costBudgetInput.value);
-    const actualCost = parseFloat(costActualInput.value);
-
-    const costId = costForm['cost-id'] ? costForm['cost-id'].value : null;
-    if (!costId) {
-        showToast("Error: ID de costo no encontrado.", "error");
-        return;
-    }
-
-    if (!saveCostButton) return;
-    setButtonLoadingState(saveCostButton, true, 'Guardando...');
-
+    if (!validateForm(dom.costForm, rules)) { showToast('Ingrese valores válidos.', 'error'); return; }
+    const budget = parseFloat(dom.costBudgetInput.value);
+    const actualCost = parseFloat(dom.costActualInput.value);
+    const costId = dom.costIdInput ? dom.costIdInput.value : null;
+    if (!costId) { showToast("Error: ID de costo inválido.", "error"); console.error("handleCostFormSubmit: costId es null o vacío"); return; }
+    console.log('EVENT_HANDLER (handleCostFormSubmit): Guardando costos para ID:', costId);
+    setButtonLoadingState(dom.saveCostButton, true, 'Guardando...');
     try {
         await db.projectCosts.update(costId, { budget, actualCost });
         const currentState = getAppState();
         const index = currentState.projectCosts.findIndex(cost => cost.id === costId);
         if (index !== -1) {
-            const updatedProjectCosts = [...currentState.projectCosts];
-            updatedProjectCosts[index] = { ...updatedProjectCosts[index], budget, actualCost };
-            updateAppState({ projectCosts: updatedProjectCosts });
+            const updatedCosts = [...currentState.projectCosts];
+            updatedCosts[index] = { ...updatedCosts[index], budget, actualCost };
+            updateAppState({ projectCosts: updatedCosts });
         }
         showToast("Costos actualizados.", 'success');
         renderProjectCostTable(); renderOverview(); renderProjectSummaries(); refreshCurrentChart();
-        closeModal(costModal);
-    } catch (error) {
-        console.error("Error updating costs in DB:", error);
-        showToast("Error al actualizar costos en la base de datos.", "error");
-    } finally {
-        setButtonLoadingState(saveCostButton, false);
-    }
+        closeModal(dom.costModal);
+    } catch (error) { console.error("Error updating costs:", error); showToast("Error al actualizar costos.", "error");
+    } finally { setButtonLoadingState(dom.saveCostButton, false); }
 };
 
 export const handleIncomeChange = async (event) => {
-    const target = event.target;
-    if (!target) return;
-    const newIncome = parseFloat(target.value);
+    const target = event.target; if (!target) return;
+    const rawValue = target.value.trim();
+    const newIncome = parseFloat(rawValue);
     const currentState = getAppState();
-
-    if ((!isNaN(newIncome) && newIncome >= 0) || target.value.trim() === '') {
+    if ((!isNaN(newIncome) && newIncome >= 0) || rawValue === '') {
         const finalIncome = isNaN(newIncome) ? 0 : newIncome;
         if (currentState.monthlyIncome !== finalIncome) {
             try {
@@ -558,488 +355,549 @@ export const handleIncomeChange = async (event) => {
                 updateAppState({ monthlyIncome: finalIncome });
                 showToast("Ingreso mensual actualizado.", 'success');
                 renderFinanceSummary();
-            } catch (error) {
-                console.error("Error updating monthly income in DB:", error);
-                showToast("Error al guardar ingreso en DB.", 'error');
-                 target.value = currentState.monthlyIncome > 0 ? currentState.monthlyIncome.toFixed(2) : '';
-            }
+            } catch (error) { console.error("Error updating income:", error); showToast("Error al guardar ingreso.", 'error'); target.value = currentState.monthlyIncome > 0 ? currentState.monthlyIncome.toFixed(2) : ''; }
         }
-    } else {
-        showToast("El ingreso debe ser un número no negativo.", "error");
-        target.value = currentState.monthlyIncome > 0 ? currentState.monthlyIncome.toFixed(2) : '';
-    }
+        target.value = (rawValue === '' || finalIncome === 0) ? '' : finalIncome.toFixed(2);
+    } else { showToast("Ingreso debe ser no negativo.", "error"); target.value = currentState.monthlyIncome > 0 ? currentState.monthlyIncome.toFixed(2) : ''; }
 };
 
 export const handleAddFixedExpense = async (event) => {
     event.preventDefault();
-    if(!addExpenseForm) return;
-
+    const dom = getDomElements();
+    if (!dom.addExpenseForm || !dom.expenseNameInput || !dom.expenseAmountInput || !dom.addExpenseButton) { showToast("Error: Formulario de gasto incompleto.", "error"); return; }
     const currentState = getAppState();
     const rules = [
-        { field: 'expense-name', errorElementId: 'expense-name-error', checks: [ { type: 'required', message: "Ingrese nombre del gasto." }, { type: 'maxlength', value: 100, message: "Máx 100 caracteres." }, { type: 'custom', message: `El gasto "${sanitizeHTML(expenseNameInput.value.trim())}" ya existe.`, validate: (value) => !currentState.fixedExpenses.some(exp => exp.name.toLowerCase() === value.toLowerCase()) } ] },
-        { field: 'expense-amount', errorElementId: 'expense-amount-error', checks: [ { type: 'required', message: "Ingrese un monto." }, { type: 'min', value: 0.01, message: "Monto debe ser positivo." } ] }
+        { field: 'expense-name', errorElementId: 'expense-name-error', checks: [ { type: 'required', message: "Ingrese nombre del gasto." }, { type: 'maxlength', value: 100, message: "Máx 100 chars." }, { type: 'custom', message: `El gasto "${sanitizeHTML(dom.expenseNameInput.value.trim())}" ya existe.`, validate: (value) => !currentState.fixedExpenses.some(exp => exp.name.toLowerCase() === value.toLowerCase()) } ] },
+        { field: 'expense-amount', errorElementId: 'expense-amount-error', checks: [ { type: 'required', message: "Ingrese un monto." }, { type: 'min', value: 0, message: "Monto >= 0." } ] }
     ];
-
-    if (!validateForm(addExpenseForm, rules)) {
-        showToast("Complete los campos requeridos (*).", "error");
-        return;
-    }
-
-    if (!addExpenseButton) return;
-    setButtonLoadingState(addExpenseButton, true, 'Agregando...');
-
-    const newExpense = {
-        id: generateId(),
-        name: expenseNameInput.value.trim(),
-        amount: parseFloat(expenseAmountInput.value)
-    };
+    if (!validateForm(dom.addExpenseForm, rules)) { showToast("Complete campos o corrija errores.", "error"); return; }
+    setButtonLoadingState(dom.addExpenseButton, true, 'Agregando...');
+    const newExpense = { id: generateId(), name: dom.expenseNameInput.value.trim(), amount: parseFloat(dom.expenseAmountInput.value) };
     try {
         await db.fixedExpenses.add(newExpense);
-        const updatedFixedExpenses = [...currentState.fixedExpenses, newExpense];
-        updateAppState({ fixedExpenses: updatedFixedExpenses });
+        updateAppState({ fixedExpenses: [...currentState.fixedExpenses, newExpense] });
         showToast("Gasto fijo agregado.", 'success');
         renderFixedExpensesList(); renderFinanceSummary();
-        addExpenseForm.reset();
-        if(expenseNameInput) expenseNameInput.focus();
-    } catch (error) {
-        console.error("Error adding fixed expense to DB:", error);
-        showToast("Error al guardar gasto fijo en DB.", 'error');
-    } finally {
-        setButtonLoadingState(addExpenseButton, false);
-    }
+        dom.addExpenseForm.reset(); if (dom.expenseNameInput) dom.expenseNameInput.focus();
+    } catch (error) { console.error("Error adding expense:", error); showToast("Error al guardar gasto.", 'error');
+    } finally { setButtonLoadingState(dom.addExpenseButton, false); }
 };
 
 export const handleDeleteFixedExpense = (expenseId) => {
-    handleDeleteListItem(
-        expenseId, 'fixedExpenses', 'gasto fijo',
-        null,
-        "Gasto fijo eliminado.",
-        renderFixedExpensesList,
-        [renderFinanceSummary]
-    );
+    console.log('EVENT_HANDLER (handleDeleteFixedExpense): Llamado con expenseId:', expenseId);
+    handleDeleteListItem(expenseId, 'fixedExpenses', 'gasto fijo', null, "Gasto fijo eliminado.", renderFixedExpensesList, [renderFinanceSummary]);
 };
 
 export const handleExportData = async () => {
-    if(!exportDataButton) return;
-    setButtonLoadingState(exportDataButton, true, 'Exportando...');
+    const dom = getDomElements();
+    if (!dom.exportDataButton) return;
+    setButtonLoadingState(dom.exportDataButton, true, 'Exportando...');
     try {
-        const [
-            statusList, projectNameList, projectDetails, projectCosts,
-            fixedExpenses, mainTitleConfig, monthlyIncomeConfig, spotTrades,
-            activeUserModeConfig, futuresTrades, watchlist
-        ] = await db.transaction('r', db.appConfig, db.statusList, db.projectNameList, db.projectDetails, db.projectCosts, db.fixedExpenses, db.spotTrades, db.futuresTrades, db.watchlist, async () => {
-            const sList = await db.statusList.toArray();
-            const pNameList = await db.projectNameList.toArray();
-            const pDetails = await db.projectDetails.toArray();
-            const pCosts = await db.projectCosts.toArray();
-            const fExpenses = await db.fixedExpenses.toArray();
-            const sTrades = await db.spotTrades.toArray();
-            const fTrades = await db.futuresTrades.toArray();
-            const mTitleConfig = await db.appConfig.get('mainTitle');
-            const mIncomeConfig = await db.appConfig.get('monthlyIncome');
-            const modeConfig = await db.appConfig.get('activeUserMode');
-            const wList = await db.watchlist.toArray();
-            return [sList, pNameList, pDetails, pCosts, fExpenses, mTitleConfig, mIncomeConfig, sTrades, modeConfig, fTrades, wList];
+        const dataToExport = await db.transaction('r', db.tables, async () => {
+            const allData = {};
+            for (const table of db.tables) { allData[table.name] = await table.toArray(); }
+            const appConfigTable = allData.appConfig || [];
+            allData.appConfig = appConfigTable.reduce((acc, item) => { acc[item.key] = item.value; return acc; }, {});
+            return allData;
         });
-        
-        const dataToExport = {
-            mainTitle: mainTitleConfig ? mainTitleConfig.value : 'Rastreador de Proyectos y Finanzas',
-            activeUserMode: activeUserModeConfig ? activeUserModeConfig.value : 'projects',
-            statusList: statusList,
-            projectNameList: projectNameList,
-            projectDetails: projectDetails,
-            projectCosts: projectCosts,
-            monthlyIncome: (monthlyIncomeConfig && typeof monthlyIncomeConfig.value === 'number') ? monthlyIncomeConfig.value : 0,
-            fixedExpenses: fixedExpenses,
-            spotTrades: spotTrades,
-            futuresTrades: futuresTrades,
-            watchlist: watchlist,
-            exportDate: new Date().toISOString(),
-            appVersion: 'vFin_Optimized_Dexie_1.0'
-        };
-
+        dataToExport.exportDate = new Date().toISOString();
+        dataToExport.appVersion = 'ZenithTrack_vCurrent_ExportTest';
+        console.log("[EXPORT] JSON final a exportar:", dataToExport);
         const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = `zenithtrack_datos_${getCurrentDate()}.json`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        a.href = url; a.download = `zenithtrack_datos_${getCurrentDate().replace(/-/g, '')}.json`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
         showToast('Datos exportados correctamente.', 'success');
-
-    } catch (error) {
-        console.error("Error durante la exportación de datos:", error);
-        showToast('Error al exportar los datos.', 'error');
-    } finally {
-        setButtonLoadingState(exportDataButton, false);
-    }
+    } catch (error) { console.error("[EXPORT] Error durante la exportación de datos:", error); showToast('Error al exportar los datos. Revise la consola.', 'error');
+    } finally { setButtonLoadingState(dom.exportDataButton, false); console.log("[EXPORT] Proceso de exportación finalizado."); }
 };
 
 export const triggerImportFile = () => {
-    if (importFileInput) importFileInput.click();
+    const dom = getDomElements();
+    if (dom.importFileInput) dom.importFileInput.click();
 };
 
 export const handleImportFile = (event) => {
-    if (!event.target || !event.target.files) return;
+    const dom = getDomElements();
+    if (!event.target || !event.target.files || event.target.files.length === 0) {
+        if (dom.importFileInput) dom.importFileInput.value = ''; return;
+    }
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) { if (dom.importFileInput) dom.importFileInput.value = ''; return; }
     if (file.type !== 'application/json') {
-        showToast('Tipo de archivo no válido. Seleccione JSON.', 'error');
-        if (importFileInput) importFileInput.value = ''; return;
+        showToast('Tipo de archivo no válido. Seleccione un archivo JSON.', 'error');
+        if (dom.importFileInput) dom.importFileInput.value = ''; return;
     }
     const reader = new FileReader();
-    reader.onload = (e) => {
-        if (!e.target || !e.target.result) return;
+    reader.onload = async (e) => {
+        if (!e.target || !e.target.result) { if (dom.importFileInput) dom.importFileInput.value = ''; return; }
         try {
-            const importedJson = JSON.parse(e.target.result);
-            openConfirmationModal(
-                "Confirmar Importación",
-                `Importar datos de "<strong>${sanitizeHTML(file.name)}</strong>"?<br>Esto <strong>REEMPLAZARÁ</strong> todos sus datos actuales.`,
-                "Sí, Importar", "teal",
+            const jsonString = e.target.result;
+            console.log("[IMPORT] JSON String leído del archivo:", jsonString.substring(0, 200) + "...");
+            const importedJson = JSON.parse(jsonString);
+            console.log("[IMPORT] Objeto JSON parseado (importedJson):", importedJson);
+            let isValidStructure = true; let validationMessage = 'Estructura del archivo JSON no válida o incompleta.';
+            if (typeof importedJson !== 'object' || importedJson === null) {
+                isValidStructure = false; validationMessage = 'El archivo no es un objeto JSON.'; console.error("[IMPORT VALIDATION] Falla: No es un objeto o es null.");
+            } else {
+                console.log("[IMPORT VALIDATION] Pasa: Es un objeto y no es null.");
+                if (!importedJson.hasOwnProperty('projectDetails')) { isValidStructure = false; validationMessage = 'Falta "projectDetails".'; console.error("[IMPORT VALIDATION] Falla: Falta projectDetails.");
+                } else if (!Array.isArray(importedJson.projectDetails)) { isValidStructure = false; validationMessage = '"projectDetails" debe ser array.'; console.error("[IMPORT VALIDATION] Falla: projectDetails no es array. Tipo:", typeof importedJson.projectDetails);
+                } else { console.log("[IMPORT VALIDATION] Pasa: projectDetails es un array."); }
+                if (isValidStructure && (!importedJson.hasOwnProperty('appConfig') || typeof importedJson.appConfig !== 'object' || importedJson.appConfig === null)) {
+                    isValidStructure = false; validationMessage = 'Falta "appConfig" (objeto) o no es objeto.'; console.error("[IMPORT VALIDATION] Falla: appConfig no es objeto o es null. Tipo:", typeof importedJson.appConfig);
+                } else if (isValidStructure) { console.log("[IMPORT VALIDATION] Pasa: appConfig es un objeto y no es null."); }
+            }
+            if (!isValidStructure) { showToast(validationMessage, 'error'); if (dom.importFileInput) dom.importFileInput.value = ''; return; }
+            console.log("[IMPORT] La estructura del JSON parece válida. Abriendo modal de confirmación.");
+            openConfirmationModal("Confirmar Importación", `Importar datos de "<strong>${sanitizeHTML(file.name)}</strong>"?<br>Esto <strong>REEMPLAZARÁ</strong> todos sus datos actuales.`, "Sí, Importar", "teal",
                 async () => {
-                    if (!importDataButton) return;
-                    setButtonLoadingState(importDataButton, true, 'Importando...');
-                    const success = await importData(importedJson, file.name);
-                    if(success) {
-                        renderAll();
-                        refreshCurrentChart();
+                    console.log("[IMPORT - CALLBACK] Iniciando proceso de importación en storage.");
+                    if (!dom.importDataButton) { console.error("[IMPORT - CALLBACK] Botón de importación no encontrado."); return; }
+                    setButtonLoadingState(dom.importDataButton, true, 'Importando...');
+                    let success = false;
+                    try {
+                        success = await storageImportData(importedJson, file.name);
+                        console.log(`[IMPORT - CALLBACK] storageImportData retornó: ${success}`);
+                        if (success) {
+                            console.log("[IMPORT - CALLBACK] Importación exitosa, llamando a renderAll().");
+                            renderAll(); showToast(`Datos importados correctamente desde ${sanitizeHTML(file.name)}.`, 'success');
+                        } else {
+                            console.error("[IMPORT - CALLBACK] storageImportData retornó false. La importación falló silenciosamente.");
+                            showToast("Falló la importación de datos. Revise la consola para detalles.", "error");
+                        }
+                    } catch (importError) {
+                        console.error("[IMPORT - CALLBACK] Error durante storageImportData:", importError);
+                        showToast("Error crítico durante la importación de datos.", "error"); success = false;
+                    } finally {
+                        setButtonLoadingState(dom.importDataButton, false);
+                        if (dom.importFileInput) dom.importFileInput.value = '';
+                        console.log("[IMPORT - CALLBACK] Proceso de importación finalizado en el callback.");
                     }
-                    setButtonLoadingState(importDataButton, false);
-                    if (!success && importFileInput) importFileInput.value = '';
-                }
+                },
+                null
             );
-        } catch (error) {
-            console.error("Error parsing imported JSON:", error);
-            showToast('Error al procesar el archivo JSON.', 'error');
-        } finally {
-            if (importFileInput) importFileInput.value = '';
-        }
+        } catch (error) { console.error("Error parsing imported JSON:", error); showToast('Error al procesar el archivo JSON.', 'error'); if (dom.importFileInput) dom.importFileInput.value = ''; }
     };
-    reader.onerror = () => {
-        showToast('Error al leer el archivo.', 'error');
-        if (importFileInput) importFileInput.value = '';
-    };
+    reader.onerror = () => { showToast('Error al leer el archivo.', 'error'); if (dom.importFileInput) dom.importFileInput.value = ''; };
     reader.readAsText(file);
 };
 
 export const handleTableSort = (event) => {
+    const dom = getDomElements();
     const sortButton = event.target.closest('.sortable-header');
-    if (!sortButton) return;
-
+    if (!sortButton || !sortButton.dataset.tableId || !sortButton.dataset.sortKey) return;
     const tableId = sortButton.dataset.tableId;
     const sortKey = sortButton.dataset.sortKey;
-
     let sortConfigKey;
     if (tableId === 'project-details-table') sortConfigKey = 'projectDetails';
     else if (tableId === 'project-cost-table') sortConfigKey = 'projectCosts';
     else if (tableId === 'fixed-expenses-table') sortConfigKey = 'fixedExpenses';
-    else {
-        console.warn(`handleTableSort: tableId desconocido o no encontrado: ${tableId}`);
-        return;
-    }
-
+    else { console.warn(`handleTableSort: tableId desconocido: ${tableId}`); return; }
     const currentState = getAppState();
-    if (!currentState.sortState || !currentState.sortState[sortConfigKey]) {
-        console.warn(`Sort state no configurado para ${sortConfigKey}`);
-        return;
-    }
-
-    let currentSortDirection = currentState.sortState[sortConfigKey].direction;
-    let newSortDirection;
-
-    if (currentState.sortState[sortConfigKey].key === sortKey) {
-        newSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
-    } else {
-        newSortDirection = 'asc';
-    }
-
-    const newSortState = {
-        ...currentState.sortState,
-        [sortConfigKey]: { key: sortKey, direction: newSortDirection }
-    };
-    updateAppState({ sortState: newSortState });
-
+    const currentSortForTable = currentState.sortState?.[sortConfigKey];
+    if (!currentSortForTable) { console.warn(`Sort state no configurado para ${sortConfigKey}`); return; }
+    const newDirection = (currentSortForTable.key === sortKey && currentSortForTable.direction === 'asc') ? 'desc' : 'asc';
+    updateAppState({ sortState: { ...currentState.sortState, [sortConfigKey]: { key: sortKey, direction: newDirection } } });
     if (sortConfigKey === 'projectDetails') renderProjectDetailsTable();
     else if (sortConfigKey === 'projectCosts') renderProjectCostTable();
     else if (sortConfigKey === 'fixedExpenses') renderFixedExpensesList();
+    const headersContainer = { 'projectDetails': dom.projectDetailsSortHeaders, 'projectCosts': dom.projectCostSortHeaders, 'fixedExpenses': dom.fixedExpensesSortHeaders }[sortConfigKey];
+    if (headersContainer) updateSortIcons(headersContainer, sortKey, newDirection);
 };
 
 export const handleConfirmAction = () => {
-    const currentState = getAppState();
-    if (currentState.currentConfirmationAction && currentState.currentConfirmationAction.callback) {
-        currentState.currentConfirmationAction.callback(currentState.currentConfirmationAction.data);
+    console.log('EVENT_HANDLER (handleConfirmAction): Función llamada.');
+    const actionToExecute = getConfirmationAction();
+    console.log('EVENT_HANDLER (handleConfirmAction): actionToExecute obtenido de getConfirmationAction():', actionToExecute ? `{ callback: ${typeof actionToExecute.callback}, data: ${JSON.stringify(actionToExecute.data)} }` : "null o undefined");
+    if (actionToExecute && typeof actionToExecute.callback === 'function') {
+        console.log('EVENT_HANDLER (handleConfirmAction): Callback de confirmación VÁLIDO encontrado. Ejecutando...');
+        updateAppState({ currentConfirmationAction: null });
+        console.log('EVENT_HANDLER (handleConfirmAction): currentConfirmationAction limpiado del estado global.');
+        const promise = actionToExecute.callback(actionToExecute.data);
+        if (promise && typeof promise.then === 'function') {
+            promise.catch(error => {
+                console.error("EVENT_HANDLER (handleConfirmAction): Error en el callback de confirmación (promesa):", error);
+            }).finally(() => {
+                console.log('EVENT_HANDLER (handleConfirmAction): Callback (promesa) invocado y finalizado/manejado.');
+                const dom = getDomElements();
+                if (dom.confirmationModal && !dom.confirmationModal.classList.contains('hidden')) {
+                    closeModal(dom.confirmationModal);
+                }
+            });
+        } else {
+             console.log('EVENT_HANDLER (handleConfirmAction): Callback invocado (síncrono).');
+             const dom = getDomElements();
+             if (dom.confirmationModal && !dom.confirmationModal.classList.contains('hidden')) {
+                closeModal(dom.confirmationModal);
+            }
+        }
+    } else {
+        console.warn('EVENT_HANDLER (handleConfirmAction): No se encontró callback válido. actionToExecute fue:', actionToExecute);
+        const dom = getDomElements();
+        if (dom.confirmationModal && !dom.confirmationModal.classList.contains('hidden')) {
+            closeModal(dom.confirmationModal);
+        }
     }
-    closeConfirmationModal();
 };
 
 export const handleChartTypeChange = () => {
-    if (chartTypeSelect) {
-        renderSelectedChart(chartTypeSelect.value);
-    }
+    const dom = getDomElements();
+    renderSelectedChart(dom.chartTypeSelect ? dom.chartTypeSelect.value : 'statusDistribution');
 };
+
 export const handleApplySpotFilters = () => {
-    const filters = {
-        asset: filterSpotAssetInput.value.trim(),
-        startDate: filterSpotStartDateInput.value,
-        endDate: filterSpotEndDateInput.value,
-    };
-
-    updateAppState({
-        searchTerms: {
-            ...getAppState().searchTerms,
-            spotTrades: filters
-        }
-    });
-
-    renderSpotTradesTable();
+    const dom = getDomElements();
+    if (!dom.filterSpotAssetInput || !dom.filterSpotStartDateInput || !dom.filterSpotEndDateInput) { showToast("Error: Elementos de filtro no encontrados.", "error"); return; }
+    const filters = { asset: dom.filterSpotAssetInput.value.trim(), startDate: dom.filterSpotStartDateInput.value, endDate: dom.filterSpotEndDateInput.value };
+    updateAppState({ searchTerms: { ...getAppState().searchTerms, spotTrades: filters } });
+    renderSpotTradesTable(); showToast("Filtros aplicados.", "info");
 };
 
 export const handleClearSpotFilters = () => {
-    const defaultSpotFilters = {
-        asset: '',
-        startDate: '',
-        endDate: ''
-    };
-
-    // Limpiar los inputs del DOM
-    filterSpotAssetInput.value = '';
-    filterSpotStartDateInput.value = '';
-    filterSpotEndDateInput.value = '';
-
-    // Limpiar el sestado de los filtros
-    updateAppState({
-        searchTerms: {
-            ...getAppState().searchTerms,
-            spotTrades: defaultSpotFilters
-        }
-    });
-
-    renderSpotTradesTable();
+    const dom = getDomElements();
+    if (!dom.filterSpotAssetInput || !dom.filterSpotStartDateInput || !dom.filterSpotEndDateInput) { showToast("Error: Elementos de filtro no encontrados.", "error"); return; }
+    const defaultSpotFilters = { asset: '', startDate: '', endDate: '' };
+    dom.filterSpotAssetInput.value = ''; dom.filterSpotStartDateInput.value = ''; dom.filterSpotEndDateInput.value = '';
+    updateAppState({ searchTerms: { ...getAppState().searchTerms, spotTrades: defaultSpotFilters } });
+    renderSpotTradesTable(); showToast("Filtros limpiados.", "info");
 };
 
-// --- Spot Trading Handlers ---
 export const handleSpotTradeFormSubmit = async (event) => {
     event.preventDefault();
-    if (!spotTradeForm) return;
-
-    const id = spotTradeIdInput.value ? parseInt(spotTradeIdInput.value, 10) : null;
-    const tradeData = {
-        tradeDate: tradeDateInput.value,
-        type: tradeTypeSelect.value,
-        baseAsset: baseAssetInput.value.trim().toUpperCase(),
-        quoteAsset: quoteAssetInput.value.trim().toUpperCase(),
-        price: parseFloat(priceInput.value),
-        quantityBase: parseFloat(quantityBaseInput.value),
-        fees: parseFloat(spotTradeFeesInput.value) || 0,
-        notes: notesInput.value.trim()
-    };
-    
-    if (!tradeData.tradeDate || !tradeData.baseAsset || !tradeData.quoteAsset || isNaN(tradeData.price) || tradeData.price <= 0 || isNaN(tradeData.quantityBase) || tradeData.quantityBase <= 0) {
-        return showToast("Por favor, complete todos los campos requeridos.", "error");
+    const dom = getDomElements();
+    if (!dom.spotTradeForm || !dom.tradeDateInput || !dom.tradeTypeSelect || !dom.baseAssetInput || !dom.quoteAssetInput || !dom.priceInput || !dom.quantityBaseInput || !dom.spotTradeFeesInput || !dom.notesInput || !dom.saveSpotTradeButton) {
+        showToast("Error interno: Formulario Spot incompleto.", "error"); return;
     }
-    
-    tradeData.totalQuote = tradeData.price * tradeData.quantityBase;
-    
-    setButtonLoadingState(saveSpotTradeButton, true, 'Guardando...');
+    const rules = [
+        { field: 'trade-date', errorElementId: null, checks: [{ type: 'required', message: 'Fecha es requerida.' }] },
+        { field: 'trade-type', errorElementId: null, checks: [{ type: 'selectRequired', message: 'Tipo es requerido.' }] },
+        { field: 'base-asset', errorElementId: null, checks: [{ type: 'required', message: 'Activo Base es requerido.' }, { type: 'maxlength', value: 10, message: 'Máx 10 caracteres.' }] },
+        { field: 'quote-asset', errorElementId: null, checks: [{ type: 'required', message: 'Activo Cotización es requerido.' }, { type: 'maxlength', value: 10, message: 'Máx 10 caracteres.' }] },
+        { field: 'price', errorElementId: null, checks: [{ type: 'required', message: 'Precio es requerido.' }, { type: 'min', value: 0, message: 'Precio inválido (>= 0).' }] },
+        { field: 'quantity-base', errorElementId: null, checks: [{ type: 'required', message: 'Cantidad es requerida.' }, { type: 'min', value: 0, message: 'Cantidad inválida (>= 0).' }] },
+        { field: 'spot-trade-fees', errorElementId: null, checks: [{ type: 'min', value: 0, message: 'Comisiones inválidas (>= 0).' }] },
+        { field: 'notes', errorElementId: null, checks: [{ type: 'maxlength', value: 500, message: 'Notas muy largas (Máx 500).' }] },
+    ];
+    if (!validateForm(dom.spotTradeForm, rules)) { showToast("Complete campos o corrija errores.", "error"); return; }
+    const id = dom.spotTradeIdInput.value ? parseInt(dom.spotTradeIdInput.value, 10) : null;
+    const tradeData = {
+        tradeDate: dom.tradeDateInput.value, type: dom.tradeTypeSelect.value, baseAsset: dom.baseAssetInput.value.trim().toUpperCase(),
+        quoteAsset: dom.quoteAssetInput.value.trim().toUpperCase(), price: parseFloat(dom.priceInput.value),
+        quantityBase: parseFloat(dom.quantityBaseInput.value), fees: parseFloat(dom.spotTradeFeesInput.value) || 0,
+        notes: dom.notesInput.value.trim()
+    };
+    tradeData.totalQuote = (tradeData.price || 0) * (tradeData.quantityBase || 0);
+    setButtonLoadingState(dom.saveSpotTradeButton, true, 'Guardando...');
     try {
         if (id) {
             await updateSpotTrade(id, tradeData);
-            const updatedTrades = getAppState().spotTrades.map(t => t.id === id ? { ...t, ...tradeData } : t);
-            updateAppState({ spotTrades: updatedTrades });
+            updateAppState({ spotTrades: getAppState().spotTrades.map(t => t.id === id ? { ...t, ...tradeData } : t) });
         } else {
             const newTradeWithId = await addSpotTrade(tradeData);
             updateAppState({ spotTrades: [newTradeWithId, ...getAppState().spotTrades] });
         }
-        renderSpotTradesTable();
-        closeModal(spotTradeModal);
-    } catch (error) {
-        console.error("Fallo al enviar formulario spot:", error);
-    } finally {
-        setButtonLoadingState(saveSpotTradeButton, false);
-    }
+        renderSpotTradesTable(); closeModal(dom.spotTradeModal);
+    } catch (error) { console.error("Fallo al enviar form spot:", error); showToast("Error al guardar operación spot.", "error");
+    } finally { setButtonLoadingState(dom.saveSpotTradeButton, false); }
 };
 
 export const handleDeleteSpotTrade = (tradeId) => {
-    const currentState = getAppState();
     const numericTradeId = parseInt(tradeId, 10);
-    const tradeToDelete = currentState.spotTrades.find(t => t.id === numericTradeId);
-
-    if (!tradeToDelete) {
-        showToast("Error: Operación no encontrada para eliminar.", "error");
-        console.error(`handleDeleteSpotTrade: No se encontró la operación con id ${numericTradeId}`);
-        return;
-    }
-    
-    openConfirmationModal(
-        "Confirmar Eliminación",
-        `¿Está seguro de eliminar la operación <strong>${tradeToDelete.type.toUpperCase()} ${tradeToDelete.quantityBase} ${tradeToDelete.baseAsset}</strong>?`,
-        "Eliminar", "red",
+    if (isNaN(numericTradeId)) { showToast("Error: ID de operación inválido.", "error"); return; }
+    const tradeToDelete = getAppState().spotTrades.find(t => t.id === numericTradeId);
+    if (!tradeToDelete) { showToast("Error: Operación no encontrada.", "error"); return; }
+    console.log('EVENT_HANDLER (handleDeleteSpotTrade): Llamado con tradeId:', numericTradeId);
+    openConfirmationModal("Confirmar Eliminación", `¿Eliminar la operación <strong>${tradeToDelete.type.toUpperCase()} ${tradeToDelete.quantityBase} ${tradeToDelete.baseAsset}</strong>?`, "Eliminar", "red",
         async () => {
+            console.log('EVENT_HANDLER (handleDeleteSpotTrade - Callback): Confirmado borrado para ID:', numericTradeId);
             try {
                 await deleteSpotTrade(numericTradeId);
-                const updatedTrades = getAppState().spotTrades.filter(t => t.id !== numericTradeId);
-                updateAppState({ spotTrades: updatedTrades });
+                updateAppState({ spotTrades: getAppState().spotTrades.filter(t => t.id !== numericTradeId) });
                 renderSpotTradesTable();
-            } catch (error) {
-                console.error("Error en el callback de confirmación para eliminar operación:", error);
-            }
-        }
+                renderOverview(); refreshCurrentChart();
+                showToast("Operación Spot eliminada.", "success");
+            } catch (error) { console.error("Error eliminando operación spot:", error); showToast("Error al eliminar la operación.", "error"); }
+        },
+        numericTradeId
     );
+    console.log('EVENT_HANDLER (handleDeleteSpotTrade): Modal de confirmación abierto para ID:', numericTradeId);
 };
-// --- FIN NUEVOS HANDLERS PARA SPOT TRADING ---
 
-// --- Funciones para el Selector de Modo ---
-export const updateUIMode = (mode) => {
-    if (!mainTitleEl) return;
-
-    const isProjectsMode = mode === 'projects';
-
-    mainTitleEl.textContent = isProjectsMode ? 'Rastreador de Proyectos y Finanzas' : 'Rastreador de Criptomonedas';
-
-    document.getElementById('tab-details')?.classList.toggle('hidden', !isProjectsMode);
-    document.getElementById('tab-cost')?.classList.toggle('hidden', !isProjectsMode);
-    document.getElementById('tab-finance')?.classList.toggle('hidden', !isProjectsMode);
-    document.getElementById('tab-crypto-panel')?.classList.toggle('hidden', isProjectsMode);
-    document.getElementById('tab-spot-trading')?.classList.toggle('hidden', isProjectsMode);
-    document.getElementById('tab-futures-trading')?.classList.toggle('hidden', isProjectsMode);
-
-    if (setupStatusListContainer) setupStatusListContainer.hidden = !isProjectsMode;
-    if (setupProjectNameListContainer) setupProjectNameListContainer.hidden = !isProjectsMode;
-
-    if (isProjectsMode && modeProjectsRadio) modeProjectsRadio.checked = true;
-    if (!isProjectsMode && modeCryptoRadio) modeCryptoRadio.checked = true;
-
-    renderOverview();
-    
-    const activeTabButton = document.querySelector('.tab-button.active');
-    if (activeTabButton && activeTabButton.classList.contains('hidden')) {
-        document.getElementById('tab-overview')?.click();
+export const handleFuturesTradeFormSubmit = async (event) => {
+    event.preventDefault();
+    const dom = getDomElements();
+    if (!dom.futuresTradeForm || !dom.futuresSymbolInput || !dom.futuresDirectionSelect || !dom.futuresLeverageInput || !dom.futuresEntryDateInput || !dom.futuresQuantityInput || !dom.futuresEntryPriceInput || !dom.futuresEntryFeesInput || !dom.futuresNotesInput || !dom.saveFuturesTradeButton) {
+        showToast("Error interno: Formulario Futuros incompleto.", "error"); return;
     }
+    const id = dom.futuresTradeIdInput.value ? parseInt(dom.futuresTradeIdInput.value, 10) : null;
+    const isEdit = id !== null;
+    const tradeData = {
+        symbol: dom.futuresSymbolInput.value.trim().toUpperCase(), direction: dom.futuresDirectionSelect.value,
+        leverage: parseInt(dom.futuresLeverageInput.value, 10), entryDate: dom.futuresEntryDateInput.value,
+        quantity: parseFloat(dom.futuresQuantityInput.value), entryPrice: parseFloat(dom.futuresEntryPriceInput.value),
+        entryFees: parseFloat(dom.futuresEntryFeesInput.value) || 0, notes: dom.futuresNotesInput.value.trim()
+    };
+    const rules = [
+        { field: 'futures-symbol', errorElementId: null, checks: [{ type: 'required', message: 'Símbolo es requerido.' }, { type: 'maxlength', value: 20, message: 'Máx 20 caracteres.' }] },
+        { field: 'futures-direction', errorElementId: null, checks: [{ type: 'selectRequired', message: 'Dirección es requerida.' }] },
+        { field: 'futures-leverage', errorElementId: null, checks: [{ type: 'required', message: 'Apalancamiento es requerido.' }, { type: 'min', value: 1, message: 'Apalancamiento inválido (>= 1).' }] },
+        { field: 'futures-entry-date', errorElementId: null, checks: [{ type: 'required', message: 'Fecha de entrada es requerida.' }] },
+        { field: 'futures-quantity', errorElementId: null, checks: [{ type: 'required', message: 'Cantidad es requerida.' }, { type: 'min', value: 0, message: 'Cantidad inválida (>= 0).' }] },
+        { field: 'futures-entry-price', errorElementId: null, checks: [{ type: 'required', message: 'Precio de entrada es requerido.' }, { type: 'min', value: 0, message: 'Precio inválido (>= 0).' }] },
+        { field: 'futures-entry-fees', errorElementId: null, checks: [{ type: 'min', value: 0, message: 'Comisión de entrada inválida (>= 0).' }] },
+        { field: 'futures-notes', errorElementId: null, checks: [{ type: 'maxlength', value: 500, message: 'Notas muy largas (Máx 500).' }] },
+    ];
+    if (!validateForm(dom.futuresTradeForm, rules)) { showToast("Complete campos o corrija errores.", "error"); return; }
+    setButtonLoadingState(dom.saveFuturesTradeButton, true, isEdit ? 'Guardando...' : 'Abriendo...');
+    try {
+        if (isEdit) {
+            await updateFuturesTrade(id, tradeData);
+            updateAppState({ futuresTrades: getAppState().futuresTrades.map(t => t.id === id ? { ...t, ...tradeData } : t) });
+            showToast("Posición actualizada.", "success");
+        } else {
+            const newTradeData = { ...tradeData, status: 'open', pnl: 0, exitPrice: null, exitDate: null, exitFees: 0 };
+            const newTradeWithId = await addFuturesTrade(newTradeData);
+            updateAppState({ futuresTrades: [newTradeWithId, ...getAppState().futuresTrades] });
+        }
+        renderFuturesTradesTable(); renderOverview(); closeModal(dom.futuresTradeModal);
+    } catch (error) { console.error("Fallo al enviar form futuros:", error); showToast("Error al guardar posición de futuros.", "error");
+    } finally { setButtonLoadingState(dom.saveFuturesTradeButton, false, isEdit ? 'Guardar Cambios' : 'Abrir Posición'); }
+};
 
-    console.log(`UI actualizada al modo: ${mode}`);
+export const handleCloseFuturesTrade = async () => {
+    const dom = getDomElements();
+    console.log("[EVENT_HANDLER] handleCloseFuturesTrade: Iniciado."); 
+    if (!dom.futuresTradeIdInput || !dom.futuresExitPriceInput || !dom.futuresExitFeesInput || !dom.closeFuturesTradeButton || !dom.futuresTradeModal) { // Añadir futuresTradeModal a la verificación
+        showToast("Error interno al intentar cerrar posición.", "error");
+        console.error("[EVENT_HANDLER] handleCloseFuturesTrade: Elementos DOM faltantes.");
+        return;
+    }
+    const id = dom.futuresTradeIdInput.value ? parseInt(dom.futuresTradeIdInput.value, 10) : null;
+    if (id === null || isNaN(id)) { showToast("Error: ID de posición inválido.", "error"); return; }
+    const exitPrice = parseFloat(dom.futuresExitPriceInput.value);
+    const exitFees = parseFloat(dom.futuresExitFeesInput.value) || 0;
+    if (isNaN(exitPrice) || exitPrice <= 0) { return showToast("Ingrese un precio de salida válido.", "error"); }
+    if (isNaN(exitFees) || exitFees < 0) { return showToast("Comisión de salida inválida.", "error"); }
+    const tradeToClose = getAppState().futuresTrades.find(t => t.id === id);
+    if (!tradeToClose || tradeToClose.status === 'closed') { showToast(tradeToClose ? "Posición ya cerrada." : "Posición no encontrada.", "info"); return; }
+    
+    const entryFees = parseFloat(tradeToClose.entryFees) || 0;
+    const totalFees = entryFees + exitFees;
+    let grossPnl;
+    if (tradeToClose.direction === 'long') {
+        grossPnl = (exitPrice - tradeToClose.entryPrice) * tradeToClose.quantity;
+    } else { 
+        grossPnl = (tradeToClose.entryPrice - exitPrice) * tradeToClose.quantity;
+    }
+    const netPnl = grossPnl - totalFees;
+    console.log(`[EVENT_HANDLER] Cerrando Futuros: ID=${id}, Entrada=${tradeToClose.entryPrice}, Salida=${exitPrice}, Cantidad=${tradeToClose.quantity}, Dirección=${tradeToClose.direction}, Apalanc.=${tradeToClose.leverage}`);
+    console.log(`[EVENT_HANDLER] PnL Bruto=${grossPnl}, ComisionesTotales=${totalFees}, PnL Neto=${netPnl}`);
+    const updates = { status: 'closed', exitPrice, exitDate: new Date().toISOString(), exitFees, pnl: netPnl };
+    
+    // Cerrar el modal de edición/cierre de futuros ANTES de abrir el de confirmación
+    closeModal(dom.futuresTradeModal); 
+    console.log("[EVENT_HANDLER] handleCloseFuturesTrade: Modal de futuros cerrado.");
+
+    console.log("[EVENT_HANDLER] handleCloseFuturesTrade: Llamando a openConfirmationModal.");
+    openConfirmationModal("Confirmar Cierre", `¿Cerrar <strong>${tradeToClose.direction.toUpperCase()} en ${tradeToClose.symbol}</strong> al precio ${exitPrice}? PnL estimado: ${formatCurrency(netPnl)}`, "Cerrar Posición", "red",
+        async () => {
+            console.log(`[EVENT_HANDLER] handleCloseFuturesTrade - Callback: Confirmado cierre para ID: ${id}`);
+            // El botón closeFuturesTradeButton podría no ser relevante aquí si el modal ya se cerró,
+            // pero si se quisiera un estado de carga en el botón del modal de confirmación, se necesitaría otra referencia.
+            // Por ahora, asumimos que el proceso es rápido o el feedback visual es suficiente.
+            // setButtonLoadingState(dom.closeFuturesTradeButton, true, 'Cerrando...'); // Esto no funcionará porque el botón está en el modal que acabamos de cerrar.
+            try {
+                await updateFuturesTrade(id, updates);
+                updateAppState({ futuresTrades: getAppState().futuresTrades.map(t => t.id === id ? { ...t, ...updates } : t) });
+                renderFuturesTradesTable(); renderOverview(); 
+                // Ya no necesitamos cerrar dom.futuresTradeModal aquí porque se cerró antes de openConfirmationModal.
+                // El modal de confirmación se cierra a través de su propio flujo o en handleConfirmAction.
+                showToast("Posición cerrada y PnL calculado.", "success");
+            } catch (error) { 
+                console.error("Error al cerrar posición:", error); 
+                showToast("Error al cerrar posición.", "error");
+            } 
+            // finally { 
+            //     setButtonLoadingState(dom.closeFuturesTradeButton, false, 'Cerrar Posición'); 
+            // }
+        },
+        id 
+    );
+    console.log("[EVENT_HANDLER] handleCloseFuturesTrade: Llamada a openConfirmationModal realizada.");
+};
+
+export const handleDeleteFuturesTrade = (tradeId) => {
+    const numericTradeId = parseInt(tradeId, 10);
+    if (isNaN(numericTradeId)) { showToast("Error: ID de posición inválido.", "error"); return; }
+    const tradeToDelete = getAppState().futuresTrades.find(t => t.id === numericTradeId);
+    if (!tradeToDelete) { showToast("Error: Posición no encontrada.", "error"); return; }
+    console.log('EVENT_HANDLER (handleDeleteFuturesTrade): Llamado con tradeId:', numericTradeId);
+    openConfirmationModal("Confirmar Eliminación", `¿Eliminar <strong>${tradeToDelete.direction.toUpperCase()} en ${tradeToDelete.symbol}</strong>? Esta acción es irreversible.`, "Eliminar", "red",
+        async () => {
+            console.log('EVENT_HANDLER (handleDeleteFuturesTrade - Callback): Confirmado borrado para ID:', numericTradeId);
+            try {
+                await deleteFuturesTrade(numericTradeId);
+                updateAppState({ futuresTrades: getAppState().futuresTrades.filter(t => t.id !== numericTradeId) });
+                renderFuturesTradesTable(); renderOverview();
+                showToast("Posición eliminada.", "success");
+            } catch (error) { console.error("Error eliminando posición de futuros:", error); showToast("Error al eliminar posición.", "error"); }
+        },
+        numericTradeId
+    );
+    console.log('EVENT_HANDLER (handleDeleteFuturesTrade): Modal de confirmación abierto para ID:', numericTradeId);
 };
 
 export const handleAppModeChange = async (event) => {
     const newMode = event.target.value;
     const currentMode = getAppState().activeUserMode;
-
-    if (newMode === currentMode) {
-        return;
-    }
-
-    console.log(`Cambiando modo de la aplicación a: ${newMode}`);
-
+    if (newMode === currentMode) return;
     try {
         await db.appConfig.put({ key: 'activeUserMode', value: newMode });
         updateAppState({ activeUserMode: newMode });
         updateUIMode(newMode);
         showToast(`Modo cambiado a ${newMode === 'projects' ? 'Proyectos' : 'Criptomonedas'}.`, 'info');
     } catch (error) {
-        console.error("Error al cambiar el modo de la aplicación:", error);
-        showToast("Error al guardar la preferencia de modo.", "error");
+        console.error("Error al cambiar el modo:", error); showToast("Error al guardar preferencia de modo.", "error");
+        const dom = getDomElements(); updateUIMode(currentMode);
+        if (currentMode === 'projects' && dom.modeProjectsRadio) dom.modeProjectsRadio.checked = true;
+        if (currentMode === 'crypto' && dom.modeCryptoRadio) dom.modeCryptoRadio.checked = true;
     }
 };
 
-// --- INICIO NUEVOS HANDLERS PARA FUTURES TRADING ---
-
-export const handleFuturesTradeFormSubmit = async (event) => {
-    event.preventDefault();
-    if (!futuresTradeForm) return;
-
-    const id = futuresTradeIdInput.value ? parseInt(futuresTradeIdInput.value, 10) : null;
-    const tradeData = {
-        symbol: futuresSymbolInput.value.trim().toUpperCase(),
-        direction: futuresDirectionSelect.value,
-        leverage: parseInt(futuresLeverageInput.value, 10),
-        entryDate: futuresEntryDateInput.value,
-        quantity: parseFloat(futuresQuantityInput.value),
-        entryPrice: parseFloat(futuresEntryPriceInput.value),
-        entryFees: parseFloat(futuresEntryFeesInput.value) || 0,
-        notes: futuresNotesInput.value.trim()
+export const updateUIMode = (mode) => {
+    const dom = getDomElements();
+    if (!dom.mainTitleEl) return;
+    const isProjectsMode = mode === 'projects';
+    dom.mainTitleEl.textContent = isProjectsMode ? 'Rastreador de Proyectos y Finanzas' : 'Rastreador de Criptomonedas';
+    const tabsConfig = {
+        'overview': true, 'details': isProjectsMode, 'cost': isProjectsMode, 'finance': isProjectsMode,
+        'crypto-panel': !isProjectsMode, 'spot-trading': !isProjectsMode, 'futures-trading': !isProjectsMode, 'setup': true
     };
-
-    if (!tradeData.symbol || !tradeData.entryDate || isNaN(tradeData.leverage) || isNaN(tradeData.quantity) || isNaN(tradeData.entryPrice)) {
-        return showToast("Por favor, complete todos los campos requeridos.", "error");
+    if (dom.tabButtons && dom.tabButtons.length) {
+        dom.tabButtons.forEach(button => {
+            const tabId = button.dataset.tab;
+            button.classList.toggle('hidden', !tabsConfig[tabId]);
+        });
     }
-    
-    setButtonLoadingState(saveFuturesTradeButton, true, 'Guardando...');
+    if (dom.setupStatusListContainer) dom.setupStatusListContainer.hidden = !isProjectsMode;
+    if (dom.setupProjectNameListContainer) dom.setupProjectNameListContainer.hidden = !isProjectsMode;
+    if (isProjectsMode && dom.modeProjectsRadio) dom.modeProjectsRadio.checked = true;
+    if (!isProjectsMode && dom.modeCryptoRadio) dom.modeCryptoRadio.checked = true;
+    renderOverview();
+    const activeTabButton = document.querySelector('.tab-button.active');
+    if (activeTabButton && activeTabButton.classList.contains('hidden')) {
+        const overviewTab = document.getElementById('tab-overview');
+        if (overviewTab) overviewTab.click();
+    }
+    console.log(`UI actualizada al modo: ${mode}`);
+};
+
+// --- Watchlist Handlers ---
+export const handleAddCoinToWatchlistFromModal = async (coinId, coinName, addButtonElement) => {
+    console.log(`[EVENT_HANDLER] handleAddCoinToWatchlistFromModal: Intentando añadir coinId: ${coinId}, coinName: ${coinName}`);
+    if (!addButtonElement) { console.error("[EVENT_HANDLER] addButtonElement no fue provisto para handleAddCoinToWatchlistFromModal."); showToast("Error interno al añadir moneda.", "error"); return; }
+    setButtonLoadingState(addButtonElement, true, '...');
     try {
-        if (id) {
-            await updateFuturesTrade(id, tradeData);
-            const updatedTrades = getAppState().futuresTrades.map(t => t.id === id ? { ...t, ...tradeData } : t);
-            updateAppState({ futuresTrades: updatedTrades });
-        } else {
-            const newTradeData = { ...tradeData, status: 'open', pnl: 0, exitPrice: null, exitDate: null, exitFees: 0 };
-            const newTradeWithId = await addFuturesTrade(newTradeData);
-            updateAppState({ futuresTrades: [newTradeWithId, ...getAppState().futuresTrades] });
+        const newItem = await addToWatchlist(coinId);
+        console.log("[EVENT_HANDLER] addToWatchlist retornó:", newItem);
+        if (newItem) {
+            const { watchlist } = getAppState();
+            updateAppState({ watchlist: [...watchlist, newItem] });
+            console.log("[EVENT_HANDLER] Watchlist actualizada en estado:", getAppState().watchlist);
+            addButtonElement.textContent = 'Añadida';
+            addButtonElement.disabled = true;
+            addButtonElement.classList.remove('bg-green-600', 'hover:bg-green-700');
+            addButtonElement.classList.add('bg-gray-400', 'cursor-not-allowed');
+            renderCryptoPanel();
+            showToast(`${sanitizeHTML(coinName)} añadida a la lista.`, "success");
         }
-        renderFuturesTradesTable();
-        renderOverview();
-        closeModal(futuresTradeModal);
     } catch (error) {
-        console.error("Fallo al enviar formulario de futuros:", error);
+        console.error(`[EVENT_HANDLER] Error añadiendo ${coinId} a la watchlist:`, error);
+        showToast(`Error al añadir ${sanitizeHTML(coinName)} a la lista.`, "error");
     } finally {
-        setButtonLoadingState(saveFuturesTradeButton, false);
+        if (addButtonElement.textContent !== 'Añadida') {
+            setButtonLoadingState(addButtonElement, false, '<i class="fas fa-plus"></i> Añadir');
+        }
     }
 };
 
-export const handleCloseFuturesTrade = async () => {
-    const id = futuresTradeIdInput.value ? parseInt(futuresTradeIdInput.value, 10) : null;
-    if (!id) return;
-    
-    const exitPrice = parseFloat(futuresExitPriceInput.value);
-    if (isNaN(exitPrice) || exitPrice <= 0) {
-        return showToast("Ingrese un precio de salida válido.", "error");
-    }
-    
-    const tradeToClose = getAppState().futuresTrades.find(t => t.id === id);
-    if (!tradeToClose) return showToast("Error: No se encontró la posición.", "error");
-
-    const entryFees = parseFloat(tradeToClose.entryFees) || 0;
-    const exitFees = parseFloat(futuresExitFeesInput.value) || 0;
-    const totalFees = entryFees + exitFees;
-    const priceDiff = exitPrice - tradeToClose.entryPrice;
-    const grossPnl = tradeToClose.direction === 'long' ? priceDiff * tradeToClose.quantity : -priceDiff * tradeToClose.quantity;
-    const netPnl = grossPnl - totalFees;
-    
-    const updates = { exitPrice, exitDate: new Date().toISOString(), status: 'closed', exitFees, pnl: netPnl };
-    
-    setButtonLoadingState(closeFuturesTradeButton, true, 'Cerrando...');
-    try {
-        await updateFuturesTrade(id, updates);
-        updateAppState({ futuresTrades: getAppState().futuresTrades.map(t => t.id === id ? { ...t, ...updates } : t) });
-        renderFuturesTradesTable();
-        renderOverview();
-        closeModal(futuresTradeModal);
-        showToast("Posición cerrada y PnL calculado.", "success");
-    } catch (error) {
-        console.error("Error al cerrar la posición:", error);
-    } finally {
-        setButtonLoadingState(closeFuturesTradeButton, false);
-    }
+export const handleRemoveCoinFromWatchlist = (coinId) => {
+    console.log(`[EVENT_HANDLER] handleRemoveCoinFromWatchlist: Intentando eliminar coinId: ${coinId}`);
+    if (!coinId) { showToast("Error: No se proporcionó ID de moneda para eliminar.", "error"); return; }
+    const { watchlist } = getAppState();
+    const coinInWatchlist = watchlist.find(item => item.coinId === coinId);
+    const displayName = coinInWatchlist ? (coinInWatchlist.name || coinId) : coinId;
+    openConfirmationModal("Confirmar Eliminación", `¿Está seguro de eliminar <strong>${sanitizeHTML(displayName)}</strong> de su lista de seguimiento?`, "Eliminar", "red",
+        async () => {
+            console.log(`[EVENT_HANDLER] handleRemoveCoinFromWatchlist - Callback: Confirmado borrado para coinId: ${coinId}`);
+            try {
+                await removeFromWatchlist(coinId);
+                const currentWatchlist = getAppState().watchlist;
+                const updatedWatchlist = currentWatchlist.filter(item => item.coinId !== coinId);
+                updateAppState({ watchlist: updatedWatchlist });
+                renderCryptoPanel();
+                showToast(`${sanitizeHTML(displayName)} eliminada de la lista.`, "success");
+                console.log(`[EVENT_HANDLER] handleRemoveCoinFromWatchlist - Callback: ${coinId} eliminada y panel renderizado.`);
+            } catch (error) {
+                console.error(`[EVENT_HANDLER] handleRemoveCoinFromWatchlist - Callback: Error eliminando ${coinId}:`, error);
+                showToast("Error al eliminar la moneda de la lista.", "error");
+            }
+        },
+        coinId
+    );
 };
+// --- NUEVA FUNCIÓN PARA EL CALCULADOR SPOT ---
+export const handleSpotCalculatorChange = (buyTradeData) => {
+    const dom = getDomElements();
 
-export const handleDeleteFuturesTrade = (tradeId) => {
-    const tradeToDelete = getAppState().futuresTrades.find(t => t.id === tradeId);
-    if (!tradeToDelete) {
-        showToast("Error: Posición no encontrada para eliminar.", "error");
+    // Asegurarse de que los elementos DOM necesarios para el calculador y los datos de compra existan
+    if (!dom.calcTargetProfitUsdInput || !dom.calcEstimatedSellFeeInput || 
+        !dom.calcSellPriceNeeded || !dom.calcTotalSellValue || !buyTradeData) {
+        
+        // console.warn("Calculador Spot: Faltan elementos DOM o datos de la operación de compra base.");
+        // Si los elementos de salida existen, mostrar un error o 'N/A'
+        if(dom.calcSellPriceNeeded) dom.calcSellPriceNeeded.textContent = 'Error';
+        if(dom.calcTotalSellValue) dom.calcTotalSellValue.textContent = 'Error';
         return;
     }
-    
-    openConfirmationModal(
-        "Confirmar Eliminación",
-        `¿Está seguro de eliminar la posición <strong>${tradeToDelete.direction.toUpperCase()} en ${tradeToDelete.symbol}</strong>? Esta acción es irreversible.`,
-        "Eliminar", "red",
-        async () => {
-            try {
-                await deleteFuturesTrade(tradeId);
-                const updatedTrades = getAppState().futuresTrades.filter(t => t.id !== tradeId);
-                updateAppState({ futuresTrades: updatedTrades });
-                renderFuturesTradesTable();
-                renderOverview();
-            } catch (error) {
-                console.error("Error en el callback de confirmación para eliminar posición de futuros:", error);
-            }
-        }
-    );
+
+    const targetProfitUSD = dom.calcTargetProfitUsdInput.value;
+    const estimatedSellFeeUSD = dom.calcEstimatedSellFeeInput.value;
+
+    // Extraer datos de la operación de compra original
+    const buyQuantity = parseFloat(buyTradeData.quantityBase);
+    const buyPricePerToken = parseFloat(buyTradeData.price);
+    const buyFeesUSD = parseFloat(buyTradeData.fees) || 0;
+
+    // Llamar a la función de cálculo
+    const results = calculateSpotTargetMetrics({
+        buyQuantity,
+        buyPricePerToken,
+        buyFeesUSD,
+        targetProfitUSD,
+        estimatedSellFeeUSD
+    });
+
+    // Actualizar la UI con los resultados
+    if (results.error) {
+        dom.calcSellPriceNeeded.textContent = 'N/A';
+        dom.calcTotalSellValue.textContent = 'N/A';
+        // Opcional: mostrar results.error en algún toast o span de error específico del calculador
+        // showToast(`Error en cálculo: ${results.error}`, 'error');
+        return;
+    }
+
+    if (results.sellPricePerTokenNeeded !== null && !isNaN(results.sellPricePerTokenNeeded)) {
+        dom.calcSellPriceNeeded.textContent = formatCurrency(results.sellPricePerTokenNeeded);
+    } else {
+        dom.calcSellPriceNeeded.textContent = '-';
+    }
+
+    if (results.totalSellValue !== null && !isNaN(results.totalSellValue)) {
+        dom.calcTotalSellValue.textContent = formatCurrency(results.totalSellValue);
+    } else {
+        dom.calcTotalSellValue.textContent = '-';
+    }
 };

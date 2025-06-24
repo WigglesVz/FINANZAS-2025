@@ -210,12 +210,6 @@ table tbody tr:hover {
     color: #818cf8;
     background-color: rgba(129, 140, 248, 0.1);
 }
-.sortable-header i {
-    font-size: 0.75rem;
-    color: #9ca3af;
-    flex-shrink: 0;
-    display: inline-block;
-}
 .sortable-header.sorted {
     color: #4f46e5;
     background-color: rgba(79, 70, 229, 0.05);
@@ -238,17 +232,24 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
 
 /* Media query para pantallas GRANDES (Desktop) */
 @media (min-width: 769px) {
-    #project-details-table { min-width: 900px; }
-    #project-cost-table { min-width: 700px; }
-    #fixed-expenses-table { min-width: 500px; }
+    /* Adjusted widths for projectDetails table columns */
+    #project-details-table th:nth-child(1),
+    #project-details-table td:nth-child(1) { width: 10%; text-align: left; } /* Proyecto */
+    #project-details-table th:nth-child(2),
+    #project-details-table td:nth-child(2) { width: 15%; text-align: left; } /* Tarea */
+    #project-details-table th:nth-child(3),
+    #project-details-table td:nth-child(3) { width: 20%; text-align: left; } /* Descripción (Adjusted) */
+    #project-details-table th:nth-child(4),
+    #project-details-table td:nth-child(4) { width: 10%; text-align: center; } /* Prioridad (New) */
+    #project-details-table th:nth-child(5),
+    #project-details-table td:nth-child(5) { width: 10%; text-align: center; } /* Inicio (Shifted) */
+    #project-details-table th:nth-child(6),
+    #project-details-table td:nth-child(6) { width: 10%; text-align: center; } /* Fin (Shifted) */
+    #project-details-table th:nth-child(7),
+    #project-details-table td:nth-child(7) { width: 15%; text-align: center; } /* Estado (Shifted) */
+    #project-details-table th:nth-child(8),
+    #project-details-table td:nth-child(8) { width: 10%; text-align: center; } /* Acciones (Shifted) */
 
-    #project-details-table td:nth-child(1) { width: 10%; text-align: left; }
-    #project-details-table td:nth-child(2) { width: 15%; text-align: left; }
-    #project-details-table td:nth-child(3) { width: 25%; text-align: left; }
-    #project-details-table td:nth-child(4) { width: 10%; text-align: center; }
-    #project-details-table td:nth-child(5) { width: 10%; text-align: center; }
-    #project-details-table td:nth-child(6) { width: 15%; text-align: center; }
-    #project-details-table td:nth-child(7) { width: 15%; text-align: center; }
 
     #project-cost-table td:nth-child(1) { width: 25%; text-align: left; }
     #project-cost-table td:nth-child(2) { width: 20%; text-align: right; }
@@ -259,6 +260,51 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
     #fixed-expenses-table td:nth-child(1) { width: 50%; text-align: left; }
     #fixed-expenses-table td:nth-child(2) { width: 30%; text-align: right; }
     #fixed-expenses-table td:nth-child(3) { width: 20%; text-align: center; }
+
+    #crypto-watchlist-container th:nth-child(1), /* Activo */
+    #crypto-watchlist-container td:nth-child(1) { text-align: left; }
+
+    #crypto-watchlist-container th:nth-child(2), /* Precio */
+    #crypto-watchlist-container td:nth-child(2) { text-align: right; }
+
+    #crypto-watchlist-container th:nth-child(3), /* Cambio 24h */
+    #crypto-watchlist-container td:nth-child(3) { text-align: right; }
+
+    #crypto-watchlist-container th:nth-child(4), /* Gráfico 7d */
+    #crypto-watchlist-container td:nth-child(4) { text-align: center; }
+
+    #crypto-watchlist-container th:nth-child(5), /* Acción */
+    #crypto-watchlist-container td:nth-child(5) { text-align: center; }
+
+    /* --- ALINEACIÓN PARA OPERACIONES SPOT --- */
+    #spot-trades-table th:nth-child(1), /* Par */
+    #spot-trades-table td:nth-child(1) { width: 20%; text-align: left; }
+    #spot-trades-table th:nth-child(2), /* Tipo */
+    #spot-trades-table td:nth-child(2) { width: 10%; text-align: left; }
+    #spot-trades-table th:nth-child(3), /* Fecha */
+    #spot-trades-table td:nth-child(3) { width: 20%; text-align: left; }
+    #spot-trades-table th:nth-child(4), /* Precio */
+    #spot-trades-table td:nth-child(4) { width: 15%; text-align: right; }
+    #spot-trades-table th:nth-child(5), /* Cantidad */
+    #spot-trades-table td:nth-child(5) { width: 15%; text-align: right; }
+    #spot-trades-table th:nth-child(6), /* Total */
+    #spot-trades-table td:nth-child(6) { width: 10%; text-align: right; }
+    #spot-trades-table th:nth-child(7), /* Acciones */
+    #spot-trades-table td:nth-child(7) { width: 10%; text-align: center; }
+
+    /* --- ALINEACIÓN PARA OPERACIONES DE FUTUROS --- */
+    #futures-trades-table th:nth-child(1), /* Símbolo */
+    #futures-trades-table td:nth-child(1) { width: 20%; text-align: left; }
+    #futures-trades-table th:nth-child(2), /* Dirección */
+    #futures-trades-table td:nth-child(2) { width: 15%; text-align: left; }
+    #futures-trades-table th:nth-child(3), /* Estado */
+    #futures-trades-table td:nth-child(3) { width: 15%; text-align: center; } /* Centrado para badge */
+    #futures-trades-table th:nth-child(4), /* PNL */
+    #futures-trades-table td:nth-child(4) { width: 15%; text-align: right; }
+    #futures-trades-table th:nth-child(5), /* Apalanc. */
+    #futures-trades-table td:nth-child(5) { width: 15%; text-align: right; }
+    #futures-trades-table th:nth-child(6), /* Acciones */
+    #futures-trades-table td:nth-child(6) { width: 20%; text-align: center; }
 }
 
 /* Media query para pantallas PEQUEÑAS (móviles) */
@@ -360,8 +406,9 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
         color: #d1d5db;
     }
 
-    /* Reglas específicas para las celdas de acciones, Y AHORA PARA EL GRÁFICO */
-    #project-details-table td:nth-child(7),
+    /* Reglas específicas para las celdas de acciones y gráfico */
+    /* Adjust nth-child for project-details-table Actions column (now 8th) */
+    #project-details-table td:nth-child(8),
     #project-cost-table td:nth-child(5),
     #fixed-expenses-table td:nth-child(3),
     #spot-trades-table td:nth-child(7),
@@ -373,7 +420,8 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
         border-top: 1px solid #e5e7eb;
         margin-top: 0.5rem;
     }
-    .dark #project-details-table td:nth-child(7),
+     /* Adjust nth-child for dark mode equivalent */
+    .dark #project-details-table td:nth-child(8),
     .dark #project-cost-table td:nth-child(5),
     .dark #fixed-expenses-table td:nth-child(3),
     .dark #spot-trades-table td:nth-child(7),
@@ -383,8 +431,10 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
         border-top-color: #4b5563;
     }
 
+
     /* Ocultar la etiqueta "Acciones" y "Gráfico" */
-    #project-details-table td:nth-child(7)::before,
+     /* Adjust nth-child for project-details-table Actions column (now 8th) */
+    #project-details-table td:nth-child(8)::before,
     #project-cost-table td:nth-child(5)::before,
     #fixed-expenses-table td:nth-child(3)::before,
     #spot-trades-table td:nth-child(7)::before,
@@ -396,7 +446,8 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
     }
 
     /* Hacer que los botones de acción y el gráfico ocupen todo el ancho */
-    #project-details-table td:nth-child(7) .value-wrapper,
+    /* Adjust nth-child for project-details-table Actions column (now 8th) */
+    #project-details-table td:nth-child(8) .value-wrapper,
     #project-cost-table td:nth-child(5) .value-wrapper,
     #fixed-expenses-table td:nth-child(3) .value-wrapper,
     #spot-trades-table td:nth-child(7) .value-wrapper,

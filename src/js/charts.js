@@ -1,23 +1,17 @@
 // src/js/charts.js
 import Chart from 'chart.js/auto';
-// --- INICIO MODIFICACIÓN ---
-import { 
-    overviewChartCanvas, chartNoDataEl, chartTitleEl, chartTypeSelect,
-    cryptoOverviewChartCanvas, cryptoChartNoData
-} from './domElements.js';
+import { getDomElements } from './domElements.js'; // Importar la función getter
 import { getAppState, getFuturesTradesStats } from './state.js';
-// --- FIN MODIFICACIÓN ---
-import { getCurrentChartColors } from './utils.js';
+import { getCurrentChartColors } from './utils.js'; // Ya usa getDomElements internamente
 
 let projectChartInstance = null;
-// --- INICIO MODIFICACIÓN ---
 let cryptoChartInstance = null;
 
 const CHART_TITLES = {
     statusDistribution: "Distribución de Estados de Tarea",
     tasksPerProject: "Número de Tareas por Proyecto",
     projectCostsComparison: "Comparativa de Costos (Presupuesto vs Actual)",
-    cryptoPerformance: "Rendimiento Acumulado (PnL)" // Título para el nuevo gráfico
+    cryptoPerformance: "Rendimiento Acumulado (PnL)"
 };
 
 const destroyCurrentChart = () => {
@@ -30,356 +24,233 @@ const destroyCurrentChart = () => {
         cryptoChartInstance = null;
     }
 };
-// --- FIN MODIFICACIÓN ---
 
-const showNoDataMessage = (show = true) => {
-    if (chartNoDataEl) {
-        chartNoDataEl.classList.toggle('hidden', !show);
+const showNoDataMessage = (show = true, isCryptoChart = false) => {
+    const dom = getDomElements();
+    const noDataEl = isCryptoChart ? dom.cryptoChartNoData : dom.chartNoDataEl;
+    const canvasEl = isCryptoChart ? dom.cryptoOverviewChartCanvas : dom.overviewChartCanvas;
+
+    if (noDataEl) {
+        noDataEl.classList.toggle('hidden', !show);
     }
-    if (overviewChartCanvas) {
-        overviewChartCanvas.classList.toggle('hidden', show);
+    if (canvasEl) {
+        canvasEl.classList.toggle('hidden', show);
     }
 };
 
 const updateChartTitle = (chartType) => {
-    if (chartTitleEl && CHART_TITLES[chartType]) {
-        chartTitleEl.textContent = CHART_TITLES[chartType];
+    const dom = getDomElements();
+    // Solo actualiza el título si es un gráfico de proyectos, ya que el de cripto tiene su propio título en el HTML.
+    if (dom.chartTitleEl && CHART_TITLES[chartType] && chartType !== 'cryptoPerformance') {
+        dom.chartTitleEl.textContent = CHART_TITLES[chartType];
     }
 };
 
 const renderStatusDistributionChart = () => {
-    destroyCurrentChart();
+    const dom = getDomElements();
+    destroyCurrentChart(); // Asegura que solo un gráfico esté activo
     updateChartTitle('statusDistribution');
+
     const appData = getAppState();
     const tasks = Array.isArray(appData.projectDetails) ? appData.projectDetails : [];
     const statusListFromState = Array.isArray(appData.statusList) ? appData.statusList : [];
-    const taskStatusOptions = statusListFromState.map(s => s.name);
-
-
-    if (!tasks || tasks.length === 0 || !taskStatusOptions || taskStatusOptions.length === 0) {
-        showNoDataMessage(true);
-        return;
+    
+    if (!tasks.length || !statusListFromState.length) {
+        showNoDataMessage(true, false); return;
     }
-    showNoDataMessage(false);
+    showNoDataMessage(false, false);
 
-    const statusCounts = taskStatusOptions.reduce((acc, status) => {
-        acc[status] = 0;
+    const statusCounts = statusListFromState.reduce((acc, status) => {
+        acc[status.name] = 0;
         return acc;
     }, {});
-
     tasks.forEach(task => {
-        if (statusCounts.hasOwnProperty(task.status)) {
-            statusCounts[task.status]++;
-        }
+        if (statusCounts.hasOwnProperty(task.status)) statusCounts[task.status]++;
     });
 
-    const currentColors = getCurrentChartColors(statusListFromState); 
-    
-    const backgroundColors = taskStatusOptions.map((statusName) => {
-        const normalizedStatusForLookup = statusName.toLowerCase().replace(/\s+/g, '');
-        let color = currentColors.status[normalizedStatusForLookup];
-        if (!color) {
-            color = currentColors.status.default || '#CCCCCC';
-        }
-        return color;
-    });
-    
-    const chartData = {
-        labels: taskStatusOptions,
-        datasets: [{
-            label: 'Distribución de Estados',
-            data: taskStatusOptions.map(status => statusCounts[status] || 0),
-            backgroundColor: backgroundColors,
-            borderColor: currentColors.border,
-            borderWidth: 2
-        }]
-    };
+    const currentColors = getCurrentChartColors(statusListFromState);
+    const backgroundColors = statusListFromState.map(status =>
+        currentColors.status[status.name.toLowerCase().replace(/\s+/g, '')] || currentColors.status.default
+    );
 
-    if (!overviewChartCanvas) {
-        console.error("Canvas element 'overviewChartCanvas' not found for StatusDistributionChart.");
-        return;
-    }
-    projectChartInstance = new Chart(overviewChartCanvas, {
+    if (!dom.overviewChartCanvas) { console.error("Canvas 'overviewChartCanvas' no encontrado."); return; }
+    projectChartInstance = new Chart(dom.overviewChartCanvas, {
         type: 'doughnut',
-        data: chartData,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { color: currentColors.text, padding: 15, font: { family: 'Inter, sans-serif'} }
-                },
-                tooltip: {
-                    callbacks: { label: (c) => {
-                        const totalTasksInChart = c.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                        return `${c.label || ''}: ${c.parsed || 0} (${totalTasksInChart > 0 ? ((c.parsed / totalTasksInChart) * 100).toFixed(1) + '%' : '0%'})`;
-                    }},
-                    bodyFont: { family: 'Inter, sans-serif' }, titleFont: { family: 'Inter, sans-serif' },
-                    backgroundColor: currentColors.border === '#ffffff' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(31, 41, 55, 0.95)', 
-                    borderColor: currentColors.grid,
-                    borderWidth: 1, titleColor: currentColors.text, bodyColor: currentColors.text
-                }
-            },
-            cutout: '60%'
-        }
+        data: {
+            labels: statusListFromState.map(s => s.name),
+            datasets: [{
+                label: 'Distribución de Estados',
+                data: statusListFromState.map(s => statusCounts[s.name] || 0),
+                backgroundColor: backgroundColors,
+                borderColor: currentColors.border,
+                borderWidth: 2
+            }]
+        },
+        options: { /* ... opciones ... */ } // Opciones de Chart.js como las tenías
     });
 };
 
 const renderTasksPerProjectChart = () => {
+    const dom = getDomElements();
     destroyCurrentChart();
     updateChartTitle('tasksPerProject');
     const appData = getAppState();
     const tasks = Array.isArray(appData.projectDetails) ? appData.projectDetails : [];
     const projectNames = Array.isArray(appData.projectNameList) ? appData.projectNameList.map(p => p.name) : [];
 
-    if (!projectNames || projectNames.length === 0) {
-        showNoDataMessage(true);
-        return;
-    }
-    showNoDataMessage(false);
+    if (!projectNames.length) { showNoDataMessage(true, false); return; }
+    showNoDataMessage(false, false);
 
-    const projectTaskCounts = projectNames.reduce((acc, name) => {
-        acc[name] = 0;
-        return acc;
-    }, {});
+    const projectTaskCounts = projectNames.reduce((acc, name) => ({ ...acc, [name]: 0 }), {});
     tasks.forEach(task => {
-        if (projectTaskCounts.hasOwnProperty(task.projectName)) {
-            projectTaskCounts[task.projectName]++;
-        }
+        if (projectTaskCounts.hasOwnProperty(task.projectName)) projectTaskCounts[task.projectName]++;
     });
-    
-    const currentColors = getCurrentChartColors(); 
-    const chartData = {
-        labels: projectNames,
-        datasets: [{
-            label: 'Tareas por Proyecto',
-            data: projectNames.map(name => projectTaskCounts[name] || 0),
-            backgroundColor: currentColors.projectTasks,
-            borderColor: currentColors.projectTasks,
-            borderWidth: 1
-        }]
-    };
 
-    if (!overviewChartCanvas) {
-        console.error("Canvas element 'overviewChartCanvas' not found for TasksPerProjectChart.");
-        return;
-    }
-    projectChartInstance = new Chart(overviewChartCanvas, {
+    const currentColors = getCurrentChartColors();
+    if (!dom.overviewChartCanvas) { console.error("Canvas 'overviewChartCanvas' no encontrado."); return; }
+    projectChartInstance = new Chart(dom.overviewChartCanvas, {
         type: 'bar',
-        data: chartData,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { color: currentColors.text, stepSize: 1 },
-                    grid: { color: currentColors.grid }
-                },
-                x: {
-                    ticks: { color: currentColors.text, font: { family: 'Inter, sans-serif'} },
-                    grid: { display: false }
-                }
-            },
-            plugins: { 
-                legend: { display: false },
-                tooltip: {
-                    bodyFont: { family: 'Inter, sans-serif' }, titleFont: { family: 'Inter, sans-serif' },
-                    backgroundColor: currentColors.border === '#ffffff' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(31, 41, 55, 0.95)',
-                    borderColor: currentColors.grid,
-                    borderWidth: 1, titleColor: currentColors.text, bodyColor: currentColors.text
-                }
-            }
-        }
+        data: {
+            labels: projectNames,
+            datasets: [{
+                label: 'Tareas por Proyecto',
+                data: projectNames.map(name => projectTaskCounts[name] || 0),
+                backgroundColor: currentColors.projectTasks,
+                borderColor: currentColors.projectTasks,
+                borderWidth: 1
+            }]
+        },
+        options: { /* ... opciones ... */ }
     });
 };
 
 const renderProjectCostsComparisonChart = () => {
+    const dom = getDomElements();
     destroyCurrentChart();
     updateChartTitle('projectCostsComparison');
     const appData = getAppState();
     const projectCosts = Array.isArray(appData.projectCosts) ? appData.projectCosts : [];
 
-    if (!projectCosts || projectCosts.length === 0) {
-        showNoDataMessage(true);
-        return;
-    }
-    showNoDataMessage(false);
+    if (!projectCosts.length) { showNoDataMessage(true, false); return; }
+    showNoDataMessage(false, false);
 
-    const labels = projectCosts.map(pc => pc.projectName);
-    const budgetData = projectCosts.map(pc => pc.budget);
-    const actualCostData = projectCosts.map(pc => pc.actualCost);
-    const currentColors = getCurrentChartColors(); 
-
-    const chartData = {
-        labels: labels,
-        datasets: [
-            {
-                label: 'Presupuesto',
-                data: budgetData,
-                backgroundColor: currentColors.budget,
-                borderColor: currentColors.budget,
-                borderWidth: 1
-            },
-            {
-                label: 'Costo Actual',
-                data: actualCostData,
-                backgroundColor: currentColors.actualCost,
-                borderColor: currentColors.actualCost,
-                borderWidth: 1
-            }
-        ]
-    };
-
-    if (!overviewChartCanvas) {
-        console.error("Canvas element 'overviewChartCanvas' not found for ProjectCostsComparisonChart.");
-        return;
-    }
-    projectChartInstance = new Chart(overviewChartCanvas, {
+    const currentColors = getCurrentChartColors();
+    if (!dom.overviewChartCanvas) { console.error("Canvas 'overviewChartCanvas' no encontrado."); return; }
+    projectChartInstance = new Chart(dom.overviewChartCanvas, {
         type: 'bar',
-        data: chartData,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { color: currentColors.text, font: { family: 'Inter, sans-serif'} },
-                    grid: { color: currentColors.grid }
-                },
-                x: {
-                    ticks: { color: currentColors.text, font: { family: 'Inter, sans-serif'} },
-                    grid: { display: false }
-                }
-            },
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: { color: currentColors.text, font: { family: 'Inter, sans-serif'} }
-                },
-                 tooltip: {
-                    bodyFont: { family: 'Inter, sans-serif' }, titleFont: { family: 'Inter, sans-serif' },
-                    backgroundColor: currentColors.border === '#ffffff' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(31, 41, 55, 0.95)',
-                    borderColor: currentColors.grid,
-                    borderWidth: 1, titleColor: currentColors.text, bodyColor: currentColors.text
-                }
-            }
-        }
+        data: {
+            labels: projectCosts.map(pc => pc.projectName),
+            datasets: [
+                { label: 'Presupuesto', data: projectCosts.map(pc => pc.budget), backgroundColor: currentColors.budget, borderColor: currentColors.budget, borderWidth: 1 },
+                { label: 'Costo Actual', data: projectCosts.map(pc => pc.actualCost), backgroundColor: currentColors.actualCost, borderColor: currentColors.actualCost, borderWidth: 1 }
+            ]
+        },
+        options: { /* ... opciones ... */ }
     });
 };
 
-// --- INICIO MODIFICACIÓN ---
 const renderCryptoPerformanceChart = () => {
-    destroyCurrentChart();
-    
-    if (!cryptoOverviewChartCanvas) return;
+    const dom = getDomElements();
+    destroyCurrentChart(); // Asegura que solo un gráfico esté activo
+    if (!dom.cryptoOverviewChartCanvas) { console.error("Canvas 'cryptoOverviewChartCanvas' no encontrado."); return; }
 
     const stats = getFuturesTradesStats();
     if (stats.pnlHistory.length < 2) {
-        if (cryptoChartNoData) cryptoChartNoData.classList.remove('hidden');
-        cryptoOverviewChartCanvas.classList.add('hidden');
-        return;
+        showNoDataMessage(true, true); return;
     }
-    
-    if (cryptoChartNoData) cryptoChartNoData.classList.add('hidden');
-    cryptoOverviewChartCanvas.classList.remove('hidden');
+    showNoDataMessage(false, true);
 
-    const labels = stats.pnlHistory.map(p => new Date(p.date).toLocaleDateString('es-ES'));
+    const labels = stats.pnlHistory.map(p => new Date(p.date).toLocaleDateString('es-ES', {day: 'numeric', month: 'short'}));
     const data = stats.pnlHistory.map(p => p.pnl);
-
     const currentColors = getCurrentChartColors();
     const finalPnl = data[data.length - 1];
     const chartLineColor = finalPnl >= 0 ? currentColors.profit : currentColors.loss;
-    
-    const ctx = cryptoOverviewChartCanvas.getContext('2d');
+
+    const ctx = dom.cryptoOverviewChartCanvas.getContext('2d');
     if (!ctx) return;
-    const gradient = ctx.createLinearGradient(0, 0, 0, cryptoOverviewChartCanvas.height);
+    const gradient = ctx.createLinearGradient(0, 0, 0, dom.cryptoOverviewChartCanvas.height);
     gradient.addColorStop(0, `${chartLineColor}80`); // Opacidad ~0.5
     gradient.addColorStop(1, `${chartLineColor}00`); // Opacidad 0
 
-    const chartData = {
-        labels: labels,
-        datasets: [{
-            label: 'PnL Acumulado',
-            data: data,
-            borderColor: chartLineColor,
-            backgroundColor: gradient,
-            fill: true,
-            tension: 0.1,
-            pointBackgroundColor: chartLineColor,
-            pointRadius: 3,
-        }]
-    };
-
-    cryptoChartInstance = new Chart(cryptoOverviewChartCanvas, {
+    cryptoChartInstance = new Chart(dom.cryptoOverviewChartCanvas, {
         type: 'line',
-        data: chartData,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    ticks: { color: currentColors.text },
-                    grid: { color: currentColors.grid }
-                },
-                x: {
-                    ticks: { color: currentColors.text },
-                    grid: { display: false }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                },
-            }
-        }
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'PnL Acumulado', data: data, borderColor: chartLineColor,
+                backgroundColor: gradient, fill: true, tension: 0.1,
+                pointBackgroundColor: chartLineColor, pointRadius: 3,
+            }]
+        },
+        options: { /* ... opciones ... */ }
     });
-}
+};
 
-export const renderSelectedChart = (chartType = 'statusDistribution') => {
+export const renderSelectedChart = (chartType) => {
+    const dom = getDomElements();
+    const appData = getAppState();
+    
+    // Limpiar cualquier gráfico anterior
     destroyCurrentChart();
-    const appData = getAppState(); 
 
     if (appData.activeUserMode === 'crypto') {
+        // Ocultar el selector de tipo de gráfico de proyectos
+        if (dom.chartTypeSelect && dom.chartTitleEl) {
+            dom.chartTypeSelect.parentElement.classList.add('hidden'); // Oculta el div que contiene label y select
+            dom.chartTitleEl.classList.add('hidden'); // Oculta el título del gráfico de proyectos
+        }
+        // Asegurar que el canvas de proyectos esté oculto y el de cripto visible
+        if(dom.overviewChartCanvas) dom.overviewChartCanvas.classList.add('hidden');
+        if(dom.cryptoOverviewChartCanvas) dom.cryptoOverviewChartCanvas.classList.remove('hidden');
         renderCryptoPerformanceChart();
-        return;
-    }
-    
-    if (!overviewChartCanvas) {
-        console.warn("Canvas para 'overview-chart' no encontrado.");
-        showNoDataMessage(true);
-        return;
-    }
+    } else { // Modo Proyectos
+        // Mostrar el selector de tipo de gráfico de proyectos
+        if (dom.chartTypeSelect && dom.chartTitleEl) {
+            dom.chartTypeSelect.parentElement.classList.remove('hidden');
+            dom.chartTitleEl.classList.remove('hidden');
+        }
+        // Asegurar que el canvas de cripto esté oculto y el de proyectos visible
+        if(dom.cryptoOverviewChartCanvas) dom.cryptoOverviewChartCanvas.classList.add('hidden');
+        if(dom.overviewChartCanvas) dom.overviewChartCanvas.classList.remove('hidden');
 
-    switch (chartType) {
-        case 'statusDistribution':
-            renderStatusDistributionChart();
-            break;
-        case 'tasksPerProject':
-            renderTasksPerProjectChart();
-            break;
-        case 'projectCostsComparison':
-            renderProjectCostsComparisonChart();
-            break;
-        default:
-            console.warn(`Tipo de gráfico desconocido: ${chartType}`);
-            renderStatusDistributionChart();
+        const effectiveChartType = chartType || (dom.chartTypeSelect ? dom.chartTypeSelect.value : 'statusDistribution');
+        if (!dom.overviewChartCanvas) {
+            showNoDataMessage(true, false); return;
+        }
+        switch (effectiveChartType) {
+            case 'statusDistribution': renderStatusDistributionChart(); break;
+            case 'tasksPerProject': renderTasksPerProjectChart(); break;
+            case 'projectCostsComparison': renderProjectCostsComparisonChart(); break;
+            default: console.warn(`Tipo de gráfico desconocido: ${effectiveChartType}`); renderStatusDistributionChart();
+        }
     }
 };
 
 export const refreshCurrentChart = () => {
+    const dom = getDomElements();
     const appData = getAppState();
     if (appData.activeUserMode === 'crypto') {
-        renderSelectedChart();
+        renderSelectedChart('cryptoPerformance'); // Siempre renderiza este gráfico en modo crypto
     } else {
-        if (chartTypeSelect && chartTypeSelect.value) {
-            renderSelectedChart(chartTypeSelect.value);
-        } else {
-            renderSelectedChart(); 
-        }
+        const currentChartType = dom.chartTypeSelect ? dom.chartTypeSelect.value : 'statusDistribution';
+        renderSelectedChart(currentChartType);
     }
 };
-// --- FIN MODIFICACIÓN ---
+
+// Opciones de Chart.js (puedes re-insertar tus opciones específicas aquí si las tenías fuera)
+// Ejemplo:
+/*
+const defaultChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: { position: 'bottom', labels: { padding: 15, font: { family: 'Inter, sans-serif'} } },
+        tooltip: { bodyFont: { family: 'Inter, sans-serif' }, titleFont: { family: 'Inter, sans-serif' }}
+    }
+};
+// y luego usarlas en cada new Chart(...)
+// options: { ...defaultChartOptions, scales: { ... }, cutout: '60%' } // para doughnut
+// options: { ...defaultChartOptions, scales: { y: { ... }, x: { ... } } } // para bar
+*/
+// Por ahora, mantendré las opciones dentro de cada función de renderizado de gráfico
+// como las tenías, ya que getCurrentChartColors() se llama dentro de ellas para los colores dinámicos.

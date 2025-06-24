@@ -1,68 +1,80 @@
 // src/js/modalHandlers.js
-import {
-    taskModal, taskModalTitle, taskForm, taskIdInput, taskProjectNameSelect, taskStatusSelect,
-    taskNameInput, taskDescriptionInput, taskStartDateInput, taskEndDateInput,
-    costModal, costModalTitle, costForm, costIdInput, costProjectNameInput, costBudgetInput, costActualInput,
-    confirmationModal, confirmationModalTitle, confirmationModalBody, confirmConfirmationButton,
-    mainTitleEl,
-    spotTradeModal, spotTradeModalTitle, spotTradeForm, spotTradeIdInput,
-    tradeDateInput, tradeTypeSelect, baseAssetInput, quoteAssetInput,
-    priceInput, quantityBaseInput, totalQuoteInput, notesInput, spotTradeFeesInput,
-    futuresTradeModal, futuresTradeModalTitle, futuresTradeForm, futuresTradeIdInput,
-    futuresSymbolInput, futuresDirectionSelect, futuresLeverageInput, futuresEntryDateInput,
-    futuresQuantityInput, futuresEntryPriceInput, futuresExitPriceContainer, futuresExitPriceInput,
-    futuresNotesInput, saveFuturesTradeButton, closeFuturesTradeButton, futuresEntryFeesInput,
-    futuresExitFeesContainer, futuresExitFeesInput,
-    addCoinModal, searchCoinInput, coinSearchResultsContainer
-} from './domElements.js';
+import { getDomElements } from './domElements.js';
 import { getAppState, updateAppState } from './state.js';
-import { sanitizeHTML, clearAllValidationErrors, showToast, debounce } from './utils.js';
+import { sanitizeHTML, clearAllValidationErrors, showToast, debounce, formatCurrency } from './utils.js';
 import db from './db.js';
 import { getTop100Coins } from '../api/cryptoAPI.js';
+import { DEFAULT_TASK_PRIORITIES } from './config.js';
+import { handleSpotCalculatorChange } from './eventHandlers.js'; 
 
-// Variable para almacenar la referencia al listener para poder removerlo si es necesario
 let taskStatusChangeListener = null;
-let allCoinsCache = []; // Caché para la lista de las 100 monedas principales
+let spotCalculatorInputListeners = []; 
+let allCoinsCache = [];
+let lastAllCoinsFetchTime = 0;
+const ALL_COINS_CACHE_DURATION = 15 * 60 * 1000;
 
-/** Abre un modal. @param {HTMLElement} modalElement */
 export const openModal = (modalElement) => {
-    if (!modalElement) return;
+    if (!modalElement) {
+        console.warn("MODAL_HANDLER (openModal): modalElement no encontrado. No se puede abrir el modal.");
+        return;
+    }
     modalElement.classList.remove('hidden');
     document.body.classList.add('modal-active');
-    modalElement.offsetHeight; // Trigger reflow
+    modalElement.offsetHeight;
     modalElement.classList.add('opacity-100');
     const modalContent = modalElement.querySelector('.modal-content');
     if (modalContent) {
         modalContent.classList.remove('scale-95');
         modalContent.classList.add('scale-100');
     }
-    const firstFocusable = modalElement.querySelector('input:not([readonly]):not([type="hidden"]), select, textarea, button');
+    const firstFocusable = modalElement.querySelector(
+        'input:not([readonly]):not([type="hidden"]):not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)'
+    );
     if (firstFocusable) firstFocusable.focus();
 };
 
-/** Cierra un modal. @param {HTMLElement} modalElement */
-export const closeModal = (modalElement) => {
-    if (!modalElement) return;
+const removeSpotCalculatorListeners = () => {
+    const dom = getDomElements();
+    if (spotCalculatorInputListeners.length > 0) {
+        if (dom.calcTargetProfitUsdInput && spotCalculatorInputListeners[0]) { 
+            dom.calcTargetProfitUsdInput.removeEventListener('input', spotCalculatorInputListeners[0]);
+        }
+        if (dom.calcEstimatedSellFeeInput && spotCalculatorInputListeners[1]) { 
+            dom.calcEstimatedSellFeeInput.removeEventListener('input', spotCalculatorInputListeners[1]);
+        }
+        spotCalculatorInputListeners = [];
+    }
+};
 
-    if (modalElement.id === 'task-modal' && taskForm) {
-        clearAllValidationErrors(taskForm);
-        if (taskStatusSelect && taskStatusChangeListener) {
-            taskStatusSelect.removeEventListener('change', taskStatusChangeListener);
+export const closeModal = (modalElement) => {
+    const dom = getDomElements();
+    if (!modalElement) {
+        console.warn("MODAL_HANDLER (closeModal): modalElement no encontrado. No se puede cerrar.");
+        return;
+    }
+
+    if (modalElement === dom.taskModal && dom.taskForm) {
+        clearAllValidationErrors(dom.taskForm);
+        if (dom.taskStatusSelect && taskStatusChangeListener) {
+            dom.taskStatusSelect.removeEventListener('change', taskStatusChangeListener);
             taskStatusChangeListener = null;
         }
+    } else if (modalElement === dom.costModal && dom.costForm) {
+        clearAllValidationErrors(dom.costForm);
+    } else if (modalElement === dom.spotTradeModal && dom.spotTradeForm) {
+        clearAllValidationErrors(dom.spotTradeForm);
+        removeSpotCalculatorListeners(); 
+        if (dom.spotTargetCalculatorSection) dom.spotTargetCalculatorSection.classList.add('hidden');
+    } else if (modalElement === dom.futuresTradeModal && dom.futuresTradeForm) {
+        clearAllValidationErrors(dom.futuresTradeForm);
+        if (dom.futuresExitPriceInput) dom.futuresExitPriceInput.disabled = false;
+        if (dom.futuresExitFeesInput) dom.futuresExitFeesInput.disabled = false;
+    } else if (modalElement === dom.addCoinModal) {
+        if (dom.searchCoinInput) dom.searchCoinInput.value = '';
+        if (dom.coinSearchResultsContainer) dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Comience a escribir para buscar monedas.</p>';
+    } else if (modalElement === dom.confirmationModal) {
+        updateAppState({ currentConfirmationAction: null });
     }
-    if (modalElement.id === 'cost-modal' && costForm) clearAllValidationErrors(costForm);
-    if (modalElement.id === 'spot-trade-modal' && spotTradeForm) {
-        clearAllValidationErrors(spotTradeForm);
-    }
-    if (modalElement.id === 'futures-trade-modal' && futuresTradeForm) {
-        clearAllValidationErrors(futuresTradeForm);
-    }
-    if (modalElement.id === 'add-coin-modal') {
-        if (searchCoinInput) searchCoinInput.value = '';
-        if (coinSearchResultsContainer) coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Comience a escribir para buscar monedas.</p>';
-    }
-    if (modalElement.id === 'confirmation-modal') updateAppState({ currentConfirmationAction: null });
 
     document.body.classList.remove('modal-active');
     modalElement.classList.remove('opacity-100');
@@ -71,364 +83,431 @@ export const closeModal = (modalElement) => {
         modalContent.classList.remove('scale-100');
         modalContent.classList.add('scale-95');
     }
-    setTimeout(() => modalElement.classList.add('hidden'), 250);
+    const scrollableContent = modalElement.querySelector('.modal-content .overflow-y-auto');
+    if (scrollableContent) scrollableContent.scrollTop = 0;
+    
+    setTimeout(() => {
+        if (modalElement) modalElement.classList.add('hidden');
+    } , 250);
 };
 
-/** Populates dropdowns in the Task Modal. */
 export const updateTaskModalDropdowns = () => {
+    const dom = getDomElements();
     const currentState = getAppState();
-    if (!taskProjectNameSelect || !taskStatusSelect) return;
-    const currentProjectValue = taskProjectNameSelect.value;
-    const currentStatusValue = taskStatusSelect.value;
+    if (!dom.taskProjectNameSelect || !dom.taskStatusSelect || !dom.taskPrioritySelect) {
+        console.warn("updateTaskModalDropdowns: Uno o más selectores del modal de tarea no encontrados.");
+        return;
+    }
+    const currentProjectValue = dom.taskProjectNameSelect.value;
+    const currentStatusValue = dom.taskStatusSelect.value;
+    const currentPriorityValue = dom.taskPrioritySelect.value;
+
     const projectNameList = Array.isArray(currentState.projectNameList) ? currentState.projectNameList : [];
-    taskProjectNameSelect.innerHTML = '<option value="">Seleccione Proyecto</option>';
-    [...projectNameList].sort((a,b) => a.name.localeCompare(b.name)).forEach(project => {
-        taskProjectNameSelect.add(new Option(sanitizeHTML(project.name), project.name));
+    dom.taskProjectNameSelect.innerHTML = '<option value="">Seleccione Proyecto</option>';
+    [...projectNameList].sort((a, b) => a.name.localeCompare(b.name)).forEach(project => {
+        dom.taskProjectNameSelect.add(new Option(sanitizeHTML(project.name), project.name));
     });
-    taskProjectNameSelect.value = currentProjectValue;
+    if (currentProjectValue) dom.taskProjectNameSelect.value = currentProjectValue;
+
     const statusList = Array.isArray(currentState.statusList) ? currentState.statusList : [];
-    taskStatusSelect.innerHTML = '<option value="">Seleccione Estado</option>';
-    [...statusList].sort((a,b) => a.name.localeCompare(b.name)).forEach(status => {
-         taskStatusSelect.add(new Option(sanitizeHTML(status.name), status.name));
+    dom.taskStatusSelect.innerHTML = '<option value="">Seleccione Estado</option>';
+    [...statusList].sort((a, b) => a.name.localeCompare(b.name)).forEach(status => {
+        dom.taskStatusSelect.add(new Option(sanitizeHTML(status.name), status.name));
     });
-    taskStatusSelect.value = currentStatusValue;
+    if (currentStatusValue) dom.taskStatusSelect.value = currentStatusValue;
+
+    dom.taskPrioritySelect.innerHTML = '<option value="">Seleccione Prioridad</option>';
+    DEFAULT_TASK_PRIORITIES.forEach(priority => {
+        dom.taskPrioritySelect.add(new Option(priority, priority));
+    });
+    if (currentPriorityValue) dom.taskPrioritySelect.value = currentPriorityValue;
 };
 
-/**
- * Función genérica para mostrar diferentes tipos de modales.
- * @param {object} options - Objeto de configuración del modal.
- */
 export const showDynamicModal = (options) => {
-    const { type, title, data, message, confirmButtonText, confirmButtonClass, actionCallback, actionData } = options;
-
+    const dom = getDomElements();
+    const { type, title, data, message, confirmButtonText, confirmButtonClass } = options;
     let modalElement, modalTitleEl, formElement;
 
     switch (type) {
-        case 'task':
-            modalElement = taskModal;
-            modalTitleEl = taskModalTitle;
-            formElement = taskForm;
-            break;
-        case 'cost':
-            modalElement = costModal;
-            modalTitleEl = costModalTitle;
-            formElement = costForm;
-            break;
+        case 'task': modalElement = dom.taskModal; modalTitleEl = dom.taskModalTitle; formElement = dom.taskForm; break;
+        case 'cost': modalElement = dom.costModal; modalTitleEl = dom.costModalTitle; formElement = dom.costForm; break;
         case 'confirmation':
-            modalElement = confirmationModal;
-            modalTitleEl = confirmationModalTitle;
-            formElement = null;
+            modalElement = dom.confirmationModal;
+            modalTitleEl = dom.confirmationModalTitle;
+            formElement = null; 
+            if (modalTitleEl) modalTitleEl.textContent = title;
+            if (dom.confirmationModalBody) {
+                dom.confirmationModalBody.innerHTML = message; 
+            }
+            if (dom.confirmConfirmationButton) {
+                dom.confirmConfirmationButton.textContent = confirmButtonText;
+                dom.confirmConfirmationButton.className = 'text-white font-medium py-2 px-4 rounded-lg shadow transition duration-300 text-sm'; 
+                if (confirmButtonClass === 'red') {
+                    dom.confirmConfirmationButton.classList.add('bg-red-600', 'hover:bg-red-700');
+                } else if (confirmButtonClass === 'teal') {
+                    dom.confirmConfirmationButton.classList.add('bg-teal-600', 'hover:bg-teal-700');
+                } else { 
+                    dom.confirmConfirmationButton.classList.add('bg-red-600', 'hover:bg-red-700');
+                }
+            }
             break;
-        case 'spotTrade':
-            modalElement = spotTradeModal;
-            modalTitleEl = spotTradeModalTitle;
-            formElement = spotTradeForm;
-            break;
-        case 'futuresTrade':
-            modalElement = futuresTradeModal;
-            modalTitleEl = futuresTradeModalTitle;
-            formElement = futuresTradeForm;
-            break;
-        case 'addCoin':
-            modalElement = addCoinModal;
-            modalTitleEl = document.getElementById('add-coin-modal-title');
-            formElement = null;
-            break;
-        default:
-            console.error(`showDynamicModal: Tipo de modal desconocido: ${type}`);
-            return;
+        case 'spotTrade': modalElement = dom.spotTradeModal; modalTitleEl = dom.spotTradeModalTitle; formElement = dom.spotTradeForm; break;
+        case 'futuresTrade': modalElement = dom.futuresTradeModal; modalTitleEl = dom.futuresTradeModalTitle; formElement = dom.futuresTradeForm; break;
+        case 'addCoin': modalElement = dom.addCoinModal; modalTitleEl = dom.addCoinModal?.querySelector('#add-coin-modal-title'); formElement = null; break;
+        default: console.error(`showDynamicModal: Tipo de modal desconocido: ${type}`); return;
     }
-
-    if (!modalElement || !modalTitleEl) {
-        console.error(`showDynamicModal: Elementos DOM no encontrados para el tipo ${type}.`);
-        return;
+    
+    if (!modalElement) { 
+      console.error(`MODAL_HANDLER (showDynamicModal): modalElement NO ENCONTRADO para tipo '${type}'.`); 
+      return; 
     }
-
-    modalTitleEl.textContent = sanitizeHTML(title);
-
-    if (formElement) {
-        formElement.reset();
-        clearAllValidationErrors(formElement);
+    if (!modalTitleEl && type !== 'addCoin' && type !== 'futuresTrade' && type !== 'confirmation') {
+      console.error(`showDynamicModal: modalTitleEl no encontrado para tipo ${type}.`); return;
     }
+    
+    if (modalTitleEl && type !== 'confirmation') modalTitleEl.textContent = sanitizeHTML(title); 
+    if (formElement) { formElement.reset(); clearAllValidationErrors(formElement); }
 
+    if (type !== 'spotTrade' || !data || data.type !== 'buy') {
+        removeSpotCalculatorListeners();
+        if(dom.spotTargetCalculatorSection) dom.spotTargetCalculatorSection.classList.add('hidden');
+    }
     switch (type) {
         case 'task':
             updateTaskModalDropdowns();
-            if (taskStatusSelect && taskStartDateInput) {
-                if (taskStatusChangeListener) taskStatusSelect.removeEventListener('change', taskStatusChangeListener);
-                taskStatusChangeListener = (event) => {
-                    const selectedStatusValue = event.target.value;
-                    const appState = getAppState();
-                    const notStartedStatus = appState.statusList.find(s => s.name.toLowerCase().includes('no iniciado'));
-                    const notStartedStatusName = notStartedStatus ? notStartedStatus.name : "No Iniciado";
-                    if (selectedStatusValue === notStartedStatusName) taskStartDateInput.value = '';
-                };
-                taskStatusSelect.addEventListener('change', taskStatusChangeListener);
+            if (!dom.taskIdInput || !dom.taskProjectNameSelect || !dom.taskStatusSelect || !dom.taskPrioritySelect || !dom.taskNameInput || !dom.taskDescriptionInput || !dom.taskStartDateInput || !dom.taskEndDateInput) {
+                console.error("MODAL_HANDLER (task): Faltan elementos DOM para el modal de tarea.");
+                return;
             }
-            if (data) {
-                if (!taskIdInput || !taskProjectNameSelect || !taskStatusSelect || !taskNameInput || !taskDescriptionInput || !taskStartDateInput || !taskEndDateInput) return;
-                taskIdInput.value = data.id || '';
-                taskProjectNameSelect.value = data.projectName || '';
-                taskStatusSelect.value = data.status || '';
-                taskNameInput.value = data.task || '';
-                taskDescriptionInput.value = data.description || '';
-                taskStartDateInput.value = data.startDate || '';
-                taskEndDateInput.value = data.endDate || '';
-                if (taskStatusSelect.value && taskStatusSelect.value === (getAppState().statusList.find(s => s.name.toLowerCase().includes('no iniciado'))?.name || "No Iniciado")) {
-                    if (taskStartDateInput) taskStartDateInput.value = '';
-                }
-            } else {
-                if (taskIdInput) taskIdInput.value = '';
-                 if (taskStatusSelect && taskStartDateInput) {
-                    const initialStatusValue = taskStatusSelect.value;
-                    const appState = getAppState();
-                    const notStartedStatus = appState.statusList.find(s => s.name.toLowerCase().includes('no iniciado'));
-                    const notStartedStatusName = notStartedStatus ? notStartedStatus.name : "No Iniciado";
-                    if (initialStatusValue === notStartedStatusName) taskStartDateInput.value = '';
-                }
+            if (data) { 
+                dom.taskIdInput.value = data.id || '';
+                dom.taskProjectNameSelect.value = data.projectName || '';
+                dom.taskStatusSelect.value = data.status || '';
+                dom.taskPrioritySelect.value = data.priority || '';
+                dom.taskNameInput.value = data.task || '';
+                dom.taskDescriptionInput.value = data.description || '';
+                dom.taskStartDateInput.value = data.startDate || '';
+                dom.taskEndDateInput.value = data.endDate || '';
+            } else { 
+                dom.taskIdInput.value = ''; 
+                const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                const todayISO = now.toISOString().slice(0, 10);
+                dom.taskStartDateInput.value = todayISO;
+                dom.taskEndDateInput.value = todayISO;
             }
             break;
         case 'cost':
+             if (!dom.costIdInput || !dom.costProjectNameInput || !dom.costBudgetInput || !dom.costActualInput) {
+                console.error("MODAL_HANDLER (cost): Faltan elementos DOM para el modal de costo.");
+                return;
+            }
             if (data) {
-                if (!costIdInput || !costProjectNameInput || !costBudgetInput || !costActualInput) return;
-                costIdInput.value = data.id || '';
-                costProjectNameInput.value = data.projectName || '';
-                costBudgetInput.value = (data.budget >= 0) ? data.budget.toFixed(2) : '';
-                costActualInput.value = (data.actualCost >= 0) ? data.actualCost.toFixed(2) : '';
+                dom.costIdInput.value = data.id || '';
+                dom.costProjectNameInput.value = data.projectName || 'N/A';
+                dom.costBudgetInput.value = data.budget || '0';
+                dom.costActualInput.value = data.actualCost || '0';
             }
             break;
-        case 'confirmation':
-            if (!confirmationModalBody || !confirmConfirmationButton) return;
-            confirmationModalBody.innerHTML = message;
-            confirmConfirmationButton.textContent = confirmButtonText;
-            confirmConfirmationButton.className = `font-medium py-2 px-4 rounded-lg shadow transition duration-300 text-sm text-white bg-${confirmButtonClass}-600 hover:bg-${confirmButtonClass}-700`;
-            updateAppState({ currentConfirmationAction: { callback: actionCallback, data: actionData } });
-            break;
         case 'spotTrade':
-            if (data) {
-                spotTradeIdInput.value = data.id || '';
-                tradeDateInput.value = data.tradeDate ? new Date(data.tradeDate).toISOString().slice(0, 16) : '';
-                tradeTypeSelect.value = data.type || 'buy';
-                baseAssetInput.value = data.baseAsset || '';
-                quoteAssetInput.value = data.quoteAsset || '';
-                priceInput.value = data.price || '';
-                quantityBaseInput.value = data.quantityBase || '';
-                totalQuoteInput.value = data.totalQuote || '';
-                spotTradeFeesInput.value = data.fees || '';
-                notesInput.value = data.notes || '';
-            } else {
-                spotTradeIdInput.value = '';
-                const now = new Date();
-                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                tradeDateInput.value = now.toISOString().slice(0, 16);
+            if (!dom.spotTradeIdInput || !dom.tradeDateInput || !dom.tradeTypeSelect || !dom.baseAssetInput || !dom.quoteAssetInput || !dom.priceInput || !dom.quantityBaseInput || !dom.totalQuoteInput || !dom.spotTradeFeesInput || !dom.notesInput ||
+                !dom.spotTargetCalculatorSection || !dom.calcBaseQuantity || !dom.calcBaseTotalCost || !dom.calcTargetProfitUsdInput || !dom.calcEstimatedSellFeeInput || !dom.calcSellPriceNeeded || !dom.calcTotalSellValue
+            ) {
+                console.error("MODAL_HANDLER (spotTrade): Faltan elementos DOM para el modal/calculador de spot.");
+                return;
+            }
+            if (data) { 
+                dom.spotTradeIdInput.value = data.id || '';
+                dom.tradeDateInput.value = data.tradeDate ? new Date(data.tradeDate).toISOString().slice(0, 16) : '';
+                dom.tradeTypeSelect.value = data.type || 'buy';
+                dom.baseAssetInput.value = data.baseAsset || '';
+                dom.quoteAssetInput.value = data.quoteAsset || '';
+                dom.priceInput.value = data.price || '';
+                dom.quantityBaseInput.value = data.quantityBase || '';
+                dom.totalQuoteInput.value = data.totalQuote || '';
+                dom.spotTradeFeesInput.value = data.fees || '';
+                dom.notesInput.value = data.notes || '';
+                if (data.type === 'buy') {
+                    dom.spotTargetCalculatorSection.classList.remove('hidden');
+                    const quantity = parseFloat(data.quantityBase) || 0;
+                    const price = parseFloat(data.price) || 0;
+                    const fees = parseFloat(data.fees) || 0;
+                    const totalCost = (quantity * price) + fees;
+                    dom.calcBaseQuantity.textContent = quantity.toLocaleString(undefined, {maximumFractionDigits: 8});
+                    dom.calcBaseTotalCost.textContent = formatCurrency(totalCost);
+                    dom.calcTargetProfitUsdInput.value = '';
+                    dom.calcEstimatedSellFeeInput.value = '0';
+                    dom.calcSellPriceNeeded.textContent = '-';
+                    dom.calcTotalSellValue.textContent = '-';
+                    removeSpotCalculatorListeners(); 
+                    const listenerProfit = () => handleSpotCalculatorChange(data); 
+                    const listenerFee = () => handleSpotCalculatorChange(data);
+                    if(dom.calcTargetProfitUsdInput) dom.calcTargetProfitUsdInput.addEventListener('input', listenerProfit);
+                    if(dom.calcEstimatedSellFeeInput) dom.calcEstimatedSellFeeInput.addEventListener('input', listenerFee);
+                    spotCalculatorInputListeners = [listenerProfit, listenerFee];
+                } else { 
+                    dom.spotTargetCalculatorSection.classList.add('hidden');
+                    removeSpotCalculatorListeners();
+                }
+            } else { 
+                dom.spotTradeIdInput.value = ''; 
+                const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                dom.tradeDateInput.value = now.toISOString().slice(0, 16); 
+                dom.tradeTypeSelect.value = 'buy';
+                dom.baseAssetInput.value = ''; dom.quoteAssetInput.value = ''; dom.priceInput.value = '';
+                dom.quantityBaseInput.value = ''; dom.totalQuoteInput.value = ''; dom.spotTradeFeesInput.value = ''; dom.notesInput.value = '';
+                dom.spotTargetCalculatorSection.classList.add('hidden');
+                removeSpotCalculatorListeners();
             }
             break;
         case 'futuresTrade':
+             if (!dom.futuresTradeIdInput || !dom.futuresSymbolInput || !dom.futuresDirectionSelect || !dom.futuresLeverageInput || !dom.futuresEntryDateInput || !dom.futuresQuantityInput || !dom.futuresEntryPriceInput || !dom.futuresEntryFeesInput || !dom.futuresNotesInput || !dom.futuresExitPriceInput || !dom.futuresExitFeesInput || !dom.futuresExitDateContainer || !dom.futuresExitDateInput || !dom.futuresExitPriceContainer || !dom.futuresExitFeesContainer || !dom.saveFuturesTradeButton || !dom.closeFuturesTradeButton) {
+                console.error("MODAL_HANDLER (futuresTrade): Faltan elementos DOM para el modal de futuros.");
+                return;
+            }
+            const isNewTrade = !data;
             const isEditingOpenTrade = data && data.status === 'open';
             const isEditingClosedTrade = data && data.status === 'closed';
-
-            futuresTradeModalTitle.textContent = isEditingClosedTrade ? 'Ver Posición Cerrada' : (isEditingOpenTrade ? 'Ver/Cerrar Posición' : 'Abrir Nueva Posición');
-            
-            saveFuturesTradeButton.classList.toggle('hidden', isEditingClosedTrade);
-            saveFuturesTradeButton.textContent = isEditingOpenTrade ? 'Guardar Cambios' : 'Abrir Posición';
-            
-            closeFuturesTradeButton.classList.toggle('hidden', !isEditingOpenTrade);
-
-            futuresExitPriceContainer.classList.toggle('hidden', !isEditingOpenTrade && !isEditingClosedTrade);
-            futuresExitFeesContainer.classList.toggle('hidden', !isEditingOpenTrade && !isEditingClosedTrade);
-
-            if (data) {
-                futuresTradeIdInput.value = data.id || '';
-                futuresSymbolInput.value = data.symbol || '';
-                futuresDirectionSelect.value = data.direction || 'long';
-                futuresLeverageInput.value = data.leverage || '';
-                futuresEntryDateInput.value = data.entryDate ? new Date(data.entryDate).toISOString().slice(0, 16) : '';
-                futuresQuantityInput.value = data.quantity || '';
-                futuresEntryPriceInput.value = data.entryPrice || '';
-                futuresEntryFeesInput.value = data.entryFees || '';
-                futuresExitPriceInput.value = data.exitPrice || '';
-                futuresExitFeesInput.value = data.exitFees || '';
-                futuresNotesInput.value = data.notes || '';
-            } else {
-                futuresTradeIdInput.value = '';
-                const now = new Date();
-                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                futuresEntryDateInput.value = now.toISOString().slice(0, 16);
+            if(modalTitleEl) modalTitleEl.textContent = isEditingClosedTrade ? 'Ver Posición Cerrada' : (isEditingOpenTrade ? 'Ver/Cerrar Posición' : 'Abrir Nueva Posición');
+            if (dom.saveFuturesTradeButton) {
+                dom.saveFuturesTradeButton.classList.remove('hidden');
+                if (isEditingClosedTrade) {
+                    dom.saveFuturesTradeButton.classList.add('hidden');
+                } else if (isEditingOpenTrade) {
+                    dom.saveFuturesTradeButton.textContent = 'Guardar Cambios';
+                } else { 
+                    dom.saveFuturesTradeButton.textContent = 'Abrir Posición';
+                }
+            }
+            if (dom.closeFuturesTradeButton) {
+                dom.closeFuturesTradeButton.classList.toggle('hidden', !isEditingOpenTrade);
+            }
+            if (dom.futuresExitDateContainer) { 
+                dom.futuresExitDateContainer.classList.toggle('hidden', !isEditingClosedTrade);
+            }
+            if (dom.futuresExitPriceContainer) { 
+                dom.futuresExitPriceContainer.classList.toggle('hidden', !(isEditingOpenTrade || isEditingClosedTrade));
+            }
+            if (dom.futuresExitFeesContainer) { 
+                dom.futuresExitFeesContainer.classList.toggle('hidden', !(isEditingOpenTrade || isEditingClosedTrade));
+            }
+            const allEntryFields = [
+                dom.futuresSymbolInput, dom.futuresDirectionSelect, dom.futuresLeverageInput, 
+                dom.futuresEntryDateInput, dom.futuresQuantityInput, dom.futuresEntryPriceInput, 
+                dom.futuresEntryFeesInput, dom.futuresNotesInput
+            ];
+            const allExitInputFields = [dom.futuresExitPriceInput, dom.futuresExitFeesInput];
+            if (isEditingClosedTrade) {
+                [...allEntryFields, ...allExitInputFields, dom.futuresExitDateInput].forEach(field => { if (field) field.disabled = true; });
+                if (dom.futuresExitDateInput && data.exitDate) { 
+                    dom.futuresExitDateInput.value = new Date(data.exitDate).toISOString().slice(0, 16);
+                } else if (dom.futuresExitDateInput) {
+                    dom.futuresExitDateInput.value = ''; 
+                }
+            } else if (isEditingOpenTrade) {
+                [...allEntryFields, ...allExitInputFields].forEach(field => { if (field) field.disabled = false; });
+                if (dom.futuresExitDateInput) dom.futuresExitDateInput.value = ''; 
+            } else { 
+                allEntryFields.forEach(field => { if (field) field.disabled = false; });
+                allExitInputFields.forEach(field => { if (field) field.disabled = true; });
+                if (dom.futuresExitDateInput) dom.futuresExitDateInput.value = ''; 
+            }
+            if (data) { 
+                dom.futuresTradeIdInput.value = data.id || ''; 
+                dom.futuresSymbolInput.value = data.symbol || '';
+                dom.futuresDirectionSelect.value = data.direction || 'long'; 
+                dom.futuresLeverageInput.value = data.leverage || '';
+                dom.futuresEntryDateInput.value = data.entryDate ? new Date(data.entryDate).toISOString().slice(0, 16) : '';
+                dom.futuresQuantityInput.value = data.quantity || ''; 
+                dom.futuresEntryPriceInput.value = data.entryPrice || '';
+                dom.futuresEntryFeesInput.value = data.entryFees || ''; 
+                dom.futuresExitPriceInput.value = data.exitPrice || ''; 
+                dom.futuresExitFeesInput.value = data.exitFees || '';   
+                dom.futuresNotesInput.value = data.notes || '';
+            } else { 
+                dom.futuresTradeIdInput.value = ''; 
+                const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                if (dom.futuresEntryDateInput) dom.futuresEntryDateInput.value = now.toISOString().slice(0, 16);
+                if (dom.futuresSymbolInput) dom.futuresSymbolInput.value = '';
+                if (dom.futuresDirectionSelect) dom.futuresDirectionSelect.value = 'long';
+                if (dom.futuresLeverageInput) dom.futuresLeverageInput.value = '';
+                if (dom.futuresQuantityInput) dom.futuresQuantityInput.value = '';
+                if (dom.futuresEntryPriceInput) dom.futuresEntryPriceInput.value = '';
+                if (dom.futuresEntryFeesInput) dom.futuresEntryFeesInput.value = '';
+                if (dom.futuresExitPriceInput) dom.futuresExitPriceInput.value = '';
+                if (dom.futuresExitFeesInput) dom.futuresExitFeesInput.value = '';
+                if (dom.futuresNotesInput) dom.futuresNotesInput.value = '';
             }
             break;
-        case 'addCoin':
-            break;
+        case 'addCoin': 
+            break; 
     }
-
     openModal(modalElement);
 };
 
-export const openAddTaskModal = () => {
-    showDynamicModal({ type: 'task', title: 'Agregar Nueva Tarea' });
-};
-
+export const openAddTaskModal = () => showDynamicModal({ type: 'task', title: 'Agregar Nueva Tarea' });
 export const openEditTaskModal = (taskIdToEdit) => {
     const currentState = getAppState();
     const taskToEdit = currentState.projectDetails.find(task => task.id === taskIdToEdit);
     if (!taskToEdit) return showToast("Error: Tarea no encontrada.", "error");
     showDynamicModal({ type: 'task', title: 'Editar Tarea', data: taskToEdit });
 };
-
 export const openEditCostModal = (costIdToEdit) => {
     const currentState = getAppState();
     const costToEdit = currentState.projectCosts.find(cost => cost.id === costIdToEdit);
-    if (!costToEdit) return showToast("Error: Costo no encontrado.", "error");
+    if (!costToEdit) {
+        showToast("Error: Costo no encontrado.", "error");
+        console.error(`openEditCostModal: Costo con ID '${costIdToEdit}' no encontrado.`);
+        return;
+    }
     showDynamicModal({ type: 'cost', title: `Editar Costos: ${sanitizeHTML(costToEdit.projectName)}`, data: costToEdit });
 };
 
-export const openAddSpotTradeModal = () => {
-    showDynamicModal({
-        type: 'spotTrade',
-        title: 'Agregar Operación Spot'
+export const openConfirmationModal = (title, message, confirmButtonText, confirmButtonClass, actionCallback, actionData = null) => {
+    updateAppState({ currentConfirmationAction: { callback: actionCallback, data: actionData } });
+    console.log("MODAL_HANDLER (openConfirmationModal): Acción guardada en estado:", getAppState().currentConfirmationAction ? "OK" : "FALLO"); 
+
+    showDynamicModal({ 
+        type: 'confirmation', 
+        title: sanitizeHTML(title), 
+        message: message,
+        confirmButtonText: sanitizeHTML(confirmButtonText), 
+        confirmButtonClass, 
     });
 };
 
+export const closeConfirmationModal = () => closeModal(getDomElements().confirmationModal);
+export const openAddSpotTradeModal = () => showDynamicModal({ type: 'spotTrade', title: 'Agregar Operación Spot' });
 export const openEditSpotTradeModal = (tradeId) => {
     const currentState = getAppState();
     const tradeToEdit = currentState.spotTrades.find(trade => trade.id === tradeId);
-    
-    if (!tradeToEdit) {
-        showToast("Error: Operación no encontrada.", "error");
-        return;
-    }
-    showDynamicModal({
-        type: 'spotTrade',
-        title: 'Editar Operación Spot',
-        data: tradeToEdit
-    });
+    if (!tradeToEdit) return showToast("Error: Operación no encontrada.", "error");
+    showDynamicModal({ type: 'spotTrade', title: 'Editar Operación Spot', data: tradeToEdit });
 };
-
-export const openAddFuturesTradeModal = () => {
-    showDynamicModal({
-        type: 'futuresTrade',
-        title: 'Abrir Nueva Posición de Futuros'
-    });
-};
-
+export const openAddFuturesTradeModal = () => showDynamicModal({ type: 'futuresTrade', title: 'Abrir Nueva Posición de Futuros' });
 export const openEditFuturesTradeModal = (tradeId) => {
     const currentState = getAppState();
     const tradeToEdit = currentState.futuresTrades.find(trade => trade.id === tradeId);
-    
-    if (!tradeToEdit) {
-        showToast("Error: Posición de futuros no encontrada.", "error");
-        return;
-    }
-    showDynamicModal({
-        type: 'futuresTrade',
-        title: 'Ver/Editar Posición de Futuros',
-        data: tradeToEdit
-    });
+    if (!tradeToEdit) return showToast("Error: Posición de futuros no encontrada.", "error");
+    showDynamicModal({ type: 'futuresTrade', title: '', data: tradeToEdit });
 };
 
 const renderCoinSearchResults = (results) => {
-    if (!coinSearchResultsContainer) return;
-    
+    const dom = getDomElements();
+    if (!dom.coinSearchResultsContainer) return;
+
+    const { watchlist } = getAppState();
+    const watchlistCoinIds = new Set(watchlist.map(item => item.coinId));
+
     if (results.length === 0) {
-        coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">No se encontraron monedas.</p>';
+        dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">No se encontraron monedas.</p>';
         return;
     }
 
-    const { watchlist } = getAppState();
-    const watchlistIds = watchlist.map(item => item.coinId);
-
-    coinSearchResultsContainer.innerHTML = `
-        <ul class="space-y-2">
-            ${results.map(coin => {
-                const isAdded = watchlistIds.includes(coin.id);
-                return `
-                    <li class="flex items-center justify-between p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <span class="font-medium text-gray-800 dark:text-gray-200">${sanitizeHTML(coin.name)} (${sanitizeHTML(coin.symbol)})</span>
-                        <button class="add-coin-to-watchlist-btn text-sm py-1 px-3 rounded-md transition-colors duration-200 ${isAdded ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white'}" data-coin-id="${coin.id}" data-coin-name="${sanitizeHTML(coin.name)}" ${isAdded ? 'disabled' : ''}>
-                            ${isAdded ? 'Añadida' : '<i class="fas fa-plus"></i> Añadir'}
-                        </button>
-                    </li>
-                `;
-            }).join('')}
+    dom.coinSearchResultsContainer.innerHTML = `
+        <ul class="space-y-2 max-h-60 overflow-y-auto">
+            ${results.map(coin => `
+                <li class="flex justify-between items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors duration-150">
+                    <div class="flex items-center">
+                        <span class="text-sm font-medium text-gray-800 dark:text-gray-200">${sanitizeHTML(coin.name)} (${sanitizeHTML(coin.symbol.toUpperCase())})</span>
+                    </div>
+                    <button 
+                        class="add-coin-to-watchlist-btn text-xs font-semibold py-1.5 px-3 rounded-md transition-all duration-200 ease-in-out
+                               ${watchlistCoinIds.has(coin.id) 
+                                   ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed' 
+                                   : 'bg-green-500 hover:bg-green-600 text-white focus:ring-2 focus:ring-green-400 focus:ring-opacity-50'}"
+                        data-coin-id="${coin.id}"
+                        data-coin-name="${sanitizeHTML(coin.name)}"
+                        ${watchlistCoinIds.has(coin.id) ? 'disabled' : ''}>
+                        ${watchlistCoinIds.has(coin.id) ? 'Añadida' : '<i class="fas fa-plus mr-1"></i> Añadir'}
+                    </button>
+                </li>
+            `).join('')}
         </ul>
     `;
 };
 
 const _handleCoinSearch = async (searchTerm) => {
-    if (!coinSearchResultsContainer) return;
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    const dom = getDomElements();
+    if (!dom.searchCoinInput || !dom.coinSearchResultsContainer) return;
 
-    if (!lowerCaseSearchTerm) {
-        coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Comience a escribir para buscar monedas.</p>';
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) {
+        dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Comience a escribir para buscar monedas.</p>';
         return;
     }
-
-    coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Buscando...</p>';
-
-    try {
-        if (allCoinsCache.length === 0) {
-            allCoinsCache = await getTop100Coins();
-        }
-        
-        const filteredCoins = allCoinsCache.filter(coin => 
-            coin.name.toLowerCase().includes(lowerCaseSearchTerm) || 
-            coin.symbol.toLowerCase().includes(lowerCaseSearchTerm)
-        );
-        
-        renderCoinSearchResults(filteredCoins);
-    } catch (error) {
-        coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-red-500 dark:text-red-400">Error al buscar monedas.</p>';
+    if (allCoinsCache.length === 0) {
+         dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Cargando lista de monedas...</p>';
+         // openAddCoinToWatchlistModal se encargará de popular allCoinsCache si está vacío.
+         // Podríamos forzar una recarga aquí si fuera necesario, pero openAdd... lo maneja.
+         await openAddCoinToWatchlistModal(); // Esto cargará las monedas si el caché está vacío.
+         if (allCoinsCache.length === 0) return; // Si sigue vacío después del intento, salir.
     }
+    const filteredResults = allCoinsCache.filter(coin =>
+        coin.name.toLowerCase().includes(term) ||
+        coin.symbol.toLowerCase().includes(term) ||
+        coin.id.toLowerCase().includes(term)
+    ).slice(0, 50); // Limitar resultados para rendimiento
+
+    renderCoinSearchResults(filteredResults);
 };
 export const handleCoinSearch = debounce(_handleCoinSearch, 300);
 
+
+// --- INICIO DE MODIFICACIÓN PARA openAddCoinToWatchlistModal ---
 export const openAddCoinToWatchlistModal = async () => {
-    allCoinsCache = [];
-    showDynamicModal({ type: 'addCoin', title: 'Añadir Moneda a la Lista' });
-    try {
-        if (coinSearchResultsContainer) coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Cargando lista de monedas...</p>';
-        allCoinsCache = await getTop100Coins();
-        if (coinSearchResultsContainer) coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Comience a escribir para buscar monedas.</p>';
-    } catch (error) {
-         if (coinSearchResultsContainer) coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-red-500 dark:text-red-400">No se pudo cargar la lista de monedas.</p>';
+    console.log('[MODALHANDLERS.JS DEBUG] openAddCoinToWatchlistModal() llamada.'); // LOG AÑADIDO
+    const dom = getDomElements();
+    if (!dom.addCoinModal) {
+        console.error("Modal 'addCoinModal' no encontrado en el DOM.");
+        showToast("Error al abrir el modal para añadir moneda.", "error");
+        return;
     }
-};
+    
+    showDynamicModal({ type: 'addCoin', title: 'Añadir Moneda a la Lista' });
 
-export const openConfirmationModal = (title, message, confirmButtonText, confirmButtonClass, actionCallback, actionData = null) => {
-    showDynamicModal({ type: 'confirmation', title, message, confirmButtonText, confirmButtonClass, actionCallback, actionData });
+    const now = Date.now();
+    if (allCoinsCache.length === 0 || (now - lastAllCoinsFetchTime > ALL_COINS_CACHE_DURATION)) {
+        console.log("[CryptoAPI] Cache de todas las monedas vacía o expirada. Obteniendo de la API...");
+        if (dom.coinSearchResultsContainer) dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Cargando monedas disponibles...</p>';
+        try {
+            allCoinsCache = await getTop100Coins();
+            lastAllCoinsFetchTime = now;
+            if (allCoinsCache.length === 0) {
+                if (dom.coinSearchResultsContainer) dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-red-500 dark:text-red-400">No se pudieron cargar las monedas.</p>';
+            } else {
+                 if (dom.coinSearchResultsContainer && dom.searchCoinInput && !dom.searchCoinInput.value) {
+                    dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Comience a escribir para buscar monedas.</p>';
+                 }
+            }
+        } catch (error) {
+            console.error("Error al obtener la lista de todas las monedas:", error);
+            if (dom.coinSearchResultsContainer) dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-red-500 dark:text-red-400">Error al cargar monedas.</p>';
+        }
+    } else {
+        console.log("[CryptoAPI] Usando caché de todas las monedas.");
+        if (dom.coinSearchResultsContainer && dom.searchCoinInput && !dom.searchCoinInput.value) {
+            dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Comience a escribir para buscar monedas.</p>';
+        }
+    }
+     if (dom.searchCoinInput) dom.searchCoinInput.focus();
 };
-
-export const closeConfirmationModal = () => {
-    closeModal(confirmationModal);
-};
+// --- FIN DE MODIFICACIÓN PARA openAddCoinToWatchlistModal ---
 
 export const handleChangeAppTitle = async () => {
-    if (!mainTitleEl) {
-         console.error("Elemento H1 del título principal no encontrado.");
-         showToast("Error interno: No se pudo encontrar el título.", "error");
-         return;
-    }
-    const currentState = getAppState();
-    const currentTitle = currentState.mainTitle || mainTitleEl.textContent.trim();
-    const newTitlePrompt = prompt(`Cambiar el título actual:\n"${currentTitle}"\n\nIngrese el nuevo título (máx 100 caracteres):`, currentTitle);
-    if (newTitlePrompt !== null) {
-        const trimmedTitle = newTitlePrompt.trim();
-        if (trimmedTitle === '') {
-            showToast("El título no puede estar vacío.", "error");
-            return;
-        }
-        if (trimmedTitle.length > 100) {
-             showToast("El título no puede exceder 100 caracteres.", "error");
-             return;
-        }
-        const sanitizedNewTitle = sanitizeHTML(trimmedTitle);
+    const dom = getDomElements();
+    const oldTitle = dom.mainTitleEl.textContent;
+    const newTitle = prompt("Ingrese el nuevo título para la aplicación:", oldTitle);
+    if (newTitle !== null && newTitle.trim() !== "") {
+        const sanitizedTitle = sanitizeHTML(newTitle.trim());
+        dom.mainTitleEl.textContent = sanitizedTitle;
         try {
-            await db.appConfig.put({ key: 'mainTitle', value: sanitizedNewTitle });
-            mainTitleEl.textContent = sanitizedNewTitle;
-            updateAppState({ mainTitle: sanitizedNewTitle });
+            await db.appConfig.put({ key: 'mainTitle', value: sanitizedTitle });
+            updateAppState({ mainTitle: sanitizedTitle });
             showToast("Título actualizado.", 'success');
         } catch (error) {
-            console.error("Error saving title to DB:", error);
-            showToast("Error al guardar el título en la base de datos.", "error");
+            console.error("Error guardando nuevo título en DB:", error);
+            dom.mainTitleEl.textContent = oldTitle; // Revertir si hay error
+            showToast("Error al guardar el título.", 'error');
         }
     }
 };

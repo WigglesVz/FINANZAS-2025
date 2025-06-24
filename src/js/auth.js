@@ -1,30 +1,21 @@
 // src/js/auth.js
 
-// Asegurarse de que todas las utilidades necesarias de utils.js estén importadas
-import { showToast, sanitizeHTML, setValidationError, clearValidationError, clearAllValidationErrors } from './utils.js';
+import { showToast, sanitizeHTML, setValidationError, clearAllValidationErrors, validateForm } from './utils.js';
 import { getAppState, updateAppState } from './state.js';
 import { loadData } from './storage.js';
 import { renderAll } from './uiRender.js';
-import { refreshCurrentChart, renderSelectedChart } from './charts.js';
-import {
-    authScreen, appContent, loginForm, registerForm,
-    loginFormContainer, registerFormContainer, logoutButton,
-    loginUsernameInput, loginPasswordInput,
-    registerUsernameInput, registerPasswordInput, registerConfirmPasswordInput,
-    loginUsernameError, loginPasswordError,
-    registerUsernameError, registerPasswordError, registerConfirmPasswordError,
-    chartTypeSelect // Necesario si hideAuthScreenAndShowApp lo usa
-} from './domElements.js';
-import { USER_CREDENTIALS_PREFIX_KEY, AUTH_STATUS_KEY as AUTH_KEY_FROM_CONFIG } from './config.js'; // Importar claves de config
+import { renderSelectedChart } from './charts.js';
+import { getDomElements } from './domElements.js';
+import { USER_CREDENTIALS_PREFIX_KEY, AUTH_STATUS_KEY } from './config.js'; // Importar claves desde config.js
 
-// Usar las claves de config.js para consistencia
-const USER_STORAGE_KEY_PREFIX = USER_CREDENTIALS_PREFIX_KEY || 'projectTrackerAppUser_';
-const AUTH_STATUS_KEY = AUTH_KEY_FROM_CONFIG || 'projectTrackerAuthStatus';
-
-
+/**
+ * Genera un hash simple de una cadena.
+ * @param {string} str - La cadena a hashear.
+ * @returns {string} El hash resultante como cadena hexadecimal.
+ */
 const simpleHash = (str) => {
     let hash = 0;
-    if (str.length === 0) return hash.toString(16);
+    if (!str || str.length === 0) return hash.toString(16);
     for (let i = 0; i < str.length; i++) {
         const char = str.charCodeAt(i);
         hash = ((hash << 5) - hash) + char;
@@ -33,149 +24,184 @@ const simpleHash = (str) => {
     return hash.toString(16);
 };
 
+/**
+ * Muestra la pantalla de autenticación y oculta el contenido principal de la aplicación.
+ */
 export const showAuthScreen = () => {
-    if (authScreen) {
-        authScreen.classList.remove('hidden');
-        // Forzar reflow para asegurar que la transición de opacidad funcione
-        void authScreen.offsetWidth; 
-        authScreen.classList.add('opacity-100');
+    const dom = getDomElements();
+    if (dom.authScreen) {
+        dom.authScreen.classList.remove('hidden');
+        void dom.authScreen.offsetWidth; // Forzar reflow para la transición de opacidad
+        dom.authScreen.classList.add('opacity-100');
     }
-    if (appContent) appContent.classList.add('hidden');
-    if (logoutButton) logoutButton.classList.add('hidden'); // Ocultar botón de logout
+    if (dom.appContent) dom.appContent.classList.add('hidden');
+    if (dom.logoutButton) dom.logoutButton.classList.add('hidden');
 };
 
+/**
+ * Oculta la pantalla de autenticación y muestra el contenido principal de la aplicación.
+ * Carga los datos y renderiza la UI.
+ */
 export const hideAuthScreenAndShowApp = async () => {
-    if (authScreen) {
-        authScreen.classList.remove('opacity-100');
-        // Esperar que la transición de opacidad termine antes de ocultar con display:none
+    const dom = getDomElements();
+    if (dom.authScreen) {
+        dom.authScreen.classList.remove('opacity-100');
         setTimeout(() => {
-            authScreen.classList.add('hidden');
-        }, 300); // Coincidir con la duración de la transición de opacidad
+            if (dom.authScreen) dom.authScreen.classList.add('hidden');
+        }, 300); // Duración de la transición
     }
-    if (appContent) appContent.classList.remove('hidden');
-    if (logoutButton) logoutButton.classList.remove('hidden'); // Mostrar botón de logout
+    if (dom.appContent) dom.appContent.classList.remove('hidden');
+    if (dom.logoutButton) dom.logoutButton.classList.remove('hidden');
 
     try {
         await loadData();
         renderAll();
-        // Asegurarse que chartTypeSelect existe antes de acceder a su valor
-        const initialChartType = chartTypeSelect ? chartTypeSelect.value : 'statusDistribution';
+        const currentMode = getAppState().activeUserMode;
+        let initialChartType = 'statusDistribution';
+        if (currentMode === 'crypto') {
+            initialChartType = 'cryptoPerformance';
+        } else if (dom.chartTypeSelect) {
+            initialChartType = dom.chartTypeSelect.value || 'statusDistribution';
+        }
         renderSelectedChart(initialChartType);
-        showToast('Aplicación cargada y lista.', 'info'); // Mover el toast aquí
-        console.log("Rastreador de proyectos y finanzas inicializado y listo.");
+        showToast('Aplicación cargada y lista.', 'info');
+        console.log("ZenithTrack inicializado y listo (desde hideAuthScreenAndShowApp).");
     } catch (error) {
-        console.error("Error al cargar datos después del login:", error);
+        console.error("Error al cargar datos y renderizar después de la autenticación:", error);
         showToast("Error al cargar los datos de la aplicación.", "error");
     }
 };
 
+/**
+ * Muestra el formulario de inicio de sesión y oculta el de registro.
+ */
 export const showLoginForm = () => {
-    if (loginFormContainer) loginFormContainer.classList.remove('hidden');
-    if (registerFormContainer) registerFormContainer.classList.add('hidden');
-    if (loginForm) {
-        loginForm.reset();
-        clearAllValidationErrors(loginForm);
+    const dom = getDomElements();
+    if (dom.loginFormContainer) dom.loginFormContainer.classList.remove('hidden');
+    if (dom.registerFormContainer) dom.registerFormContainer.classList.add('hidden');
+    if (dom.loginForm) {
+        dom.loginForm.reset();
+        clearAllValidationErrors(dom.loginForm);
     }
-    if (loginUsernameInput) loginUsernameInput.focus();
+    if (dom.loginUsernameInput) dom.loginUsernameInput.focus();
 };
 
+/**
+ * Muestra el formulario de registro y oculta el de inicio de sesión.
+ */
 export const showRegisterForm = () => {
-    if (registerFormContainer) registerFormContainer.classList.remove('hidden');
-    if (loginFormContainer) loginFormContainer.classList.add('hidden');
-    if (registerForm) {
-        registerForm.reset();
-        clearAllValidationErrors(registerForm);
+    const dom = getDomElements();
+    if (dom.registerFormContainer) dom.registerFormContainer.classList.remove('hidden');
+    if (dom.loginFormContainer) dom.loginFormContainer.classList.add('hidden');
+    if (dom.registerForm) {
+        dom.registerForm.reset();
+        clearAllValidationErrors(dom.registerForm);
     }
-    if (registerUsernameInput) registerUsernameInput.focus();
+    if (dom.registerUsernameInput) dom.registerUsernameInput.focus();
 };
 
+/**
+ * Maneja el envío del formulario de registro.
+ * @param {Event} event - El evento de envío del formulario.
+ */
 export const handleRegister = async (event) => {
     event.preventDefault();
-    if (!registerForm || !registerUsernameInput || !registerPasswordInput || !registerConfirmPasswordInput ||
-        !registerUsernameError || !registerPasswordError || !registerConfirmPasswordError) {
-        console.error("Elementos del formulario de registro faltantes.");
+    const dom = getDomElements();
+    if (!dom.registerForm || !dom.registerUsernameInput || !dom.registerPasswordInput || !dom.registerConfirmPasswordInput ||
+        !dom.registerUsernameError || !dom.registerPasswordError || !dom.registerConfirmPasswordError) {
+        console.error("Elementos del formulario de registro faltantes en handleRegister.");
+        showToast("Error interno del formulario. Intente de nuevo.", "error");
         return;
     }
 
-    clearAllValidationErrors(registerForm);
-    let isValid = true;
+    const validationRules = [
+        { field: 'register-username', errorElementId: 'register-username-error', checks: [
+            { type: 'required', message: "Nombre de usuario es requerido." },
+            { type: 'minlength', value: 3, message: "Mínimo 3 caracteres." },
+            {
+                type: 'custom',
+                message: "Este nombre de usuario ya existe.",
+                validate: (value) => {
+                    try {
+                        return !localStorage.getItem(USER_CREDENTIALS_PREFIX_KEY + value.trim());
+                    } catch (e) {
+                        console.warn("localStorage no accesible en validación de nombre de usuario:", e);
+                        return true; // No bloquear si no se puede verificar
+                    }
+                }
+            }
+        ]},
+        { field: 'register-password', errorElementId: 'register-password-error', checks: [
+            { type: 'required', message: "Contraseña es requerida." },
+            { type: 'minlength', value: 6, message: "Mínimo 6 caracteres." }
+        ]},
+        { field: 'register-confirm-password', errorElementId: 'register-confirm-password-error', checks: [
+            { type: 'required', message: "Confirme la contraseña." },
+            {
+                type: 'custom',
+                message: "Las contraseñas no coinciden.",
+                validate: (value) => value === dom.registerPasswordInput.value
+            }
+        ]}
+    ];
 
-    const username = registerUsernameInput.value.trim();
-    const password = registerPasswordInput.value;
-    const confirmPassword = registerConfirmPasswordInput.value;
-
-    if (!username) {
-        setValidationError(registerUsernameError, "Nombre de usuario es requerido.");
-        isValid = false;
-    } else if (username.length < 3) {
-        setValidationError(registerUsernameError, "Mínimo 3 caracteres.");
-        isValid = false;
-    } else if (localStorage.getItem(USER_STORAGE_KEY_PREFIX + username)) {
-        setValidationError(registerUsernameError, "Este nombre de usuario ya existe.");
-        isValid = false;
+    if (!validateForm(dom.registerForm, validationRules)) {
+        return;
     }
 
-    if (!password) {
-        setValidationError(registerPasswordError, "Contraseña es requerida.");
-        isValid = false;
-    } else if (password.length < 6) {
-        setValidationError(registerPasswordError, "Mínimo 6 caracteres.");
-        isValid = false;
-    }
-
-    if (!confirmPassword) {
-        setValidationError(registerConfirmPasswordError, "Confirme la contraseña.");
-        isValid = false;
-    } else if (password !== confirmPassword) {
-        setValidationError(registerConfirmPasswordError, "Las contraseñas no coinciden.");
-        isValid = false;
-    }
-
-    if (!isValid) return;
-
+    const username = dom.registerUsernameInput.value.trim();
+    const password = dom.registerPasswordInput.value;
     const hashedPassword = simpleHash(password);
     const userData = { username, hashedPassword };
 
     try {
-        localStorage.setItem(USER_STORAGE_KEY_PREFIX + username, JSON.stringify(userData));
+        localStorage.setItem(USER_CREDENTIALS_PREFIX_KEY + username, JSON.stringify(userData));
         localStorage.setItem(AUTH_STATUS_KEY, JSON.stringify({ isLoggedIn: true, username: username }));
         updateAppState({ isAuthenticated: true, currentUser: username });
         showToast(`¡Bienvenido, ${sanitizeHTML(username)}! Cuenta creada.`, 'success');
         await hideAuthScreenAndShowApp();
     } catch (e) {
         showToast("Error al guardar datos de usuario. Intente de nuevo.", "error");
-        console.error("Error saving user data:", e);
+        console.error("Error saving user data during registration:", e);
     }
 };
 
+/**
+ * Maneja el envío del formulario de inicio de sesión.
+ * @param {Event} event - El evento de envío del formulario.
+ */
 export const handleLogin = async (event) => {
     event.preventDefault();
-    if (!loginForm || !loginUsernameInput || !loginPasswordInput || !loginUsernameError || !loginPasswordError) {
-        console.error("Elementos del formulario de login faltantes.");
+    const dom = getDomElements();
+    if (!dom.loginForm || !dom.loginUsernameInput || !dom.loginPasswordInput || !dom.loginUsernameError || !dom.loginPasswordError) {
+        console.error("Elementos del formulario de login faltantes en handleLogin.");
+        showToast("Error interno del formulario. Intente de nuevo.", "error");
         return;
     }
 
-    clearAllValidationErrors(loginForm);
-    let isValid = true;
+    const validationRules = [
+        { field: 'login-username', errorElementId: 'login-username-error', checks: [{ type: 'required', message: "Nombre de usuario es requerido." }]},
+        { field: 'login-password', errorElementId: 'login-password-error', checks: [{ type: 'required', message: "Contraseña es requerida." }]}
+    ];
 
-    const username = loginUsernameInput.value.trim();
-    const password = loginPasswordInput.value;
-
-    if (!username) {
-        setValidationError(loginUsernameError, "Nombre de usuario es requerido.");
-        isValid = false;
-    }
-    if (!password) {
-        setValidationError(loginPasswordError, "Contraseña es requerida.");
-        isValid = false;
+    if (!validateForm(dom.loginForm, validationRules)) {
+        return;
     }
 
-    if (!isValid) return;
+    const username = dom.loginUsernameInput.value.trim();
+    const password = dom.loginPasswordInput.value;
+    let storedUserDataString;
+    try {
+        storedUserDataString = localStorage.getItem(USER_CREDENTIALS_PREFIX_KEY + username);
+    } catch (e) {
+        showToast("Error al acceder a los datos de usuario.", "error");
+        console.error("Error accessing localStorage for login:", e);
+        return;
+    }
 
-    const storedUserDataString = localStorage.getItem(USER_STORAGE_KEY_PREFIX + username);
     if (!storedUserDataString) {
-        setValidationError(loginUsernameError, "Usuario no encontrado.");
-        loginPasswordInput.value = ""; // Limpiar campo de contraseña
+        setValidationError(dom.loginUsernameError, "Usuario no encontrado.");
+        if (dom.loginPasswordInput) dom.loginPasswordInput.value = "";
         return;
     }
 
@@ -186,11 +212,10 @@ export const handleLogin = async (event) => {
         if (storedUserData.hashedPassword === hashedPasswordAttempt) {
             localStorage.setItem(AUTH_STATUS_KEY, JSON.stringify({ isLoggedIn: true, username: username }));
             updateAppState({ isAuthenticated: true, currentUser: username });
-            // El toast y el resto se manejan en hideAuthScreenAndShowApp
             await hideAuthScreenAndShowApp();
         } else {
-            setValidationError(loginPasswordError, "Contraseña incorrecta.");
-            loginPasswordInput.value = ""; // Limpiar campo de contraseña
+            setValidationError(dom.loginPasswordError, "Contraseña incorrecta.");
+            if (dom.loginPasswordInput) dom.loginPasswordInput.value = "";
         }
     } catch (e) {
         showToast("Error al procesar inicio de sesión.", "error");
@@ -198,21 +223,41 @@ export const handleLogin = async (event) => {
     }
 };
 
+/**
+ * Maneja el cierre de sesión del usuario.
+ */
 export const handleLogout = () => {
-    localStorage.removeItem(AUTH_STATUS_KEY);
+    try {
+        localStorage.removeItem(AUTH_STATUS_KEY);
+    } catch (e) {
+        console.error("Error removing auth status from localStorage:", e);
+    }
     updateAppState({ isAuthenticated: false, currentUser: null });
     showToast("Has cerrado sesión.", "info");
     showAuthScreen();
     showLoginForm();
 };
 
+/**
+ * Verifica el estado de autenticación al cargar la aplicación.
+ * @returns {Promise<boolean>} True si el usuario está autenticado, false en caso contrario.
+ */
 export const checkAuthStatus = async () => {
-    const authStatusString = localStorage.getItem(AUTH_STATUS_KEY);
+    let authStatusString;
+    try {
+        authStatusString = localStorage.getItem(AUTH_STATUS_KEY);
+    } catch (e) {
+        console.error("Error accessing localStorage for auth status:", e);
+        updateAppState({ isAuthenticated: false, currentUser: null });
+        showAuthScreen();
+        return false;
+    }
+
     if (authStatusString) {
         try {
             const authStatus = JSON.parse(authStatusString);
             if (authStatus.isLoggedIn && authStatus.username) {
-                if (localStorage.getItem(USER_STORAGE_KEY_PREFIX + authStatus.username)) {
+                if (localStorage.getItem(USER_CREDENTIALS_PREFIX_KEY + authStatus.username)) {
                     updateAppState({ isAuthenticated: true, currentUser: authStatus.username });
                     await hideAuthScreenAndShowApp();
                     return true;
@@ -221,28 +266,31 @@ export const checkAuthStatus = async () => {
                 }
             }
         } catch (e) {
-            console.error("Error parsing auth status:", e);
+            console.error("Error parsing auth status from localStorage:", e);
             localStorage.removeItem(AUTH_STATUS_KEY);
         }
     }
     updateAppState({ isAuthenticated: false, currentUser: null });
-    showAuthScreen(); // Mostrar pantalla de autenticación si no está autenticado
+    showAuthScreen();
     return false;
 };
 
+/**
+ * Verifica si existen usuarios registrados y muestra el formulario apropiado (login o registro).
+ * @returns {boolean} True si existe al menos un usuario registrado, false en caso contrario.
+ */
 export const checkForRegisteredUser = () => {
     let userExists = false;
     try {
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && key.startsWith(USER_STORAGE_KEY_PREFIX)) {
+            if (key && key.startsWith(USER_CREDENTIALS_PREFIX_KEY)) {
                 userExists = true;
                 break;
             }
         }
     } catch (e) {
         console.error("Error accessing localStorage in checkForRegisteredUser:", e);
-        // Asumir que no hay usuarios si localStorage no es accesible
     }
 
     if (!userExists) {

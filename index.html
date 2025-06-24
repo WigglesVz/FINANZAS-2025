@@ -233,16 +233,18 @@
                     <div id="project-details-sort-headers" class="hidden sm:flex justify-between items-center bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-4 py-3 border-b border-gray-200 dark:border-gray-600 rounded-t-lg text-xs font-semibold uppercase tracking-wider">
                         <div class="w-[10%] text-left">Proyecto</div>
                         <div class="w-[15%] text-left">Tarea</div>
-                        <div class="w-[25%] text-left">Descripción</div>
+                        <div class="w-[20%] text-left">Descripción</div> <!-- Adjusted width -->
+                        <button class="sortable-header w-[10%] text-center" data-sort-key="priority" data-table-id="project-details-table">Prioridad <i class="fas fa-sort" aria-hidden="true"></i></button> <!-- Added Priority Header -->
                         <button class="sortable-header w-[10%] text-center" data-sort-key="startDate" data-table-id="project-details-table">Inicio <i class="fas fa-sort" aria-hidden="true"></i></button>
                         <button class="sortable-header w-[10%] text-center" data-sort-key="endDate" data-table-id="project-details-table">Fin <i class="fas fa-sort" aria-hidden="true"></i></button>
                         <button class="sortable-header w-[15%] text-center" data-sort-key="status" data-table-id="project-details-table">Estado <i class="fas fa-sort" aria-hidden="true"></i></button>
-                        <div class="w-[15%] text-center">Acciones</div>
+                        <div class="w-[10%] text-center">Acciones</div> <!-- Adjusted width -->
                     </div>
                     <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg shadow">
                         <table id="project-details-table" class="bg-white dark:bg-gray-800">
                             <tbody id="project-details-table-body" class="divide-y divide-gray-200 dark:divide-gray-700">
-                                <tr><td colspan="7" class="text-center py-10 text-gray-500 dark:text-gray-400">Cargando tareas...</td></tr>
+                                 <!-- Colspan updated to 8 -->
+                                <tr><td colspan="8" class="text-center py-10 text-gray-500 dark:text-gray-400">Cargando tareas...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -560,7 +562,8 @@
             </div>
             <form id="task-form" novalidate>
                  <input type="hidden" id="task-id">
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                 <!-- Combined Project, Status, and Priority in a single grid row -->
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                         <label for="task-project-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Proyecto: <span class="text-red-500">*</span></label>
                         <select id="task-project-name" name="task-project-name" required
@@ -576,6 +579,16 @@
                              <option value="">Seleccione Estado</option>
                         </select>
                          <span id="task-status-error" class="error-message hidden"></span>
+                    </div>
+                    <!-- Added Priority Select -->
+                    <div>
+                         <label for="task-priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prioridad: <span class="text-red-500">*</span></label>
+                        <select id="task-priority" name="task-priority" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                             <option value="">Seleccione Prioridad</option>
+                             <!-- Options will be populated by JS -->
+                        </select>
+                         <span id="task-priority-error" class="error-message hidden"></span>
                     </div>
                 </div>
                  <div class="mb-4">
@@ -734,73 +747,120 @@
                 </div>
             </form>
         </div>
+        <div id="spot-target-calculator-section" class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 hidden">
+    <h4 class="text-md font-semibold mb-3 text-gray-700 dark:text-gray-300">Calculador de Venta Objetivo</h4>
+    
+    <!-- Datos de la compra base (informativo, readonly) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 mb-3 text-sm">
+        <div>
+            <span class="font-medium text-gray-600 dark:text-gray-400">Cantidad Comprada:</span>
+            <span id="calc-base-quantity" class="text-gray-800 dark:text-gray-200"></span>
+        </div>
+        <div>
+            <span class="font-medium text-gray-600 dark:text-gray-400">Costo Total Compra (incl. fees):</span>
+            <span id="calc-base-total-cost" class="text-gray-800 dark:text-gray-200"></span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+        <div>
+            <label for="calc-target-profit-usd" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Profit Deseado (USD)</label>
+            <input type="number" id="calc-target-profit-usd" name="calc-target-profit-usd" min="0" step="any" placeholder="Ej: 50"
+                   class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700">
+        </div>
+        <div>
+            <label for="calc-estimated-sell-fee" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Comisión Venta Estimada (USD)</label>
+            <input type="number" id="calc-estimated-sell-fee" name="calc-estimated-sell-fee" min="0" step="any" placeholder="Ej: 1.50" value="0"
+                   class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700">
+        </div>
+    </div>
+    <div class="mt-3 p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-md text-sm">
+        <p class="mb-1"><span class="font-medium text-gray-700 dark:text-gray-300">Precio de Venta Necesario por Token:</span> <strong id="calc-sell-price-needed" class="text-indigo-600 dark:text-indigo-400"></strong></p>
+        <p><span class="font-medium text-gray-700 dark:text-gray-300">Venta Total Bruta Estimada (USD):</span> <strong id="calc-total-sell-value" class="text-indigo-600 dark:text-indigo-400"></strong></p>
+    </div>
+</div>
     </div>
     
     <div id="futures-trade-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50">
-        <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl p-6 transform scale-95 text-gray-800 dark:text-gray-200">
-            <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-                <h3 id="futures-trade-modal-title" class="text-xl font-semibold">Abrir Posición de Futuros</h3>
-                <button id="close-futures-trade-modal" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400 text-2xl" aria-label="Cerrar modal de futuros">×</button>
-            </div>
+    <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl transform scale-95 text-gray-800 dark:text-gray-200 flex flex-col">
+        <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700 px-6 pt-6">
+            <h3 id="futures-trade-modal-title" class="text-xl font-semibold">Abrir Posición de Futuros</h3>
+            <button id="close-futures-trade-modal" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400 text-2xl" aria-label="Cerrar modal de futuros">×</button>
+        </div>
+        <div class="overflow-y-auto px-6 pb-2 flex-grow" style="max-height: 70vh;">
             <form id="futures-trade-form" novalidate>
                 <input type="hidden" id="futures-trade-id">
+                
+                <!-- Primera fila de inputs: Símbolo, Dirección, Apalancamiento -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                         <label for="futures-symbol" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Símbolo <span class="text-red-500">*</span></label>
-                        <input type="text" id="futures-symbol" placeholder="BTCUSDT" required class="uppercase w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                        <input type="text" id="futures-symbol" name="futures-symbol" placeholder="BTCUSDT" required class="uppercase w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                     </div>
                     <div>
                         <label for="futures-direction" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección <span class="text-red-500">*</span></label>
-                        <select id="futures-direction" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                        <select id="futures-direction" name="futures-direction" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                             <option value="long">Long (Compra)</option>
                             <option value="short">Short (Venta)</option>
                         </select>
                     </div>
                     <div>
                         <label for="futures-leverage" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Apalancamiento <span class="text-red-500">*</span></label>
-                        <input type="number" id="futures-leverage" placeholder="10" required min="1" step="1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                        <input type="number" id="futures-leverage" name="futures-leverage" placeholder="10" required min="1" step="1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                     </div>
                 </div>
+
+                <!-- Segunda fila de inputs: Fecha Entrada, Cantidad, Precio Entrada, Fecha Salida (condicional) -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div>
                         <label for="futures-entry-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Entrada <span class="text-red-500">*</span></label>
-                        <input type="datetime-local" id="futures-entry-date" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                        <input type="datetime-local" id="futures-entry-date" name="futures-entry-date" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                     </div>
                      <div>
                         <label for="futures-quantity" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cantidad <span class="text-red-500">*</span></label>
-                        <input type="number" id="futures-quantity" placeholder="0.1" required min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                        <input type="number" id="futures-quantity" name="futures-quantity" placeholder="0.1" required min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                     </div>
                     <div>
                         <label for="futures-entry-price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Precio Entrada <span class="text-red-500">*</span></label>
-                        <input type="number" id="futures-entry-price" placeholder="65000" required min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                        <input type="number" id="futures-entry-price" name="futures-entry-price" placeholder="65000" required min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                     </div>
-                    <div id="futures-exit-price-container" class="hidden">
-                        <label for="futures-exit-price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Precio Salida</label>
-                        <input type="number" id="futures-exit-price" placeholder="68000" min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div>
-                        <label for="futures-entry-fees" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Comisión Entrada (USD)</label>
-                        <input type="number" id="futures-entry-fees" placeholder="2.50" min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                    </div>
-                    <div id="futures-exit-fees-container" class="hidden">
-                        <label for="futures-exit-fees" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Comisión Salida (USD)</label>
-                        <input type="number" id="futures-exit-fees" placeholder="2.80" min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    <div id="futures-exit-date-container" class="hidden">
+                        <label for="futures-exit-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Salida</label>
+                        <input type="datetime-local" id="futures-exit-date" name="futures-exit-date" readonly 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-sm text-gray-500 dark:text-gray-400">
                     </div>
                 </div>
+
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="futures-entry-fees" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Comisión Entrada (USD)</label>
+                            <input type="number" id="futures-entry-fees" name="futures-entry-fees" placeholder="2.50" min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                        </div>
+                        <div id="futures-exit-price-container" class="hidden">
+                            <label for="futures-exit-price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Precio Salida</label>
+                            <input type="number" id="futures-exit-price" name="futures-exit-price" placeholder="68000" min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                        </div>
+                        <div id="futures-exit-fees-container" class="hidden md:col-start-2">
+                            <label for="futures-exit-fees" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Comisión Salida (USD)</label>
+                            <input type="number" id="futures-exit-fees" name="futures-exit-fees" placeholder="2.80" min="0" step="any" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="mb-6">
                     <label for="futures-notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
-                    <textarea id="futures-notes" rows="2" placeholder="Estrategia, confirmaciones, etc..." maxlength="500" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"></textarea>
-                </div>
-                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <button type="button" id="cancel-futures-trade-modal" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg">Cancelar</button>
-                    <button type="submit" id="save-futures-trade-button" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg">Guardar Posición</button>
-                    <button type="button" id="close-futures-trade-button" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg hidden">Cerrar Posición</button>
+                    <textarea id="futures-notes" name="futures-notes" rows="2" placeholder="Estrategia, confirmaciones, etc..." maxlength="500" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"></textarea>
                 </div>
             </form>
+        </div>    
+        <div class="flex justify-end space-x-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+            <button type="button" id="cancel-futures-trade-modal" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg">Cancelar</button>
+            <button type="submit" form="futures-trade-form" id="save-futures-trade-button" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg">Guardar Posición</button>
+            <button type="button" id="close-futures-trade-button" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg hidden">Cerrar Posición</button>
         </div>
     </div>
+</div>
     
     <div id="add-coin-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden opacity-0 z-50">
         <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 transform scale-95 text-gray-800 dark:text-gray-200 flex flex-col">

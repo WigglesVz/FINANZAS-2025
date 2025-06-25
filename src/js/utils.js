@@ -428,6 +428,14 @@ export const calculateSpotTargetMetrics = (options) => {
         error: null
     };
 };
+
+/**
+ * --- NUEVA FUNCIÓN MEJORADA ---
+ * Formatea la duración entre dos fechas en un formato legible.
+ * @param {string} startDateString - La fecha de inicio en formato ISO (ej. "2023-10-27T10:00:00").
+ * @param {string} endDateString - La fecha de fin en formato ISO.
+ * @returns {string} La duración formateada (ej. "3d 5h", "12h 30m", "< 1m") o '-'.
+ */
 export const formatDuration = (startDateString, endDateString) => {
     if (!startDateString || !endDateString) return '-';
 
@@ -440,6 +448,10 @@ export const formatDuration = (startDateString, endDateString) => {
 
     let diffMs = endDate - startDate;
 
+    if (diffMs < 60000) { // Menos de 1 minuto
+        return '< 1m';
+    }
+
     const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     diffMs -= days * (1000 * 60 * 60 * 24);
 
@@ -448,20 +460,77 @@ export const formatDuration = (startDateString, endDateString) => {
 
     const minutes = Math.floor(diffMs / (1000 * 60));
 
-    let result = '';
+    const parts = [];
     if (days > 0) {
-        result += `${days}d `;
+        parts.push(`${days}d`);
     }
-    if (hours > 0 || days > 0) { // Mostrar horas si hay días o si hay horas
-        result += `${hours}h `;
+    if (hours > 0) {
+        parts.push(`${hours}h`);
     }
-    // Solo mostrar minutos si la duración total es menos de 1 día o si no hay días ni horas (para duraciones muy cortas)
-    if (days === 0 && (hours > 0 || minutes > 0)) {
-        result += `${minutes}m`;
-    } else if (days === 0 && hours === 0 && minutes === 0) {
-        return '< 1m'; // Para duraciones extremadamente cortas
+    if (minutes > 0 && days === 0) { // Solo mostrar minutos si no hay días
+        parts.push(`${minutes}m`);
     }
 
+    return parts.length > 0 ? parts.join(' ') : '< 1m';
+};
 
-    return result.trim() || '-';
+
+/**
+ * --- NUEVA FUNCIÓN MEJORADA ---
+ * Calcula las métricas de una operación de futuros (margen, PnL, ROI).
+ * @param {object} trade - El objeto de la operación.
+ * @returns {{margin: number, roi: number, pnl: number}} Un objeto con las métricas calculadas.
+ */
+export const calculateFuturesMetrics = (trade) => {
+    // Valores por defecto si la operación no se puede calcular
+    const defaults = { margin: 0, roi: 0, pnl: trade?.pnl || 0 };
+
+    if (!trade || !trade.entryPrice || !trade.quantity || !trade.leverage) {
+        return defaults;
+    }
+
+    const entryPrice = parseFloat(trade.entryPrice);
+    const quantity = parseFloat(trade.quantity);
+    const leverage = parseFloat(trade.leverage);
+
+    if (isNaN(entryPrice) || isNaN(quantity) || isNaN(leverage) || leverage === 0) {
+        return defaults;
+    }
+
+    // Calcular el margen inicial
+    const positionValue = entryPrice * quantity;
+    const margin = positionValue / leverage;
+
+    // Si la operación no está cerrada, devolvemos solo el margen.
+    if (trade.status !== 'closed' || !trade.exitPrice) {
+        return { margin, roi: 0, pnl: 0 };
+    }
+
+    const exitPrice = parseFloat(trade.exitPrice);
+    const entryFees = parseFloat(trade.entryFees) || 0;
+    const exitFees = parseFloat(trade.exitFees) || 0;
+
+    if (isNaN(exitPrice)) {
+        return { margin, roi: 0, pnl: 0 };
+    }
+    
+    // Calcular el PnL bruto
+    let grossPnl = 0;
+    if (trade.direction === 'long') {
+        grossPnl = (exitPrice - entryPrice) * quantity;
+    } else if (trade.direction === 'short') {
+        grossPnl = (entryPrice - exitPrice) * quantity;
+    }
+    
+    // Calcular el PnL neto (restando comisiones)
+    const netPnl = grossPnl - entryFees - exitFees;
+
+    // Calcular el ROI sobre el margen
+    const roi = margin > 0 ? (netPnl / margin) * 100 : 0;
+
+    return {
+        margin: margin,
+        roi: roi,
+        pnl: netPnl
+    };
 };

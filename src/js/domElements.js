@@ -178,8 +178,13 @@ export let futuresNotesInput;
 export let futuresEntryFeesInput;
 export let futuresExitFeesContainer;
 export let futuresExitFeesInput;
+// NUEVOS ELEMENTOS PARA FUTUROS
 export let futuresDurationContainer; 
-export let futuresDurationInput;  
+export let futuresDurationInput;
+export let futuresMarginContainer;
+export let futuresMarginInput;
+export let futuresRoiContainer;
+export let futuresRoiInput; 
 // --- Elementos de Autenticación ---
 export let authScreen;
 export let appContent;
@@ -338,7 +343,6 @@ export const initializeDomElements = () => {
     filterSpotEndDateInput = document.getElementById('filter-spot-end-date');
     applySpotFiltersBtn = document.getElementById('apply-spot-filters-btn');
     clearSpotFiltersBtn = document.getElementById('clear-spot-filters-btn');
-    // INICIALIZACIÓN NUEVOS ELEMENTOS CALCULADOR SPOT
     spotTargetCalculatorSection = document.getElementById('spot-target-calculator-section');
     calcBaseQuantity = document.getElementById('calc-base-quantity');
     calcBaseTotalCost = document.getElementById('calc-base-total-cost');
@@ -372,7 +376,11 @@ export const initializeDomElements = () => {
     futuresExitFeesContainer = document.getElementById('futures-exit-fees-container');
     futuresExitFeesInput = document.getElementById('futures-exit-fees');
     futuresDurationContainer = document.getElementById('futures-duration-container'); 
-futuresDurationInput = document.getElementById('futures-duration');      
+    futuresDurationInput = document.getElementById('futures-duration');    
+    futuresMarginContainer = document.getElementById('futures-margin-container');
+    futuresMarginInput = document.getElementById('futures-margin');
+    futuresRoiContainer = document.getElementById('futures-roi-container');
+    futuresRoiInput = document.getElementById('futures-roi');  
     authScreen = document.getElementById('auth-screen');
     appContent = document.getElementById('app-content');
     loginFormContainer = document.getElementById('login-form-container');
@@ -406,8 +414,6 @@ futuresDurationInput = document.getElementById('futures-duration');
 export const getDomElements = () => {
     if (!htmlElement) { // Una comprobación básica para ver si la inicialización ha ocurrido
         console.error("--- [DOM_ERROR] getDomElements: Acceso a elementos DOM antes de la inicialización completa! ---");
-        // Podrías lanzar un error aquí o devolver un objeto de placeholders si es crítico.
-        // Por ahora, se devolverán las variables 'let' que podrían estar undefined.
     }
      return {
         htmlElement, mainTitleEl, changeTitleButton, themeToggleButton, tabButtons, tabContents,
@@ -440,10 +446,8 @@ export const getDomElements = () => {
         baseAssetInput, quoteAssetInput, priceInput, quantityBaseInput, totalQuoteInput,
         notesInput, spotTradeFeesInput, filterSpotAssetInput, filterSpotStartDateInput,
         filterSpotEndDateInput, applySpotFiltersBtn, clearSpotFiltersBtn, 
-        // AÑADIDOS ELEMENTOS CALCULADOR SPOT
         spotTargetCalculatorSection, calcBaseQuantity, calcBaseTotalCost, 
         calcTargetProfitUsdInput, calcEstimatedSellFeeInput, calcSellPriceNeeded, calcTotalSellValue,
-        // ELEMENTOS DE FUTUROS (YA INCLUÍAN LOS DE FECHA DE SALIDA)
         futuresTradingTab, addFuturesTradeButton, futuresTradesTableBody, futuresTradeModal, 
         futuresTradeModalTitle, closeFuturesTradeModalButton, cancelFuturesTradeModalButton, 
         saveFuturesTradeButton, closeFuturesTradeButton, futuresTradeForm, futuresTradeIdInput, 
@@ -451,12 +455,17 @@ export const getDomElements = () => {
         futuresQuantityInput, futuresEntryPriceInput, futuresExitDateContainer, 
         futuresExitDateInput, futuresExitPriceContainer, futuresExitPriceInput, futuresNotesInput,
         futuresEntryFeesInput, futuresExitFeesContainer, futuresExitFeesInput, 
-        // ELEMENTOS DE AUTENTICACIÓN
         authScreen, appContent, loginFormContainer, loginForm, loginUsernameInput, 
         loginPasswordInput, loginUsernameError, loginPasswordError, loginButton, 
         showRegisterFormButton, registerFormContainer, registerForm, registerUsernameInput, 
         registerPasswordInput, registerConfirmPasswordInput, registerUsernameError, 
         registerPasswordError, registerConfirmPasswordError, registerButton, 
-        showLoginFormButton, logoutButton
+        showLoginFormButton, logoutButton,
+
+        // === CORRECCIÓN AQUÍ ===
+        // Se añaden los nuevos elementos de futuros al objeto de retorno
+        futuresDurationContainer, futuresDurationInput,
+        futuresMarginContainer, futuresMarginInput,
+        futuresRoiContainer, futuresRoiInput
     };
 };

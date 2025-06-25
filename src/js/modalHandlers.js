@@ -1,8 +1,7 @@
 // src/js/modalHandlers.js
 import { getDomElements } from './domElements.js';
 import { getAppState, updateAppState } from './state.js';
-import { sanitizeHTML, clearAllValidationErrors, showToast, debounce, formatCurrency, formatDuration,
-    } from './utils.js';
+import { sanitizeHTML, clearAllValidationErrors, showToast, debounce, formatCurrency, formatDuration, calculateFuturesMetrics } from './utils.js';
 import db from './db.js';
 import { getTop100Coins } from '../api/cryptoAPI.js';
 import { DEFAULT_TASK_PRIORITIES } from './config.js';
@@ -162,11 +161,10 @@ export const showDynamicModal = (options) => {
       console.error(`MODAL_HANDLER (showDynamicModal): modalElement NO ENCONTRADO para tipo '${type}'.`); 
       return; 
     }
-    if (!modalTitleEl && type !== 'addCoin' && type !== 'futuresTrade' && type !== 'confirmation') {
-      console.error(`showDynamicModal: modalTitleEl no encontrado para tipo ${type}.`); return;
+    if (modalTitleEl && type !== 'confirmation') {
+        modalTitleEl.textContent = sanitizeHTML(title); 
     }
     
-    if (modalTitleEl && type !== 'confirmation') modalTitleEl.textContent = sanitizeHTML(title); 
     if (formElement) { formElement.reset(); clearAllValidationErrors(formElement); }
 
     if (type !== 'spotTrade' || !data || data.type !== 'buy') {
@@ -261,68 +259,24 @@ export const showDynamicModal = (options) => {
             }
             break;
         case 'futuresTrade':
-             if (!dom.futuresTradeIdInput || !dom.futuresSymbolInput || !dom.futuresDirectionSelect || !dom.futuresLeverageInput || !dom.futuresEntryDateInput || !dom.futuresQuantityInput || !dom.futuresEntryPriceInput || !dom.futuresEntryFeesInput || !dom.futuresNotesInput || !dom.futuresExitPriceInput || !dom.futuresExitFeesInput || !dom.futuresExitDateContainer || !dom.futuresExitDateInput || !dom.futuresExitPriceContainer || !dom.futuresExitFeesContainer || !dom.saveFuturesTradeButton || !dom.closeFuturesTradeButton) {
-                console.error("MODAL_HANDLER (futuresTrade): Faltan elementos DOM para el modal de futuros.");
+            // === SECCIÓN REESTRUCTURADA Y CORREGIDA ===
+            if (!dom.futuresTradeModalTitle || !dom.futuresTradeForm) {
+                console.error("MODAL_HANDLER (futuresTrade): Faltan elementos DOM base para el modal de futuros.");
                 return;
             }
+
             const isNewTrade = !data;
             const isEditingOpenTrade = data && data.status === 'open';
             const isEditingClosedTrade = data && data.status === 'closed';
-            if(modalTitleEl) modalTitleEl.textContent = isEditingClosedTrade ? 'Ver Posición Cerrada' : (isEditingOpenTrade ? 'Ver/Cerrar Posición' : 'Abrir Nueva Posición');
-            if (dom.saveFuturesTradeButton) {
-                dom.saveFuturesTradeButton.classList.remove('hidden');
-                if (isEditingClosedTrade) {
-                    dom.saveFuturesTradeButton.classList.add('hidden');
-                } else if (isEditingOpenTrade) {
-                    dom.saveFuturesTradeButton.textContent = 'Guardar Cambios';
-                } else { 
-                    dom.saveFuturesTradeButton.textContent = 'Abrir Posición';
-                }
-                if (dom.futuresDurationContainer) {
-                dom.futuresDurationContainer.classList.toggle('hidden', !isEditingClosedTrade);
-            }
-            if (dom.futuresDurationInput) {
-                if (isEditingClosedTrade && data.entryDate && data.exitDate) {
-                    dom.futuresDurationInput.value = formatDuration(data.entryDate, data.exitDate);
-                } else {
-                    dom.futuresDurationInput.value = '';
-                }
-            }
-            }
-            if (dom.closeFuturesTradeButton) {
-                dom.closeFuturesTradeButton.classList.toggle('hidden', !isEditingOpenTrade);
-            }
-            if (dom.futuresExitDateContainer) { 
-                dom.futuresExitDateContainer.classList.toggle('hidden', !isEditingClosedTrade);
-            }
-            if (dom.futuresExitPriceContainer) { 
-                dom.futuresExitPriceContainer.classList.toggle('hidden', !(isEditingOpenTrade || isEditingClosedTrade));
-            }
-            if (dom.futuresExitFeesContainer) { 
-                dom.futuresExitFeesContainer.classList.toggle('hidden', !(isEditingOpenTrade || isEditingClosedTrade));
-            }
-            const allEntryFields = [
-                dom.futuresSymbolInput, dom.futuresDirectionSelect, dom.futuresLeverageInput, 
-                dom.futuresEntryDateInput, dom.futuresQuantityInput, dom.futuresEntryPriceInput, 
-                dom.futuresEntryFeesInput, dom.futuresNotesInput
-            ];
-            const allExitInputFields = [dom.futuresExitPriceInput, dom.futuresExitFeesInput];
-            if (isEditingClosedTrade) {
-                [...allEntryFields, ...allExitInputFields, dom.futuresExitDateInput].forEach(field => { if (field) field.disabled = true; });
-                if (dom.futuresExitDateInput && data.exitDate) { 
-                    dom.futuresExitDateInput.value = new Date(data.exitDate).toISOString().slice(0, 16);
-                } else if (dom.futuresExitDateInput) {
-                    dom.futuresExitDateInput.value = ''; 
-                }
-            } else if (isEditingOpenTrade) {
-                [...allEntryFields, ...allExitInputFields].forEach(field => { if (field) field.disabled = false; });
-                if (dom.futuresExitDateInput) dom.futuresExitDateInput.value = ''; 
-            } else { 
-                allEntryFields.forEach(field => { if (field) field.disabled = false; });
-                allExitInputFields.forEach(field => { if (field) field.disabled = true; });
-                if (dom.futuresExitDateInput) dom.futuresExitDateInput.value = ''; 
-            }
-            if (data) { 
+
+            // 1. Configurar Título y Botones
+            dom.futuresTradeModalTitle.textContent = isEditingClosedTrade ? 'Ver Posición Cerrada' : (isEditingOpenTrade ? 'Ver/Cerrar Posición' : 'Abrir Nueva Posición');
+            dom.saveFuturesTradeButton.classList.toggle('hidden', isEditingClosedTrade);
+            dom.saveFuturesTradeButton.textContent = isNewTrade ? 'Abrir Posición' : 'Guardar Cambios';
+            dom.closeFuturesTradeButton.classList.toggle('hidden', !isEditingOpenTrade);
+            
+            // 2. Poblar el formulario si hay datos
+            if (data) {
                 dom.futuresTradeIdInput.value = data.id || ''; 
                 dom.futuresSymbolInput.value = data.symbol || '';
                 dom.futuresDirectionSelect.value = data.direction || 'long'; 
@@ -334,21 +288,43 @@ export const showDynamicModal = (options) => {
                 dom.futuresExitPriceInput.value = data.exitPrice || ''; 
                 dom.futuresExitFeesInput.value = data.exitFees || '';   
                 dom.futuresNotesInput.value = data.notes || '';
-            } else { 
-                dom.futuresTradeIdInput.value = ''; 
+                if(data.exitDate) dom.futuresExitDateInput.value = new Date(data.exitDate).toISOString().slice(0, 16);
+            } else {
                 const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                if (dom.futuresEntryDateInput) dom.futuresEntryDateInput.value = now.toISOString().slice(0, 16);
-                if (dom.futuresSymbolInput) dom.futuresSymbolInput.value = '';
-                if (dom.futuresDirectionSelect) dom.futuresDirectionSelect.value = 'long';
-                if (dom.futuresLeverageInput) dom.futuresLeverageInput.value = '';
-                if (dom.futuresQuantityInput) dom.futuresQuantityInput.value = '';
-                if (dom.futuresEntryPriceInput) dom.futuresEntryPriceInput.value = '';
-                if (dom.futuresEntryFeesInput) dom.futuresEntryFeesInput.value = '';
-                if (dom.futuresExitPriceInput) dom.futuresExitPriceInput.value = '';
-                if (dom.futuresExitFeesInput) dom.futuresExitFeesInput.value = '';
-                if (dom.futuresNotesInput) dom.futuresNotesInput.value = '';
+                dom.futuresEntryDateInput.value = now.toISOString().slice(0, 16);
+            }
+            
+            // 3. Configurar visibilidad y estado de los campos
+            const allEntryFields = [dom.futuresSymbolInput, dom.futuresDirectionSelect, dom.futuresLeverageInput, dom.futuresEntryDateInput, dom.futuresQuantityInput, dom.futuresEntryPriceInput, dom.futuresEntryFeesInput, dom.futuresNotesInput];
+            const allExitFields = [dom.futuresExitPriceContainer, dom.futuresExitFeesContainer];
+            const allCalculatedFields = [dom.futuresExitDateContainer, dom.futuresDurationContainer, dom.futuresMarginContainer, dom.futuresRoiContainer];
+            
+            allExitFields.forEach(el => el.classList.toggle('hidden', isNewTrade));
+            allCalculatedFields.forEach(el => el.classList.toggle('hidden', !isEditingClosedTrade));
+            
+            const allInputs = [...allEntryFields, dom.futuresExitPriceInput, dom.futuresExitFeesInput];
+            allInputs.forEach(input => { if(input) input.disabled = isEditingClosedTrade; });
+
+            // 4. Calcular y mostrar métricas para trades cerrados
+            if (isEditingClosedTrade) {
+                const metrics = calculateFuturesMetrics(data);
+                dom.futuresDurationInput.value = formatDuration(data.entryDate, data.exitDate);
+                dom.futuresMarginInput.value = formatCurrency(metrics.margin);
+                dom.futuresRoiInput.value = `${metrics.roi.toFixed(2)}%`;
+
+                // Aplicar estilo al ROI
+                dom.futuresRoiInput.classList.remove('text-green-600', 'dark:text-green-400', 'text-red-600', 'dark:text-red-400', 'text-gray-500', 'dark:text-gray-400', 'font-semibold');
+                if (metrics.roi > 0) {
+                    dom.futuresRoiInput.classList.add('text-green-600', 'dark:text-green-400', 'font-semibold');
+                } else if (metrics.roi < 0) {
+                    dom.futuresRoiInput.classList.add('text-red-600', 'dark:text-red-400', 'font-semibold');
+                } else {
+                    dom.futuresRoiInput.classList.add('text-gray-500', 'dark:text-gray-400');
+                }
             }
             break;
+            // === FIN DE SECCIÓN REESTRUCTURADA ===
+
         case 'addCoin': 
             break; 
     }
@@ -375,8 +351,6 @@ export const openEditCostModal = (costIdToEdit) => {
 
 export const openConfirmationModal = (title, message, confirmButtonText, confirmButtonClass, actionCallback, actionData = null) => {
     updateAppState({ currentConfirmationAction: { callback: actionCallback, data: actionData } });
-    console.log("MODAL_HANDLER (openConfirmationModal): Acción guardada en estado:", getAppState().currentConfirmationAction ? "OK" : "FALLO"); 
-
     showDynamicModal({ 
         type: 'confirmation', 
         title: sanitizeHTML(title), 
@@ -448,25 +422,21 @@ const _handleCoinSearch = async (searchTerm) => {
     }
     if (allCoinsCache.length === 0) {
          dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Cargando lista de monedas...</p>';
-         // openAddCoinToWatchlistModal se encargará de popular allCoinsCache si está vacío.
-         // Podríamos forzar una recarga aquí si fuera necesario, pero openAdd... lo maneja.
-         await openAddCoinToWatchlistModal(); // Esto cargará las monedas si el caché está vacío.
-         if (allCoinsCache.length === 0) return; // Si sigue vacío después del intento, salir.
+         await openAddCoinToWatchlistModal(); 
+         if (allCoinsCache.length === 0) return;
     }
     const filteredResults = allCoinsCache.filter(coin =>
         coin.name.toLowerCase().includes(term) ||
         coin.symbol.toLowerCase().includes(term) ||
         coin.id.toLowerCase().includes(term)
-    ).slice(0, 50); // Limitar resultados para rendimiento
+    ).slice(0, 50);
 
     renderCoinSearchResults(filteredResults);
 };
 export const handleCoinSearch = debounce(_handleCoinSearch, 300);
 
 
-// --- INICIO DE MODIFICACIÓN PARA openAddCoinToWatchlistModal ---
 export const openAddCoinToWatchlistModal = async () => {
-    console.log('[MODALHANDLERS.JS DEBUG] openAddCoinToWatchlistModal() llamada.'); // LOG AÑADIDO
     const dom = getDomElements();
     if (!dom.addCoinModal) {
         console.error("Modal 'addCoinModal' no encontrado en el DOM.");
@@ -478,7 +448,6 @@ export const openAddCoinToWatchlistModal = async () => {
 
     const now = Date.now();
     if (allCoinsCache.length === 0 || (now - lastAllCoinsFetchTime > ALL_COINS_CACHE_DURATION)) {
-        console.log("[CryptoAPI] Cache de todas las monedas vacía o expirada. Obteniendo de la API...");
         if (dom.coinSearchResultsContainer) dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Cargando monedas disponibles...</p>';
         try {
             allCoinsCache = await getTop100Coins();
@@ -495,14 +464,12 @@ export const openAddCoinToWatchlistModal = async () => {
             if (dom.coinSearchResultsContainer) dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-red-500 dark:text-red-400">Error al cargar monedas.</p>';
         }
     } else {
-        console.log("[CryptoAPI] Usando caché de todas las monedas.");
         if (dom.coinSearchResultsContainer && dom.searchCoinInput && !dom.searchCoinInput.value) {
             dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Comience a escribir para buscar monedas.</p>';
         }
     }
      if (dom.searchCoinInput) dom.searchCoinInput.focus();
 };
-// --- FIN DE MODIFICACIÓN PARA openAddCoinToWatchlistModal ---
 
 export const handleChangeAppTitle = async () => {
     const dom = getDomElements();

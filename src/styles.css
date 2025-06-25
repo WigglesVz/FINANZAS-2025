@@ -290,71 +290,52 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
     #spot-trades-table th:nth-child(7), /* Acciones */
     #spot-trades-table td:nth-child(7) { width: 10%; text-align: center; }
 
-    /* --- ALINEACIÓN PARA OPERACIONES DE FUTUROS (ESCRITORIO - ESTÁNDAR) --- */
+    /* === INICIO: ESTILOS CORREGIDOS PARA FUTUROS EN DESKTOP === */
     #futures-trades-table {
-        width: 100%;
-        border-collapse: collapse;
-        table-layout: fixed; /* Ayuda a que los anchos de columna se respeten */
+        table-layout: fixed;
     }
 
     #futures-trades-table th,
     #futures-trades-table td {
-        padding: 12px 15px; /* Padding estándar */
-        font-size: 0.875rem; /* Tamaño de fuente estándar */
-        border-bottom: 1px solid #e5e7eb; /* Borde inferior estándar */
-        vertical-align: middle; /* Alinea el contenido verticalmente al centro */
-        /* white-space: nowrap; */ /* Descomenta si quieres evitar que el texto se rompa en varias líneas */
-        overflow: hidden; /* Evita que el contenido desborde la celda */
-        text-overflow: ellipsis; /* Muestra '...' si el contenido es muy largo y white-space: nowrap está activo */
+        padding: 12px 15px;
+        vertical-align: middle;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
-    .dark #futures-trades-table th,
-    .dark #futures-trades-table td {
-        border-bottom-color: #4b5563; /* Borde inferior en modo oscuro */
-        color: #d1d5db; /* Color de texto en modo oscuro */
-    }
-    .dark #futures-trades-table th { /* Color específico para encabezados en dark mode */
-        color: #e5e7eb; /* Un gris más claro para encabezados en dark */
-    }
+    
+    /* Anchos y alineaciones para las 8 columnas */
+    #futures-trades-table th:nth-child(1), /* Símbolo */
+    #futures-trades-table td:nth-child(1) { width: 18%; text-align: left; }
+    
+    #futures-trades-table th:nth-child(2), /* Dirección */
+    #futures-trades-table td:nth-child(2) { width: 12%; text-align: left; }
 
-    /* Anchos y alineaciones para cada columna de #futures-trades-table */
-    /* Símbolo */
-    #futures-trades-table th:nth-child(1),
-    #futures-trades-table td:nth-child(1) { width: 20%; text-align: left; }
-    /* Dirección */
-    #futures-trades-table th:nth-child(2),
-    #futures-trades-table td:nth-child(2) { width: 15%; text-align: left; }
-    /* Estado */
-    #futures-trades-table th:nth-child(3),
-    #futures-trades-table td:nth-child(3) { width: 15%; text-align: center; }
-    /* PNL */
-    #futures-trades-table th:nth-child(4),
-    #futures-trades-table td:nth-child(4) { width: 15%; text-align: right; }
-    /* Apalanc. */
-    #futures-trades-table th:nth-child(5),
-    #futures-trades-table td:nth-child(5) { width: 15%; text-align: right; }
-    /* Duración */
-    #futures-trades-table th:nth-child(6),
+    #futures-trades-table th:nth-child(3), /* Estado */
+    #futures-trades-table td:nth-child(3) { width: 12%; text-align: center; }
+
+    #futures-trades-table th:nth-child(4), /* PnL */
+    #futures-trades-table td:nth-child(4) { width: 14%; text-align: right; }
+
+    #futures-trades-table th:nth-child(5), /* Apalanc. */
+    #futures-trades-table td:nth-child(5) { width: 10%; text-align: right; }
+
+    #futures-trades-table th:nth-child(6), /* Duración */
     #futures-trades-table td:nth-child(6) { width: 10%; text-align: center; }
-    /* Acciones */
-    #futures-trades-table th:nth-child(7),
-    #futures-trades-table td:nth-child(7) { width: 10%; text-align: center; }
+    
+    #futures-trades-table th:nth-child(7), /* ROI % */
+    #futures-trades-table td:nth-child(7) { width: 12%; text-align: right; }
 
-    /* Asegurar que el contenido del span.value-wrapper se comporte bien */
-    #futures-trades-table td .value-wrapper {
-        display: inline-block;
-        width: 100%;
-    }
+    #futures-trades-table th:nth-child(8), /* Acciones */
+    #futures-trades-table td:nth-child(8) { width: 12%; text-align: center; }
 
-    /* Ajustes específicos para el contenido de ciertas celdas */
-    #futures-trades-table td:nth-child(2) .value-wrapper i {
-        margin-right: 0.25rem;
-    }
-    #futures-trades-table td:nth-child(7) .value-wrapper {
+    /* Ajuste para el contenido de los botones de acción */
+    #futures-trades-table td:nth-child(8) .value-wrapper {
         display: flex;
         justify-content: center;
         align-items: center;
-        gap: 0.5rem; /* Espacio entre botones */
+        gap: 0.5rem;
     }
+    /* === FIN: ESTILOS CORREGIDOS PARA FUTUROS EN DESKTOP === */
 }
 
 /* Media query para pantallas PEQUEÑAS (móviles) */
@@ -456,39 +437,39 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
         color: #d1d5db;
     }
 
+    /* === INICIO: ESTILOS CORREGIDOS PARA ACCIONES EN MÓVIL === */
     /* Reglas específicas para las celdas de acciones y gráfico */
     #project-details-table td:nth-child(8),
     #project-cost-table td:nth-child(5),
     #fixed-expenses-table td:nth-child(3),
     #spot-trades-table td:nth-child(7),
-    #futures-trades-table td:nth-child(7),
-    #crypto-watchlist-container td:nth-child(4), /* <- GRÁFICO */
-    #crypto-watchlist-container td:nth-child(5) { /* <- ACCIÓN */
+    #futures-trades-table td:nth-child(8), /* ACTUALIZADO de 7 a 8 para Acciones */
+    #crypto-watchlist-container td:nth-child(4), /* Gráfico */
+    #crypto-watchlist-container td:nth-child(5) { /* Acción */
         justify-content: center;
         padding-top: 1rem;
         border-top: 1px solid #e5e7eb;
         margin-top: 0.5rem;
     }
-     /* Adjust nth-child for dark mode equivalent */
+     /* Dark mode equivalent */
     .dark #project-details-table td:nth-child(8),
     .dark #project-cost-table td:nth-child(5),
     .dark #fixed-expenses-table td:nth-child(3),
     .dark #spot-trades-table td:nth-child(7),
-    .dark #futures-trades-table td:nth-child(7),
-    .dark #crypto-watchlist-container td:nth-child(4), /* <- GRÁFICO */
-    .dark #crypto-watchlist-container td:nth-child(5) { /* <- ACCIÓN */
+    .dark #futures-trades-table td:nth-child(8), /* ACTUALIZADO de 7 a 8 para Acciones */
+    .dark #crypto-watchlist-container td:nth-child(4), /* Gráfico */
+    .dark #crypto-watchlist-container td:nth-child(5) { /* Acción */
         border-top-color: #4b5563;
     }
-
 
     /* Ocultar la etiqueta "Acciones" y "Gráfico" */
     #project-details-table td:nth-child(8)::before,
     #project-cost-table td:nth-child(5)::before,
     #fixed-expenses-table td:nth-child(3)::before,
     #spot-trades-table td:nth-child(7)::before,
-    #futures-trades-table td:nth-child(7)::before,
-    #crypto-watchlist-container td:nth-child(4)::before, /* <- OCULTAR ETIQUETA GRÁFICO */
-    #crypto-watchlist-container td:nth-child(5)::before { /* <- OCULTAR ETIQUETA ACCIÓN */
+    #futures-trades-table td:nth-child(8)::before, /* ACTUALIZADO de 7 a 8 para Acciones */
+    #crypto-watchlist-container td:nth-child(4)::before, /* OCULTAR ETIQUETA GRÁFICO */
+    #crypto-watchlist-container td:nth-child(5)::before { /* OCULTAR ETIQUETA ACCIÓN */
         content: "";
         display: none;
     }
@@ -498,12 +479,13 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
     #project-cost-table td:nth-child(5) .value-wrapper,
     #fixed-expenses-table td:nth-child(3) .value-wrapper,
     #spot-trades-table td:nth-child(7) .value-wrapper,
-    #futures-trades-table td:nth-child(7) .value-wrapper,
-    #crypto-watchlist-container td:nth-child(4) .value-wrapper, /* <- CENTRAR VALOR GRÁFICO */
-    #crypto-watchlist-container td:nth-child(5) .value-wrapper { /* <- CENTRAR VALOR ACCIÓN */
+    #futures-trades-table td:nth-child(8) .value-wrapper, /* ACTUALIZADO de 7 a 8 para Acciones */
+    #crypto-watchlist-container td:nth-child(4) .value-wrapper, /* CENTRAR VALOR GRÁFICO */
+    #crypto-watchlist-container td:nth-child(5) .value-wrapper { /* CENTRAR VALOR ACCIÓN */
         width: 100%;
         text-align: center;
     }
+    /* === FIN: ESTILOS CORREGIDOS PARA ACCIONES EN MÓVIL === */
 
     #fixed-expenses-table th, #fixed-expenses-table td,
     #project-cost-table th, #project-cost-table td,

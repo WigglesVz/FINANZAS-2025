@@ -290,7 +290,7 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
     #spot-trades-table th:nth-child(7), /* Acciones */
     #spot-trades-table td:nth-child(7) { width: 10%; text-align: center; }
 
-    /* === INICIO: ESTILOS CORREGIDOS PARA FUTUROS EN DESKTOP === */
+    /* --- ESTILOS PARA FUTUROS EN DESKTOP --- */
     #futures-trades-table {
         table-layout: fixed;
     }
@@ -303,39 +303,36 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
         text-overflow: ellipsis;
     }
     
-    /* Anchos y alineaciones para las 8 columnas */
-    #futures-trades-table th:nth-child(1), /* Símbolo */
+    #futures-trades-table th:nth-child(1),
     #futures-trades-table td:nth-child(1) { width: 18%; text-align: left; }
     
-    #futures-trades-table th:nth-child(2), /* Dirección */
+    #futures-trades-table th:nth-child(2),
     #futures-trades-table td:nth-child(2) { width: 12%; text-align: left; }
 
-    #futures-trades-table th:nth-child(3), /* Estado */
+    #futures-trades-table th:nth-child(3),
     #futures-trades-table td:nth-child(3) { width: 12%; text-align: center; }
 
-    #futures-trades-table th:nth-child(4), /* PnL */
+    #futures-trades-table th:nth-child(4),
     #futures-trades-table td:nth-child(4) { width: 14%; text-align: right; }
 
-    #futures-trades-table th:nth-child(5), /* Apalanc. */
+    #futures-trades-table th:nth-child(5),
     #futures-trades-table td:nth-child(5) { width: 10%; text-align: right; }
 
-    #futures-trades-table th:nth-child(6), /* Duración */
+    #futures-trades-table th:nth-child(6),
     #futures-trades-table td:nth-child(6) { width: 10%; text-align: center; }
     
-    #futures-trades-table th:nth-child(7), /* ROI % */
+    #futures-trades-table th:nth-child(7),
     #futures-trades-table td:nth-child(7) { width: 12%; text-align: right; }
 
-    #futures-trades-table th:nth-child(8), /* Acciones */
+    #futures-trades-table th:nth-child(8),
     #futures-trades-table td:nth-child(8) { width: 12%; text-align: center; }
 
-    /* Ajuste para el contenido de los botones de acción */
     #futures-trades-table td:nth-child(8) .value-wrapper {
         display: flex;
         justify-content: center;
         align-items: center;
         gap: 0.5rem;
     }
-    /* === FIN: ESTILOS CORREGIDOS PARA FUTUROS EN DESKTOP === */
 }
 
 /* Media query para pantallas PEQUEÑAS (móviles) */
@@ -353,10 +350,11 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
         display: none !important;
     }
 
-    /* Estructura base para todas las tablas en móvil */
+    /* === INICIO: REFACTORIZACIÓN UI MÓVIL === */
+    /* Estructura base para TODAS las tablas en móvil */
+    #project-details-table,
     #project-cost-table,
     #fixed-expenses-table,
-    #project-details-table,
     #spot-trades-table,
     #futures-trades-table,
     #crypto-watchlist-container table {
@@ -367,14 +365,24 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
     }
 
     /* Cada tbody se convierte en un contenedor de bloques */
-    #project-cost-table tbody, #project-details-table tbody, #fixed-expenses-table tbody, #spot-trades-table tbody, #futures-trades-table tbody, #crypto-watchlist-container tbody {
+    #project-details-table tbody,
+    #project-cost-table tbody,
+    #fixed-expenses-table tbody, 
+    #spot-trades-table tbody, 
+    #futures-trades-table tbody, 
+    #crypto-watchlist-container tbody {
         display: block;
         width: 100%;
         border-bottom: none;
     }
 
     /* Cada fila se convierte en una tarjeta */
-    #project-cost-table tr, #project-details-table tr, #fixed-expenses-table tr, #spot-trades-table tr, #futures-trades-table tr, #crypto-watchlist-container tr {
+    #project-details-table tr,
+    #project-cost-table tr, 
+    #fixed-expenses-table tr, 
+    #spot-trades-table tr, 
+    #futures-trades-table tr, 
+    #crypto-watchlist-container tr {
         display: block;
         margin-bottom: 1rem;
         padding: 1rem;
@@ -383,16 +391,31 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         background-color: white;
     }
-    #project-cost-table tr:hover, #project-details-table tr:hover, #fixed-expenses-table tr:hover, #spot-trades-table tr:hover, #futures-trades-table tr:hover, #crypto-watchlist-container tr:hover {
+    #project-details-table tr:hover,
+    #project-cost-table tr:hover, 
+    #fixed-expenses-table tr:hover, 
+    #spot-trades-table tr:hover, 
+    #futures-trades-table tr:hover, 
+    #crypto-watchlist-container tr:hover {
         background-color: #f9fafb;
         box-shadow: 0 2px 5px rgba(0,0,0,0.15);
     }
 
-    .dark #project-cost-table tr, .dark #project-details-table tr, .dark #fixed-expenses-table tr, .dark #spot-trades-table tr, .dark #futures-trades-table tr, .dark #crypto-watchlist-container tr {
+    .dark #project-details-table tr,
+    .dark #project-cost-table tr, 
+    .dark #fixed-expenses-table tr, 
+    .dark #spot-trades-table tr, 
+    .dark #futures-trades-table tr, 
+    .dark #crypto-watchlist-container tr {
         background-color: #1f2937;
         border-color: #4b5563;
     }
-    .dark #project-cost-table tr:hover, .dark #project-details-table tr:hover, .dark #fixed-expenses-table tr:hover, .dark #spot-trades-table tr:hover, .dark #futures-trades-table tr:hover, .dark #crypto-watchlist-container tr:hover {
+    .dark #project-details-table tr:hover,
+    .dark #project-cost-table tr:hover, 
+    .dark #fixed-expenses-table tr:hover, 
+    .dark #spot-trades-table tr:hover, 
+    .dark #futures-trades-table tr:hover, 
+    .dark #crypto-watchlist-container tr:hover {
         background-color: #374151;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
@@ -402,11 +425,16 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
     }
 
     /* Cada celda se convierte en una fila de etiqueta-valor */
-    #project-cost-table td, #project-details-table td, #fixed-expenses-table td, #spot-trades-table td, #futures-trades-table td, #crypto-watchlist-container td {
+    #project-details-table td,
+    #project-cost-table td, 
+    #fixed-expenses-table td, 
+    #spot-trades-table td, 
+    #futures-trades-table td, 
+    #crypto-watchlist-container td {
         border: none;
         display: flex;
         justify-content: space-between;
-        align-items: center; /* Centrar verticalmente para mejor estética */
+        align-items: center;
         padding: 0.35rem 0;
         font-size: 0.875rem;
         text-align: left;
@@ -414,7 +442,12 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
     }
 
     /* El pseudo-elemento ::before actúa como la etiqueta */
-    #project-cost-table td::before, #project-details-table td::before, #fixed-expenses-table td::before, #spot-trades-table td::before, #futures-trades-table td::before, #crypto-watchlist-container td::before {
+    #project-details-table td::before,
+    #project-cost-table td::before, 
+    #fixed-expenses-table td::before, 
+    #spot-trades-table td::before, 
+    #futures-trades-table td::before, 
+    #crypto-watchlist-container td::before {
         content: attr(data-label);
         font-weight: 600;
         color: #6b7280;
@@ -422,7 +455,12 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
         width: 35%;
         text-align: left;
     }
-    .dark #project-cost-table td::before, .dark #project-details-table td::before, .dark #fixed-expenses-table td::before, .dark #spot-trades-table td::before, .dark #futures-trades-table td::before, .dark #crypto-watchlist-container td::before {
+    .dark #project-details-table td::before,
+    .dark #project-cost-table td::before, 
+    .dark #fixed-expenses-table td::before, 
+    .dark #spot-trades-table td::before, 
+    .dark #futures-trades-table td::before, 
+    .dark #crypto-watchlist-container td::before {
         color: #9ca3af;
     }
 
@@ -437,13 +475,12 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
         color: #d1d5db;
     }
 
-    /* === INICIO: ESTILOS CORREGIDOS PARA ACCIONES EN MÓVIL === */
     /* Reglas específicas para las celdas de acciones y gráfico */
     #project-details-table td:nth-child(8),
     #project-cost-table td:nth-child(5),
     #fixed-expenses-table td:nth-child(3),
     #spot-trades-table td:nth-child(7),
-    #futures-trades-table td:nth-child(8), /* ACTUALIZADO de 7 a 8 para Acciones */
+    #futures-trades-table td:nth-child(8), /* Acciones de Futuros */
     #crypto-watchlist-container td:nth-child(4), /* Gráfico */
     #crypto-watchlist-container td:nth-child(5) { /* Acción */
         justify-content: center;
@@ -451,12 +488,11 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
         border-top: 1px solid #e5e7eb;
         margin-top: 0.5rem;
     }
-     /* Dark mode equivalent */
     .dark #project-details-table td:nth-child(8),
     .dark #project-cost-table td:nth-child(5),
     .dark #fixed-expenses-table td:nth-child(3),
     .dark #spot-trades-table td:nth-child(7),
-    .dark #futures-trades-table td:nth-child(8), /* ACTUALIZADO de 7 a 8 para Acciones */
+    .dark #futures-trades-table td:nth-child(8), /* Acciones de Futuros */
     .dark #crypto-watchlist-container td:nth-child(4), /* Gráfico */
     .dark #crypto-watchlist-container td:nth-child(5) { /* Acción */
         border-top-color: #4b5563;
@@ -467,7 +503,7 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
     #project-cost-table td:nth-child(5)::before,
     #fixed-expenses-table td:nth-child(3)::before,
     #spot-trades-table td:nth-child(7)::before,
-    #futures-trades-table td:nth-child(8)::before, /* ACTUALIZADO de 7 a 8 para Acciones */
+    #futures-trades-table td:nth-child(8)::before, /* Acciones de Futuros */
     #crypto-watchlist-container td:nth-child(4)::before, /* OCULTAR ETIQUETA GRÁFICO */
     #crypto-watchlist-container td:nth-child(5)::before { /* OCULTAR ETIQUETA ACCIÓN */
         content: "";
@@ -479,13 +515,14 @@ button:disabled { opacity: 0.75; cursor: not-allowed; }
     #project-cost-table td:nth-child(5) .value-wrapper,
     #fixed-expenses-table td:nth-child(3) .value-wrapper,
     #spot-trades-table td:nth-child(7) .value-wrapper,
-    #futures-trades-table td:nth-child(8) .value-wrapper, /* ACTUALIZADO de 7 a 8 para Acciones */
+    #futures-trades-table td:nth-child(8) .value-wrapper, /* Acciones de Futuros */
     #crypto-watchlist-container td:nth-child(4) .value-wrapper, /* CENTRAR VALOR GRÁFICO */
     #crypto-watchlist-container td:nth-child(5) .value-wrapper { /* CENTRAR VALOR ACCIÓN */
         width: 100%;
         text-align: center;
     }
-    /* === FIN: ESTILOS CORREGIDOS PARA ACCIONES EN MÓVIL === */
+    
+    /* === FIN: REFACTORIZACIÓN UI MÓVIL === */
 
     #fixed-expenses-table th, #fixed-expenses-table td,
     #project-cost-table th, #project-cost-table td,

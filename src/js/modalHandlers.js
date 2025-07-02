@@ -174,10 +174,6 @@ export const showDynamicModal = (options) => {
     switch (type) {
         case 'task':
             updateTaskModalDropdowns();
-            if (!dom.taskIdInput || !dom.taskProjectNameSelect || !dom.taskStatusSelect || !dom.taskPrioritySelect || !dom.taskNameInput || !dom.taskDescriptionInput || !dom.taskStartDateInput || !dom.taskEndDateInput) {
-                console.error("MODAL_HANDLER (task): Faltan elementos DOM para el modal de tarea.");
-                return;
-            }
             if (data) { 
                 dom.taskIdInput.value = data.id || '';
                 dom.taskProjectNameSelect.value = data.projectName || '';
@@ -196,11 +192,7 @@ export const showDynamicModal = (options) => {
             }
             break;
         case 'cost':
-             if (!dom.costIdInput || !dom.costProjectNameInput || !dom.costBudgetInput || !dom.costActualInput) {
-                console.error("MODAL_HANDLER (cost): Faltan elementos DOM para el modal de costo.");
-                return;
-            }
-            if (data) {
+             if (data) {
                 dom.costIdInput.value = data.id || '';
                 dom.costProjectNameInput.value = data.projectName || 'N/A';
                 dom.costBudgetInput.value = data.budget || '0';
@@ -208,12 +200,6 @@ export const showDynamicModal = (options) => {
             }
             break;
         case 'spotTrade':
-            if (!dom.spotTradeIdInput || !dom.tradeDateInput || !dom.tradeTypeSelect || !dom.baseAssetInput || !dom.quoteAssetInput || !dom.priceInput || !dom.quantityBaseInput || !dom.totalQuoteInput || !dom.spotTradeFeesInput || !dom.notesInput ||
-                !dom.spotTargetCalculatorSection || !dom.calcBaseQuantity || !dom.calcBaseTotalCost || !dom.calcTargetProfitUsdInput || !dom.calcEstimatedSellFeeInput || !dom.calcSellPriceNeeded || !dom.calcTotalSellValue
-            ) {
-                console.error("MODAL_HANDLER (spotTrade): Faltan elementos DOM para el modal/calculador de spot.");
-                return;
-            }
             if (data) { 
                 dom.spotTradeIdInput.value = data.id || '';
                 dom.tradeDateInput.value = data.tradeDate ? new Date(data.tradeDate).toISOString().slice(0, 16) : '';
@@ -240,8 +226,8 @@ export const showDynamicModal = (options) => {
                     removeSpotCalculatorListeners(); 
                     const listenerProfit = () => handleSpotCalculatorChange(data); 
                     const listenerFee = () => handleSpotCalculatorChange(data);
-                    if(dom.calcTargetProfitUsdInput) dom.calcTargetProfitUsdInput.addEventListener('input', listenerProfit);
-                    if(dom.calcEstimatedSellFeeInput) dom.calcEstimatedSellFeeInput.addEventListener('input', listenerFee);
+                    dom.calcTargetProfitUsdInput.addEventListener('input', listenerProfit);
+                    dom.calcEstimatedSellFeeInput.addEventListener('input', listenerFee);
                     spotCalculatorInputListeners = [listenerProfit, listenerFee];
                 } else { 
                     dom.spotTargetCalculatorSection.classList.add('hidden');
@@ -259,51 +245,52 @@ export const showDynamicModal = (options) => {
             }
             break;
         case 'futuresTrade':
-            // === SECCIÓN REESTRUCTURADA Y CORREGIDA ===
-            if (!dom.futuresTradeModalTitle || !dom.futuresTradeForm) {
-                console.error("MODAL_HANDLER (futuresTrade): Faltan elementos DOM base para el modal de futuros.");
-                return;
-            }
-
+            // === BLOQUE CORREGIDO ===
             const isNewTrade = !data;
             const isEditingOpenTrade = data && data.status === 'open';
             const isEditingClosedTrade = data && data.status === 'closed';
 
             // 1. Configurar Título y Botones
-            dom.futuresTradeModalTitle.textContent = isEditingClosedTrade ? 'Ver Posición Cerrada' : (isEditingOpenTrade ? 'Ver/Cerrar Posición' : 'Abrir Nueva Posición');
-            dom.saveFuturesTradeButton.classList.toggle('hidden', isEditingClosedTrade);
+            dom.futuresTradeModalTitle.textContent = title || (isEditingOpenTrade ? 'Ver/Cerrar Posición' : (isEditingClosedTrade ? 'Ver Posición Cerrada' : 'Abrir Nueva Posición'));
+            
+            // --- ESTA ES LA CORRECCIÓN CLAVE ---
+            dom.saveFuturesTradeButton.classList.remove('hidden'); // Siempre asegúrate de que sea visible primero
+            if (isEditingClosedTrade) {
+                dom.saveFuturesTradeButton.classList.add('hidden'); // Y luego ocúltalo si es necesario
+            }
+            // --- FIN DE LA CORRECCIÓN CLAVE ---
+
             dom.saveFuturesTradeButton.textContent = isNewTrade ? 'Abrir Posición' : 'Guardar Cambios';
             dom.closeFuturesTradeButton.classList.toggle('hidden', !isEditingOpenTrade);
             
-            // 2. Poblar el formulario si hay datos
-            if (data) {
-                dom.futuresTradeIdInput.value = data.id || ''; 
-                dom.futuresSymbolInput.value = data.symbol || '';
-                dom.futuresDirectionSelect.value = data.direction || 'long'; 
-                dom.futuresLeverageInput.value = data.leverage || '';
-                dom.futuresEntryDateInput.value = data.entryDate ? new Date(data.entryDate).toISOString().slice(0, 16) : '';
-                dom.futuresQuantityInput.value = data.quantity || ''; 
-                dom.futuresEntryPriceInput.value = data.entryPrice || '';
-                dom.futuresEntryFeesInput.value = data.entryFees || ''; 
-                dom.futuresExitPriceInput.value = data.exitPrice || ''; 
-                dom.futuresExitFeesInput.value = data.exitFees || '';   
-                dom.futuresNotesInput.value = data.notes || '';
-                if(data.exitDate) dom.futuresExitDateInput.value = new Date(data.exitDate).toISOString().slice(0, 16);
-            } else {
-                const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                dom.futuresEntryDateInput.value = now.toISOString().slice(0, 16);
-            }
+            // 2. Poblar/Resetear el Formulario
+            dom.futuresTradeIdInput.value = data?.id || ''; 
+            dom.futuresSymbolInput.value = data?.symbol || '';
+            dom.futuresDirectionSelect.value = data?.direction || 'long'; 
+            dom.futuresLeverageInput.value = data?.leverage || '';
+            dom.futuresEntryDateInput.value = data?.entryDate ? new Date(data.entryDate).toISOString().slice(0, 16) : new Date(new Date().setMinutes(new Date().getMinutes() - new Date().getTimezoneOffset())).toISOString().slice(0, 16);
+            dom.futuresQuantityInput.value = data?.quantity || ''; 
+            dom.futuresEntryPriceInput.value = data?.entryPrice || '';
+            dom.futuresEntryFeesInput.value = data?.entryFees || ''; 
+            dom.futuresExitPriceInput.value = data?.exitPrice || ''; 
+            dom.futuresExitFeesInput.value = data?.exitFees || '';   
+            dom.futuresNotesInput.value = data?.notes || '';
+            dom.futuresExitDateInput.value = data?.exitDate ? new Date(data.exitDate).toISOString().slice(0, 16) : '';
             
-            // 3. Configurar visibilidad y estado de los campos
+            // 3. Configurar Visibilidad y Estado de los Campos
             const allEntryFields = [dom.futuresSymbolInput, dom.futuresDirectionSelect, dom.futuresLeverageInput, dom.futuresEntryDateInput, dom.futuresQuantityInput, dom.futuresEntryPriceInput, dom.futuresEntryFeesInput, dom.futuresNotesInput];
-            const allExitFields = [dom.futuresExitPriceContainer, dom.futuresExitFeesContainer];
-            const allCalculatedFields = [dom.futuresExitDateContainer, dom.futuresDurationContainer, dom.futuresMarginContainer, dom.futuresRoiContainer];
+            const allExitInputFields = [dom.futuresExitPriceInput, dom.futuresExitFeesInput];
             
-            allExitFields.forEach(el => el.classList.toggle('hidden', isNewTrade));
-            allCalculatedFields.forEach(el => el.classList.toggle('hidden', !isEditingClosedTrade));
-            
-            const allInputs = [...allEntryFields, dom.futuresExitPriceInput, dom.futuresExitFeesInput];
-            allInputs.forEach(input => { if(input) input.disabled = isEditingClosedTrade; });
+            dom.futuresExitPriceContainer.classList.toggle('hidden', isNewTrade);
+            dom.futuresExitFeesContainer.classList.toggle('hidden', isNewTrade);
+            dom.futuresExitDateContainer.classList.toggle('hidden', !isEditingClosedTrade);
+            dom.futuresDurationContainer.classList.toggle('hidden', !isEditingClosedTrade);
+            dom.futuresMarginContainer.classList.toggle('hidden', !isEditingClosedTrade);
+            dom.futuresRoiContainer.classList.toggle('hidden', !isEditingClosedTrade);
+
+            [...allEntryFields, ...allExitInputFields].forEach(input => { 
+                if(input) input.disabled = isEditingClosedTrade;
+            });
 
             // 4. Calcular y mostrar métricas para trades cerrados
             if (isEditingClosedTrade) {
@@ -312,7 +299,6 @@ export const showDynamicModal = (options) => {
                 dom.futuresMarginInput.value = formatCurrency(metrics.margin);
                 dom.futuresRoiInput.value = `${metrics.roi.toFixed(2)}%`;
 
-                // Aplicar estilo al ROI
                 dom.futuresRoiInput.classList.remove('text-green-600', 'dark:text-green-400', 'text-red-600', 'dark:text-red-400', 'text-gray-500', 'dark:text-gray-400', 'font-semibold');
                 if (metrics.roi > 0) {
                     dom.futuresRoiInput.classList.add('text-green-600', 'dark:text-green-400', 'font-semibold');
@@ -323,8 +309,6 @@ export const showDynamicModal = (options) => {
                 }
             }
             break;
-            // === FIN DE SECCIÓN REESTRUCTURADA ===
-
         case 'addCoin': 
             break; 
     }
@@ -332,18 +316,19 @@ export const showDynamicModal = (options) => {
 };
 
 export const openAddTaskModal = () => showDynamicModal({ type: 'task', title: 'Agregar Nueva Tarea' });
+
 export const openEditTaskModal = (taskIdToEdit) => {
     const currentState = getAppState();
     const taskToEdit = currentState.projectDetails.find(task => task.id === taskIdToEdit);
     if (!taskToEdit) return showToast("Error: Tarea no encontrada.", "error");
     showDynamicModal({ type: 'task', title: 'Editar Tarea', data: taskToEdit });
 };
+
 export const openEditCostModal = (costIdToEdit) => {
     const currentState = getAppState();
     const costToEdit = currentState.projectCosts.find(cost => cost.id === costIdToEdit);
     if (!costToEdit) {
         showToast("Error: Costo no encontrado.", "error");
-        console.error(`openEditCostModal: Costo con ID '${costIdToEdit}' no encontrado.`);
         return;
     }
     showDynamicModal({ type: 'cost', title: `Editar Costos: ${sanitizeHTML(costToEdit.projectName)}`, data: costToEdit });
@@ -378,8 +363,6 @@ export const openEditFuturesTradeModal = (tradeId) => {
 
 const renderCoinSearchResults = (results) => {
     const dom = getDomElements();
-    if (!dom.coinSearchResultsContainer) return;
-
     const { watchlist } = getAppState();
     const watchlistCoinIds = new Set(watchlist.map(item => item.coinId));
 
@@ -413,8 +396,6 @@ const renderCoinSearchResults = (results) => {
 
 const _handleCoinSearch = async (searchTerm) => {
     const dom = getDomElements();
-    if (!dom.searchCoinInput || !dom.coinSearchResultsContainer) return;
-
     const term = searchTerm.trim().toLowerCase();
     if (!term) {
         dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Comience a escribir para buscar monedas.</p>';
@@ -438,33 +419,27 @@ export const handleCoinSearch = debounce(_handleCoinSearch, 300);
 
 export const openAddCoinToWatchlistModal = async () => {
     const dom = getDomElements();
-    if (!dom.addCoinModal) {
-        console.error("Modal 'addCoinModal' no encontrado en el DOM.");
-        showToast("Error al abrir el modal para añadir moneda.", "error");
-        return;
-    }
-    
     showDynamicModal({ type: 'addCoin', title: 'Añadir Moneda a la Lista' });
 
     const now = Date.now();
     if (allCoinsCache.length === 0 || (now - lastAllCoinsFetchTime > ALL_COINS_CACHE_DURATION)) {
-        if (dom.coinSearchResultsContainer) dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Cargando monedas disponibles...</p>';
+        dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Cargando monedas disponibles...</p>';
         try {
             allCoinsCache = await getTop100Coins();
             lastAllCoinsFetchTime = now;
             if (allCoinsCache.length === 0) {
-                if (dom.coinSearchResultsContainer) dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-red-500 dark:text-red-400">No se pudieron cargar las monedas.</p>';
+                dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-red-500 dark:text-red-400">No se pudieron cargar las monedas.</p>';
             } else {
-                 if (dom.coinSearchResultsContainer && dom.searchCoinInput && !dom.searchCoinInput.value) {
+                 if (dom.coinSearchResultsContainer && !dom.searchCoinInput.value) {
                     dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Comience a escribir para buscar monedas.</p>';
                  }
             }
         } catch (error) {
             console.error("Error al obtener la lista de todas las monedas:", error);
-            if (dom.coinSearchResultsContainer) dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-red-500 dark:text-red-400">Error al cargar monedas.</p>';
+            dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-red-500 dark:text-red-400">Error al cargar monedas.</p>';
         }
     } else {
-        if (dom.coinSearchResultsContainer && dom.searchCoinInput && !dom.searchCoinInput.value) {
+        if (dom.coinSearchResultsContainer && !dom.searchCoinInput.value) {
             dom.coinSearchResultsContainer.innerHTML = '<p class="text-center py-4 text-gray-500 dark:text-gray-400">Comience a escribir para buscar monedas.</p>';
         }
     }
